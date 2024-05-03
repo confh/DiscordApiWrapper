@@ -1,13 +1,16 @@
 import fetch from "node-fetch"
-import Client, { BaseData, ApplicationCommandTypes, ApplicationCommandOptionTypes } from "../Client"
+import Client, { BaseData, ApplicationCommandTypes, ApplicationCommandOptionTypes, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
+import Message from "./Message"
 
 export default class Interaction {
     private token: string
     private callbackURL: string
     private client: Client
+    private interaction_id: string
     member: Member
+    name: string
     user: User
     id: string
     guildId: string
@@ -16,18 +19,29 @@ export default class Interaction {
 
     constructor(data: BaseData, client: Client) {
         this.client = client
-        this.id = data.id
+        this.interaction_id = data.id
         this.token = data.token
+        this.name = data.data.name
+        this.id = data.data.id
         this.guildId = data.guild_id
         this.user = client.users.find(a => a.id === data.member.id) || new User(data.member.user)
         this.member = client.guilds.find(a => a.id === this.guildId)?.members.find(a => a.id === this.user.id) || new Member(data.member, client)
         this.description = data.description
         this.type = data.type
-        this.callbackURL = `${client.baseURL}interactions/${this.id}/${this.token}/callback`
+        this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
     }
 
-    async reply(text: string) {
-        await fetch(this.callbackURL, {
+    async reply(content: string | ContentOptions) {
+        const embeds: any = []
+        if (typeof content !== "string" && content.embeds) {
+            if (content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+        }
+        const data = await fetch(this.callbackURL, {
             method: "POST",
             headers: {
                 "Authorization": `Bot ${this.client.token}`,
@@ -36,21 +50,26 @@ export default class Interaction {
             body: JSON.stringify({
                 type: 4,
                 data: {
-                    content: text
+                    content: typeof content === "string" ? content : content.content,
+                    embeds,
+                    flags: typeof content !== "string" && content.ephemeral ? 64 : 0
                 }
             })
         })
-            .then(async a => {
-                try {
-                    const json = await a.json()
-                    if (json.code === 10062) throw new Error("Unknown interaction");
-                } catch { }
-            })
-            .catch(console.error)
+
+        if (data.status === 400) throw new Error((await data.json()).message, {
+            cause: "Replying to interaction"
+        })
+
+        const originalMsg = await fetch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            method: "GET",
+            headers: this.client.getHeaders()
+        })
+        return new Message(await originalMsg.json(), this.client)
     }
 
-    defer() {
-        fetch(this.callbackURL, {
+    async defer() {
+        await fetch(this.callbackURL, {
             method: "POST",
             headers: this.client.getHeaders(),
             body: JSON.stringify({
@@ -58,31 +77,34 @@ export default class Interaction {
             })
         })
             .then(async a => {
-                try {
-                    const json = await a.json()
-                    if (json.code === 10062) throw new Error("Unknown interaction");
-                } catch { }
+                if (a.status === 400) throw new Error((await a.json()).message, {
+                    cause: "Defering reply to interaction"
+                })
             })
-            .catch(console.error)
     }
 
-    edit(text: string) {
-        fetch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+    async edit(content: string | ContentOptions) {
+        const embeds: any = []
+        if (typeof content !== "string" && content.embeds) {
+            if (content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+        }
+        await fetch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             method: "PATCH",
             headers: this.client.getHeaders(),
             body: JSON.stringify({
-                content: text
+                content: typeof content === "string" ? content : content.content,
+                embeds,
             })
         }).then(async a => {
-            try {
-                const json = await a.json()
-                if (json.code === 10015) throw new Error(json.message);
-                
-            } catch {}
-            console.log(await a.json())
-            if (a.status === 400) throw new Error("Bad Request in editing interaction message");
+            if (a.status === 400) throw new Error("Bad Request in editing interaction message", {
+                cause: "Editing interaction original message"
+            })
         })
-            .catch(console.error)
     }
 }
 

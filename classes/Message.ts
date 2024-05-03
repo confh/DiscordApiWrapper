@@ -1,5 +1,5 @@
 import fetch from "node-fetch"
-import Client, { BaseData } from "../Client"
+import Client, { BaseData, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
 
@@ -36,13 +36,23 @@ export default class Message {
         this.type = data.type
     }
 
-    async reply(text: string): Promise<Message> {
+    async reply(content: string | ContentOptions): Promise<Message> {
+        const embeds: any = []
+        if (typeof content !== "string" && content.embeds) {
+            if (content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+        }
         return new Promise((resolve, reject) => {
-             fetch(`${this.client.baseURL}/channels/${this.channelId}/messages`, {
+            fetch(`${this.client.baseURL}/channels/${this.channelId}/messages`, {
                 method: "POST",
                 headers: this.client.getHeaders(),
                 body: JSON.stringify({
-                    content: text,
+                    content: typeof content === "string" ? content : content.content,
+                    embeds,
                     tts: false,
                     message_reference: {
                         message_id: this.id,
@@ -56,5 +66,30 @@ export default class Message {
                 resolve(new Message(json, this.client))
             })
         })
+    }
+
+    async edit(content: string | ContentOptions): Promise<Message> {
+        const embeds: any = []
+        if (typeof content !== "string" && content.embeds) {
+            if (content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+        }
+        if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
+        const data = await fetch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
+            method: "PATCH",
+            headers: this.client.getHeaders(),
+            body: JSON.stringify({
+                content: typeof content === "string" ? content : content.content,
+                embeds,
+            })
+        })
+
+        if (data.status === 400) throw new Error((await data.json()).message);
+
+        return await data.json()
     }
 }

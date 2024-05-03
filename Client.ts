@@ -5,17 +5,10 @@ import Message from "./classes/Message"
 import Interaction, { SlashCommandInteraction } from './classes/Interaction';
 import fetch from 'node-fetch';
 import SlashCommandBuilder from './classes/SlashCommandBuilder';
+import EmbedBuilder from './classes/EmbedBuilder'
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
-
-async function wait(ms: number) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve(null)
-        }, ms);
-    })
-}
 
 interface ClientEvents {
     ready: [],
@@ -58,6 +51,12 @@ export enum ApplicationCommandOptionTypes {
     NUMBER = 10,
     ATTACHMENT = 11
 };
+
+export interface ContentOptions {
+    content?: string,
+    embeds?: EmbedBuilder[],
+    ephemeral?: boolean
+}
 
 export default class Client {
     private payload;
@@ -244,7 +243,7 @@ export default class Client {
                     _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
                     break
                 case "INTERACTION_CREATE":
-                    if (d.type === 2) {
+                    if (d.data.type === 1) {
                         _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
                     }
                     break
