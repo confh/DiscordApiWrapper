@@ -3,6 +3,8 @@ import Client, { BaseData, ApplicationCommandTypes, ApplicationCommandOptionType
 import Member from "./Member"
 import User from "./User"
 import Message from "./Message"
+import axios from "axios"
+import Channel from "./Channel"
 
 export default class Interaction {
     private token: string
@@ -14,6 +16,7 @@ export default class Interaction {
     user: User
     id: string
     guildId: string
+    channel: Channel
     description: string
     type: ApplicationCommandTypes
 
@@ -28,6 +31,7 @@ export default class Interaction {
         this.member = client.guilds.find(a => a.id === this.guildId)?.members.find(a => a.id === this.user.id) || new Member(data.member, client)
         this.description = data.description
         this.type = data.type
+        this.channel = client.channels.find(a => a.id === data.channel_id) as Channel
         this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
     }
 
@@ -41,46 +45,37 @@ export default class Interaction {
                 }
             }
         }
-        const data = await fetch(this.callbackURL, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bot ${this.client.token}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                type: 4,
-                data: {
-                    content: typeof content === "string" ? content : content.content,
-                    embeds,
-                    flags: typeof content !== "string" && content.ephemeral ? 64 : 0
-                }
-            })
+        const data = await axios.post(this.callbackURL, {
+            type: 4,
+            data: {
+                content: typeof content === "string" ? content : content.content,
+                embeds,
+                flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+            }
+        }, {
+            headers: this.client.getHeaders()
         })
-
-        if (data.status === 400) throw new Error((await data.json()).message, {
+        if (data.status === 400) throw new Error((data.data).message, {
             cause: "Replying to interaction"
         })
 
-        const originalMsg = await fetch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-            method: "GET",
+        const originalMsg = await axios.get(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders()
         })
-        return new Message(await originalMsg.json(), this.client)
+
+
+        return new Message(originalMsg.data, this.client)
     }
 
     async defer() {
-        await fetch(this.callbackURL, {
-            method: "POST",
-            headers: this.client.getHeaders(),
-            body: JSON.stringify({
-                type: 5,
+        await axios.post(this.callbackURL, { type: 5 }, {
+            headers: this.client.getHeaders()
+        }).then(async a => {
+            if (a.status === 400) throw new Error(a.data.message, {
+                cause: "Defering reply to interaction"
             })
         })
-            .then(async a => {
-                if (a.status === 400) throw new Error((await a.json()).message, {
-                    cause: "Defering reply to interaction"
-                })
-            })
+
     }
 
     async edit(content: string | ContentOptions) {
@@ -93,13 +88,11 @@ export default class Interaction {
                 }
             }
         }
-        await fetch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-            method: "PATCH",
-            headers: this.client.getHeaders(),
-            body: JSON.stringify({
-                content: typeof content === "string" ? content : content.content,
-                embeds,
-            })
+        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            content: typeof content === "string" ? content : content.content,
+            embeds,
+        }, {
+            headers: this.client.getHeaders()
         }).then(async a => {
             if (a.status === 400) throw new Error("Bad Request in editing interaction message", {
                 cause: "Editing interaction original message"

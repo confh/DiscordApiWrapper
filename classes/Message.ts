@@ -2,6 +2,8 @@ import fetch from "node-fetch"
 import Client, { BaseData, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
+import axios from "axios"
+import Channel from "./Channel"
 
 export default class Message {
     client: Client
@@ -17,6 +19,7 @@ export default class Message {
     guildId: string
     pinned: boolean
     type: number
+    channel: Channel
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -34,6 +37,7 @@ export default class Message {
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
         this.type = data.type
+        this.channel = client.channels.find(a => a.id === this.channelId) as Channel
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {
@@ -47,22 +51,20 @@ export default class Message {
             }
         }
         return new Promise((resolve, reject) => {
-            fetch(`${this.client.baseURL}/channels/${this.channelId}/messages`, {
-                method: "POST",
-                headers: this.client.getHeaders(),
-                body: JSON.stringify({
-                    content: typeof content === "string" ? content : content.content,
-                    embeds,
-                    tts: false,
-                    message_reference: {
-                        message_id: this.id,
-                        channel_id: this.channelId,
-                        guild_Id: this.guildId
-                    },
-                })
+            axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, {
+                content: typeof content === "string" ? content : content.content,
+                embeds,
+                tts: false,
+                message_reference: {
+                    message_id: this.id,
+                    channel_id: this.channelId,
+                    guild_Id: this.guildId
+                },
+            }, {
+                headers: this.client.getHeaders()
             }).then(async e => {
                 if (e.status === 400) throw new Error(e.statusText);
-                const json = await e.json()
+                const json = e.data
                 resolve(new Message(json, this.client))
             })
         })
@@ -79,17 +81,23 @@ export default class Message {
             }
         }
         if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
-        const data = await fetch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
-            method: "PATCH",
-            headers: this.client.getHeaders(),
-            body: JSON.stringify({
-                content: typeof content === "string" ? content : content.content,
-                embeds,
-            })
+        const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
+            content: typeof content === "string" ? content : content.content,
+            embeds,
+        }, {
+            headers: this.client.getHeaders()
         })
 
-        if (data.status === 400) throw new Error((await data.json()).message);
+        if (data.status === 400) throw new Error(data.data.message);
 
-        return await data.json()
+        return data.data
+    }
+
+    async delete() {
+        const data = await axios.delete(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
+            headers: this.client.getHeaders()
+        })
+
+        if (data.status === 400) throw new Error(data.data.message)
     }
 }

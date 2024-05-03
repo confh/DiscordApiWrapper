@@ -1,4 +1,5 @@
 import Client, { BaseData } from "../Client"
+import Channel from "./Channel"
 import Member from "./Member"
 
 export default class Guild {
@@ -8,6 +9,7 @@ export default class Guild {
     memberCount: number
     joined_at: number
     members: Member[] = []
+    channels: Channel[] = []
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -18,6 +20,10 @@ export default class Guild {
         for (let i = 0; i < data.members.length; i++) {
             const member = data.members[i];
             this.members.push(new Member(member, client))
+        }
+        for (let i = 0; i < data.channels.length; i++) {
+            const channel = data.channels[i];
+            this.channels.push(client.channels.find(a => a.id === channel.id) as Channel)
         }
     }
 }

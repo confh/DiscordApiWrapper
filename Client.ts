@@ -6,6 +6,8 @@ import Interaction, { SlashCommandInteraction } from './classes/Interaction';
 import fetch from 'node-fetch';
 import SlashCommandBuilder from './classes/SlashCommandBuilder';
 import EmbedBuilder from './classes/EmbedBuilder'
+import axios from 'axios';
+import Channel from './classes/Channel';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -52,6 +54,11 @@ export enum ApplicationCommandOptionTypes {
     ATTACHMENT = 11
 };
 
+export enum ChannelTypes {
+    TEXT = 0,
+    DM = 1,
+}
+
 export interface ContentOptions {
     content?: string,
     embeds?: EmbedBuilder[],
@@ -72,6 +79,7 @@ export default class Client {
     private cacheAllUsers = false
     public users: User[] = []
     public guilds: Guild[] = []
+    public channels: Channel[] = []
     public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
@@ -146,10 +154,8 @@ export default class Client {
             const cmd = Commands[i];
             JSONCommands.push(cmd.toJson())
         }
-        await fetch(`${this.baseURL}/applications/${this.user.id}/commands`, {
-            method: "PUT",
-            headers: this.getHeaders(),
-            body: JSON.stringify(JSONCommands)
+        await axios.put(`${this.baseURL}/applications/${this.user.id}/commands`, JSONCommands, {
+            headers: this.getHeaders()
         })
     }
 
@@ -238,6 +244,10 @@ export default class Client {
                         }
 
                         _this.registerUser(allUsers)
+                    }
+                    for (let i = 0; i < d.channels.length; i++) {
+                        const channel = d.channels[i];
+                        _this.channels.push(new Channel(channel, _this))
                     }
                     _this.guilds.push(new Guild(d, _this))
                     _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)

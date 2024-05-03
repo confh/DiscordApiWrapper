@@ -16,7 +16,7 @@ export default class User {
         discriminator: string,
         bot: boolean
     }) {
-        this.verified = options.verified
+        this.verified = options.verified || false
         this.username = options.username
         this.mfa_enabled = options.mfa_enabled
         this.id = options.id
