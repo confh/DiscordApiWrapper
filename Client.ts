@@ -2,9 +2,9 @@ import WebSocket from 'ws';
 import User from './classes/User';
 import Guild from './classes/Guild';
 import Message from "./classes/Message"
-import Interaction, { SlashCommandInteraction } from './classes/Interaction';
-import fetch from 'node-fetch';
+import Interaction, { ButtonInteraction, SlashCommandInteraction } from './classes/Interaction';
 import SlashCommandBuilder from './classes/SlashCommandBuilder';
+import ActionRowBuilder from "./classes/ActionRowBuilder"
 import EmbedBuilder from './classes/EmbedBuilder'
 import axios from 'axios';
 import Channel from './classes/Channel';
@@ -20,6 +20,22 @@ interface ClientEvents {
     resume: []
 }
 
+export interface Emoji {
+    id: string
+    name: string
+    roles?: string[]
+    user?: User
+    require_colons?: boolean
+    managed?: boolean
+    animated?: boolean
+    available?: boolean
+}
+
+export interface PartialEmoji {
+    id: string
+    name: string
+}
+
 export interface BaseData {
     id: string;
     [key: string]: any;
@@ -29,6 +45,14 @@ export enum ApplicationCommandTypes {
     CHAT_INPUT = 1,
     USER = 2,
     MESSAGE = 3
+}
+
+export enum ButtonStyles {
+    PRIMARY = 1,
+    SECONDARY = 2,
+    SUCCESS = 3,
+    DANGER = 4,
+    LINK = 5
 }
 
 export enum ActivityTypes {
@@ -62,6 +86,7 @@ export enum ChannelTypes {
 export interface ContentOptions {
     content?: string,
     embeds?: EmbedBuilder[],
+    components?: ActionRowBuilder[]
     ephemeral?: boolean
 }
 
@@ -179,86 +204,98 @@ export default class Client {
     }
 
     connect() {
-        if (this.ws && this.ws.readyState !== 3) this.ws.close();
+        try {
+            if (this.ws && this.ws.readyState !== 3) this.ws.close();
 
 
-        const _this = this
-        this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
+            const _this = this
+            this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
 
-        this.ws.on('open', function open(data: any) {
-            if (_this.initialUrl !== this.url) {
-                const resumePayload = {
-                    op: 6,
-                    d: {
-                        token: _this.token,
-                        sessionId: _this.session_id,
-                        seq: _this.seq
-                    }
-                }
-
-                _this.ws.send(JSON.stringify(resumePayload))
-            }
-        })
-
-        this.ws.on("close", function close() {
-            setTimeout(() => {
-                _this.connect()
-            }, 2500);
-        })
-
-        this.ws.on('message', function incoming(data: any) {
-            let payload = JSON.parse(data)
-            const { t, op, d, s } = payload;
-
-            switch (op) {
-                case 10:
-                    const { heartbeat_interval } = d;
-                    interval = _this.heartbeat(heartbeat_interval)
-
-                    if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
-                    break;
-                case 0:
-                    _this.seq = s
-                    break;
-            }
-            switch (t) {
-                case "READY":
-                    _this.url = d.resume_gateway_url
-                    _this.session_id = d.session_id
-                    _this.user = new User(d.user)
-                    _this.registerUser(new User(d.user))
-                    _this.emit("ready")
-                    break;
-                case "RESUMED":
-                    _this.emit("resume")
-                    break;
-                case "MESSAGE_CREATE":
-                    _this.emit("messageCreate", new Message(d, _this))
-                    break;
-                case "GUILD_CREATE":
-                    if (_this.cacheAllUsers) {
-                        const allUsers: User[] = []
-                        for (let i = 0; i < d.members.length; i++) {
-                            const user = d.members[i].user;
-                            allUsers.push(new User(user))
+            this.ws.on('open', function open(data: any) {
+                if (_this.initialUrl !== this.url) {
+                    const resumePayload = {
+                        op: 6,
+                        d: {
+                            token: _this.token,
+                            sessionId: _this.session_id,
+                            seq: _this.seq
                         }
+                    }
 
-                        _this.registerUser(allUsers)
-                    }
-                    for (let i = 0; i < d.channels.length; i++) {
-                        const channel = d.channels[i];
-                        _this.channels.push(new Channel(channel, _this))
-                    }
-                    _this.guilds.push(new Guild(d, _this))
-                    _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
-                    break
-                case "INTERACTION_CREATE":
-                    if (d.data.type === 1) {
-                        _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
-                    }
-                    break
-            }
-        })
+                    _this.ws.send(JSON.stringify(resumePayload))
+                }
+            })
+
+            this.ws.on("close", function close() {
+                setTimeout(() => {
+                    _this.connect()
+                }, 2500);
+            })
+
+            this.ws.on("error", (e) => {
+                console.log(e.message)
+            })
+
+            this.ws.on('message', function incoming(data: any) {
+                let payload = JSON.parse(data)
+                const { t, op, d, s } = payload;
+
+                switch (op) {
+                    case 10:
+                        const { heartbeat_interval } = d;
+                        interval = _this.heartbeat(heartbeat_interval)
+
+                        if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
+                        break;
+                    case 0:
+                        _this.seq = s
+                        break;
+                }
+                switch (t) {
+                    case "READY":
+                        _this.url = d.resume_gateway_url
+                        _this.session_id = d.session_id
+                        _this.user = new User(d.user)
+                        _this.registerUser(new User(d.user))
+                        _this.emit("ready")
+                        break;
+                    case "RESUMED":
+                        _this.emit("resume")
+                        break;
+                    case "MESSAGE_CREATE":
+                        _this.emit("messageCreate", new Message(d, _this))
+                        break;
+                    case "GUILD_CREATE":
+                        if (_this.cacheAllUsers) {
+                            const allUsers: User[] = []
+                            for (let i = 0; i < d.members.length; i++) {
+                                const user = d.members[i].user;
+                                allUsers.push(new User(user))
+                            }
+
+                            _this.registerUser(allUsers)
+                        }
+                        for (let i = 0; i < d.channels.length; i++) {
+                            const channel = d.channels[i];
+                            _this.channels.push(new Channel(channel, _this))
+                        }
+                        _this.guilds.push(new Guild(d, _this))
+                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                        break
+                    case "INTERACTION_CREATE":
+                        if (d.data.type === 1) {
+                            _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
+                        } else if (d.type === 3) {
+                            if (d.data.component_type === 2) {
+                                _this.emit("interactionCreate", new ButtonInteraction(d, _this))
+                            }
+                        }
+                        break
+                }
+            })
+        } catch (e) {
+            console.error(e.message)
+        }
     }
 
 }

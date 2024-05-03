@@ -1,10 +1,11 @@
-import fetch from "node-fetch"
 import Client, { BaseData, ApplicationCommandTypes, ApplicationCommandOptionTypes, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
 import Message from "./Message"
 import axios from "axios"
 import Channel from "./Channel"
+import ActionRowBuilder from "./ActionRowBuilder"
+import Guild from "./Guild"
 
 export default class Interaction {
     private token: string
@@ -18,6 +19,7 @@ export default class Interaction {
     guildId: string
     channel: Channel
     description: string
+    guild: Guild
     type: ApplicationCommandTypes
 
     constructor(data: BaseData, client: Client) {
@@ -27,7 +29,8 @@ export default class Interaction {
         this.name = data.data.name
         this.id = data.data.id
         this.guildId = data.guild_id
-        this.user = client.users.find(a => a.id === data.member.id) || new User(data.member.user)
+        this.guild = client.guilds.find(a => a.id === this.guildId) as Guild
+        this.user = client.users.find(a => a.id === data.member.user.id) as User
         this.member = client.guilds.find(a => a.id === this.guildId)?.members.find(a => a.id === this.user.id) || new Member(data.member, client)
         this.description = data.description
         this.type = data.type
@@ -37,19 +40,29 @@ export default class Interaction {
 
     async reply(content: string | ContentOptions) {
         const embeds: any = []
-        if (typeof content !== "string" && content.embeds) {
-            if (content.embeds?.length) {
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
                     const embed = content.embeds[i];
                     embeds.push(embed.toJson())
                 }
             }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
         }
+
         const data = await axios.post(this.callbackURL, {
             type: 4,
             data: {
                 content: typeof content === "string" ? content : content.content,
                 embeds,
+                components,
                 flags: typeof content !== "string" && content.ephemeral ? 64 : 0
             }
         }, {
@@ -135,5 +148,16 @@ export class SlashCommandInteraction extends Interaction {
             ephemeral: boolean,
             content_type: string
         }
+    }
+}
+
+export class ButtonInteraction extends Interaction {
+    message: Message
+    custom_id: string
+
+    constructor(data: BaseData, client: Client) {
+        super(data, client)
+        this.message = new Message(data.message, client)
+        this.custom_id = data.data.custom_id
     }
 }

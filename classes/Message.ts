@@ -1,4 +1,3 @@
-import fetch from "node-fetch"
 import Client, { BaseData, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
