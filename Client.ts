@@ -189,7 +189,7 @@ export default class Client {
             op: 2,
             d: {
                 token: this.token,
-                intents: 131071,
+                intents: this.intents,
                 properties: {
                     $os: 'linux',
                     $browser: 'chrome',
