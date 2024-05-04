@@ -6,6 +6,14 @@ import axios from "axios"
 import Channel from "./Channel"
 import Guild from "./Guild"
 
+async function wait(ms: number) {
+    return new Promise((resolve, reject) => [
+        setTimeout(() => {
+            resolve(null)
+        }, ms)
+    ])
+}
+
 export default class Interaction {
     token: string
     callbackURL: string
@@ -71,7 +79,9 @@ export default class Interaction {
             cause: "Replying to interaction"
         })
 
-        const originalMsg = await axios.get(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        await wait(1000)
+
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders()
         })
 
@@ -106,7 +116,8 @@ export default class Interaction {
                 }
             }
         }
-        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+
+        await axios.patch(`${this.client.baseURL}/ebhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             content: typeof content === "string" ? content : content.content,
             embeds,
         }, {

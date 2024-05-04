@@ -121,6 +121,7 @@ export default class Client {
     public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
+    public uptime: number
 
     private heartbeat(ms: number) {
         return setInterval(() => {
@@ -280,6 +281,7 @@ export default class Client {
                 }
                 switch (t) {
                     case "READY":
+                        _this.uptime = new Date().getTime()
                         _this.url = d.resume_gateway_url
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
