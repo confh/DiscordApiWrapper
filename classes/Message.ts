@@ -1,8 +1,9 @@
-import Client, { BaseData, ContentOptions } from "../Client"
+import Client, { BaseData, ComponentTypes, ContentOptions } from "../Client"
 import Member from "./Member"
 import User from "./User"
 import axios from "axios"
 import Channel from "./Channel"
+import Collector from "./Collector"
 
 export default class Message {
     client: Client
@@ -19,6 +20,7 @@ export default class Message {
     pinned: boolean
     type: number
     channel: Channel
+    collectors: Collector[] = []
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -37,6 +39,15 @@ export default class Message {
         this.pinned = data.pinned
         this.type = data.type
         this.channel = client.channels.find(a => a.id === this.channelId) as Channel
+    }
+
+    createComponentCollector(options?: {
+        timeout?: number,
+        component_type?: ComponentTypes
+    }) {
+        const index = this.client.collectors.push(new Collector(this, options)) - 1
+        this.collectors.push(this.client.collectors[index])
+        return this.client.collectors[index]
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {

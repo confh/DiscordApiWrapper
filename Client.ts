@@ -2,17 +2,18 @@ import WebSocket from 'ws';
 import User from './classes/User';
 import Guild from './classes/Guild';
 import Message from "./classes/Message"
-import Interaction, { ButtonInteraction, SlashCommandInteraction } from './classes/Interaction';
+import Interaction, { ButtonInteraction, ContentInteraction, SlashCommandInteraction } from './classes/Interaction';
 import SlashCommandBuilder from './classes/SlashCommandBuilder';
 import ActionRowBuilder from "./classes/ActionRowBuilder"
 import EmbedBuilder from './classes/EmbedBuilder'
 import axios from 'axios';
 import Channel from './classes/Channel';
+import Collector from './classes/Collector';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
-interface ClientEvents {
+export interface ClientEvents {
     ready: [],
     messageCreate: [message: Message],
     guildCreate: [guild: Guild],
@@ -43,44 +44,51 @@ export interface BaseData {
 
 export enum ApplicationCommandTypes {
     CHAT_INPUT = 1,
-    USER = 2,
-    MESSAGE = 3
+    USER,
+    MESSAGE
+}
+
+export enum ComponentTypes {
+    ACTION_ROW = 1,
+    BUTTON,
+    STRING_SELECT,
+    TEXT_INPUT
 }
 
 export enum ButtonStyles {
     PRIMARY = 1,
-    SECONDARY = 2,
-    SUCCESS = 3,
-    DANGER = 4,
-    LINK = 5
+    SECONDARY,
+    SUCCESS,
+    DANGER,
+    LINK
 }
 
 export enum ActivityTypes {
-    GAME = 0,
-    STREAMING = 1,
-    LISTENING = 2,
-    WATCHING = 3,
-    CUSTOM = 4,
-    COMPETING = 5
+    GAME,
+    STREAMING,
+    LISTENING,
+    WATCHING,
+    CUSTOM,
+    COMPETING
 }
 
 export enum ApplicationCommandOptionTypes {
     SUB_COMMAND = 1,
-    SUB_COMMAND_GROUP = 2,
-    STRING = 3,
-    INTEGER = 4,
-    BOOLEAN = 5,
-    USER = 6,
-    CHANNEL = 7,
-    ROLE = 8,
-    MENTIONABLE = 9,
-    NUMBER = 10,
-    ATTACHMENT = 11
+    SUB_COMMAND_GROUP,
+    STRING,
+    INTEGER,
+    BOOLEAN,
+    USER,
+    CHANNEL,
+    ROLE,
+    MENTIONABLE,
+    NUMBER,
+    ATTACHMENT
 };
 
 export enum ChannelTypes {
-    TEXT = 0,
-    DM = 1,
+    TEXT,
+    DM,
 }
 
 export interface ContentOptions {
@@ -105,6 +113,7 @@ export default class Client {
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
+    public collectors: Collector[] = []
     public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
@@ -179,9 +188,13 @@ export default class Client {
             const cmd = Commands[i];
             JSONCommands.push(cmd.toJson())
         }
-        await axios.put(`${this.baseURL}/applications/${this.user.id}/commands`, JSONCommands, {
-            headers: this.getHeaders()
+
+        const data = await axios.put(`${this.baseURL}/applications/${this.user.id}/commands`, JSONCommands, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
         })
+
+        if (data.status === 400) throw new Error(data.data.message)
     }
 
     editStatus(data: PRESENCES | {
@@ -203,6 +216,16 @@ export default class Client {
         this.ws.send(JSON.stringify(presencePayload))
     }
 
+    async getMessage(channelId: string, messageId: string) {
+        const data = await axios.get(`${this.baseURL}/channels/${channelId}/messages/${messageId}`, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) throw new Error(data.data.message);
+
+        return new Message(data.data, this)
+    }
     connect() {
         try {
             if (this.ws && this.ws.readyState !== 3) this.ws.close();
@@ -286,8 +309,16 @@ export default class Client {
                         if (d.data.type === 1) {
                             _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
                         } else if (d.type === 3) {
+                            const collector = _this.collectors.find(a => a.messageId === d.message.id)
+                            if (collector) {
+                                collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
+                            }
                             if (d.data.component_type === 2) {
                                 _this.emit("interactionCreate", new ButtonInteraction(d, _this))
+                            }
+                        } else if (d.type === 2) {
+                            if (d.data.type === 3) {
+                                _this.emit("interactionCreate", new ContentInteraction(d, _this))
                             }
                         }
                         break

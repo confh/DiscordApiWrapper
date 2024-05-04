@@ -8,11 +8,11 @@ import ActionRowBuilder from "./ActionRowBuilder"
 import Guild from "./Guild"
 
 export default class Interaction {
-    private token: string
-    private callbackURL: string
-    private client: Client
-    private interaction_id: string
+    token: string
+    callbackURL: string
+    interaction_id: string
     member: Member
+    client: Client
     name: string
     user: User
     id: string
@@ -80,8 +80,14 @@ export default class Interaction {
         return new Message(originalMsg.data, this.client)
     }
 
-    async defer() {
-        await axios.post(this.callbackURL, { type: 5 }, {
+    async defer(options?: {
+        ephemeral?: boolean
+    }) {
+        await axios.post(this.callbackURL, {
+            type: 5, data: {
+                flags: options?.ephemeral ? 64 : 0
+            }
+        }, {
             headers: this.client.getHeaders()
         }).then(async a => {
             if (a.status === 400) throw new Error(a.data.message, {
@@ -159,5 +165,27 @@ export class ButtonInteraction extends Interaction {
         super(data, client)
         this.message = new Message(data.message, client)
         this.custom_id = data.data.custom_id
+    }
+
+    override async defer() {
+        await axios.post(this.callbackURL, { type: 6 }, {
+            headers: this.client.getHeaders()
+        }).then(async a => {
+            if (a.status === 400) throw new Error(a.data.message, {
+                cause: "Defering reply to interaction"
+            })
+        })
+
+    }
+}
+
+export class ContentInteraction extends Interaction {
+    target_id: string
+    message: Message
+
+    constructor(data: BaseData, client: Client) {
+        super(data, client)
+        this.target_id = data.data.target_id
+        this.message = new Message(data.data.resolved.messages[this.target_id], client)
     }
 }

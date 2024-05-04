@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "../Client"
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, ComponentTypes } from "../Client"
 
 interface choice<T> {
     name: T,
@@ -145,11 +145,14 @@ export default class SlashCommandBuilder {
      * @returns JSON Data
      */
     toJson() {
-        return {
+        const data: any = {
             name: this.name,
-            description: this.description,
             type: this.type,
-            options: this.options
         }
+        if (this.type === ApplicationCommandTypes.CHAT_INPUT) {
+            data.description = this.description
+            data.options = this.options
+        }
+        return data
     }
 }
