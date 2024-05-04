@@ -113,6 +113,10 @@ export default class Client {
     private initialUrl = 'wss://gateway.discord.gg'
     private url = this.initialUrl
     private cacheAllUsers = false
+    private logger: {
+        info: (...args: any[]) => any,
+        error: (...args: any[]) => any
+    } = console
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
