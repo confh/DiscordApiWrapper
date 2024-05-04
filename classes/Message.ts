@@ -20,7 +20,6 @@ export default class Message {
     pinned: boolean
     type: number
     channel: Channel
-    collectors: Collector[] = []
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -45,9 +44,17 @@ export default class Message {
         timeout?: number,
         component_type?: ComponentTypes
     }) {
-        const index = this.client.collectors.push(new Collector(this, options)) - 1
-        this.collectors.push(this.client.collectors[index])
+        const index = this.client.collectors.push(new Collector(this, this.client, options)) - 1
         return this.client.collectors[index]
+    }
+
+    getComponentCollectors() {
+        const collectors: Collector[] = []
+        for (let i = 0; i < this.client.collectors.length; i++) {
+            const collector = this.client.collectors[i];
+            if (collector.messageId === this.id) collectors.push(collector)
+        }
+        return collectors
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {
