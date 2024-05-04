@@ -16,12 +16,12 @@ let interval: number | Timer = 0;
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
 export interface ClientEvents {
-    ready: [],
-    messageCreate: [message: Message],
-    guildCreate: [guild: Guild],
-    interactionCreate: [interaction: Interaction],
-    resume: [],
-    roleUpdate: [oldRole: Role, newrole: Role, guild: Guild]
+    ready: [client: Client],
+    messageCreate: [message: Message, client: Client],
+    guildCreate: [guild: Guild, client: Client],
+    interactionCreate: [interaction: Interaction, client: Client],
+    resume: [client: Client],
+    roleUpdate: [oldRole: Role, newrole: Role, guild: Guild, client: Client]
 }
 
 export interface Emoji {
@@ -351,13 +351,13 @@ export default class Client {
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
                         _this.registerUser(new User(d.user))
-                        _this.emit("ready")
+                        _this.emit("ready", _this)
                         break;
                     case "RESUMED":
-                        _this.emit("resume")
+                        _this.emit("resume", _this)
                         break;
                     case "MESSAGE_CREATE":
-                        _this.emit("messageCreate", new Message(d, _this))
+                        _this.emit("messageCreate", new Message(d, _this), _this)
                         break;
                     case "GUILD_CREATE":
                         for (let i = 0; i < d.roles.length; i++) {
@@ -382,22 +382,22 @@ export default class Client {
                         }
 
                         _this.guilds.push(new Guild(d, _this))
-                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild, _this)
                         break
                     case "INTERACTION_CREATE":
                         if (d.data.type === 1) {
-                            _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
+                            _this.emit("interactionCreate", new SlashCommandInteraction(d, _this), _this)
                         } else if (d.type === 3) {
                             const collector = _this.collectors.find(a => a.messageId === d.message.id)
                             if (collector) {
                                 collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
                             }
                             if (d.data.component_type === 2) {
-                                _this.emit("interactionCreate", new ButtonInteraction(d, _this))
+                                _this.emit("interactionCreate", new ButtonInteraction(d, _this), _this)
                             }
                         } else if (d.type === 2) {
                             if (d.data.type === 3) {
-                                _this.emit("interactionCreate", new ContextInteraction(d, _this))
+                                _this.emit("interactionCreate", new ContextInteraction(d, _this), _this)
                             }
                         }
                         break
@@ -416,7 +416,7 @@ export default class Client {
                                 break
                             }
                         }
-                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
+                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild, _this)
                         break
                 }
             })
