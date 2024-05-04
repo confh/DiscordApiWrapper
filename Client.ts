@@ -418,7 +418,7 @@ export default class Client {
                 }
             })
         } catch (e) {
-            console.error(e.message)
+            this.logger.error(e.message)
         }
     }
 

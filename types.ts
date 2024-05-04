@@ -590,16 +590,12 @@ export class Interaction {
             headers: this.client.getHeaders(),
             validateStatus: () => true
         })
+
         if (data.status === 400) throw new Error((data.data).message, {
             cause: "Replying to interaction"
         })
 
-        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-            headers: this.client.getHeaders(),
-            validateStatus: () => true
-        })
-
-        return new Message(originalMsg.data, this.client)
+        return new Message(data.data, this.client)
     }
 
     async delete() {
