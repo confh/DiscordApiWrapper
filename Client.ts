@@ -296,6 +296,7 @@ export default class Client {
 
         return new Message(data.data, this)
     }
+    
     connect() {
         try {
             if (this.ws && this.ws.readyState !== 3) this.ws.close();
