@@ -16,7 +16,7 @@ let interval: number | Timer = 0;
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
 export interface ClientEvents {
-    ready: [client: Client],
+    ready: [client: Client | any],
     messageCreate: [message: Message, client: Client],
     guildCreate: [guild: Guild, client: Client],
     interactionCreate: [interaction: Interaction, client: Client],
