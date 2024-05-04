@@ -20,7 +20,8 @@ export interface ClientEvents {
     messageCreate: [message: Message],
     guildCreate: [guild: Guild],
     interactionCreate: [interaction: Interaction],
-    resume: []
+    resume: [],
+    roleUpdate: [oldRole: Role, newrole: Role, guild: Guild]
 }
 
 export interface Emoji {
@@ -334,6 +335,7 @@ export default class Client {
                         }
                         break
                     case "GUILD_ROLE_UPDATE":
+                        const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role)
                         for (let i = 0; i < _this.roles.length; i++) {
                             if (_this.roles[i].guild_id === d.guild_id) {
                                 _this.roles[i]._update(d.role)
@@ -347,6 +349,7 @@ export default class Client {
                                 break
                             }
                         }
+                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
                         break
                 }
             })
