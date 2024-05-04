@@ -101,6 +101,40 @@ export interface ContentOptions {
     ephemeral?: boolean
 }
 
+export enum Intents {
+    GUILDS = 1 << 0,
+    GUILD_MEMBERS = 1 << 1,
+    GUILD_BANS = 1 << 2,
+    GUILD_EMOJIS_AND_STICKERS = 1 << 3,
+    GUILD_INTEGRATIONS = 1 << 4,
+    GUILD_WEBHOOKS = 1 << 5,
+    GUILD_INVITES = 1 << 6,
+    GUILD_VOICE_STATES = 1 << 7,
+    GUILD_PRESENCES = 1 << 8,
+    GUILD_MESSAGES = 1 << 9,
+    GUILD_MESSAGE_REACTIONS = 1 << 10,
+    GUILD_MESSAGE_TYPING = 1 << 11,
+    DIRECT_MESSAGES = 1 << 12,
+    DIRECT_MESSAGE_REACTIONS = 1 << 13,
+    DIRECT_MESSAGE_TYPING = 1 << 14,
+    MESSAGE_CONTENT = 1 << 15,
+    GUILD_SCHEDULED_EVENTS = 1 << 16,
+    ALL = 131071
+}
+
+function calculateIntents(intents: Intents[]) {
+    let totalIntentValue = 0
+    for (let i = 0; i < intents.length; i++) {
+        const intent = intents[i];
+        totalIntentValue += intent
+    }
+    if (totalIntentValue > Intents.ALL) throw new Error("Error with calculating intents.", {
+        cause: 'Intent "ALL" should be chosen alone.'
+    })
+
+    return totalIntentValue
+}
+
 export default class Client {
     private payload;
     private ws: WebSocket;
@@ -109,7 +143,7 @@ export default class Client {
         callback: (...args: any) => any
     }[] = []
     private session_id: string
-    private seq = -1
+    private seq: number | null = null
     private initialUrl = 'wss://gateway.discord.gg'
     private url = this.initialUrl
     private cacheAllUsers = false
@@ -117,6 +151,7 @@ export default class Client {
         info: (...args: any[]) => any,
         error: (...args: any[]) => any
     } = console
+    private intents = 0
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
@@ -129,15 +164,19 @@ export default class Client {
 
     private heartbeat(ms: number) {
         return setInterval(() => {
-            this.ws.send(JSON.stringify({ op: 1, d: null }))
+            this.ws.send(JSON.stringify({ op: 1, d: this.seq }))
         }, ms)
     }
 
     constructor(token: string, options?: {
-        cacheAllUsers?: boolean
+        cacheAllUsers?: boolean,
+        intents?: Intents[]
     }) {
         this.token = token
         this.cacheAllUsers = options?.cacheAllUsers || false
+        if (options?.intents && options.intents.length) {
+            this.intents = calculateIntents(options.intents)
+        }
         this.payload = {
             op: 2,
             d: {
