@@ -186,7 +186,7 @@ export default class Client {
         this.ws.close()
     }
 
-    async setGlobalCommands(Commands: SlashCommandBuilder[]) {
+    async setGlobalCommands(...Commands: SlashCommandBuilder[]) {
         const JSONCommands: any = []
         for (let i = 0; i < Commands.length; i++) {
             const cmd = Commands[i];

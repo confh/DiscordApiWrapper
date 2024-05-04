@@ -16,6 +16,8 @@ index.ts
 
 commit.sh
 
+bun.lockb
+
 # Caches
 
 .cache
