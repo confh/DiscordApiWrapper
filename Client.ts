@@ -16,12 +16,12 @@ let interval: number | Timer = 0;
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
 export interface ClientEvents {
-    ready: [client: Client],
-    messageCreate: [message: Message, client: Client],
-    guildCreate: [guild: Guild, client: Client],
-    interactionCreate: [interaction: Interaction, client: Client],
-    resume: [client: Client],
-    roleUpdate: [oldRole: Role, newrole: Role, guild: Guild, client: Client]
+    ready: [client: Client | any],
+    messageCreate: [message: Message, client: Client | any],
+    guildCreate: [guild: Guild, client: Client | any],
+    interactionCreate: [interaction: Interaction, client: Client | any],
+    resume: [client: Client | any],
+    roleUpdate: [oldRole: Role, newrole: Role, guild: Guild, client: Client | any]
 }
 
 export interface Emoji {
