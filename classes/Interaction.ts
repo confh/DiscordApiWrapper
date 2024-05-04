@@ -15,6 +15,7 @@ async function wait(ms: number) {
 }
 
 export default class Interaction {
+    private current_message: Message
     token: string
     callbackURL: string
     interaction_id: string
@@ -81,12 +82,17 @@ export default class Interaction {
 
         await wait(1000)
 
-        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-            headers: this.client.getHeaders()
-        })
+        if (this.current_message) {
+            return this.current_message
+        } else {
+            const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+                headers: this.client.getHeaders()
+            })
 
+            this.current_message = new Message(originalMsg.data, this.client)
 
-        return new Message(originalMsg.data, this.client)
+            return this.current_message
+        }
     }
 
     async defer(options?: {
@@ -117,7 +123,7 @@ export default class Interaction {
             }
         }
 
-        await axios.patch(`${this.client.baseURL}/ebhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             content: typeof content === "string" ? content : content.content,
             embeds,
         }, {
