@@ -1,7 +1,7 @@
 import axios from "axios";
 import Client, { BaseData, ApplicationCommandOptionTypes, ApplicationCommandTypes, ContentOptions, ButtonStyles, ChannelTypes, ComponentTypes, Emoji } from "./Client";
 import { PermissionsBitField } from "./PermissionCalculator";
-const PermissionCalculator = require("../PermissionCalculator")
+const PermissionCalculator = require("./PermissionCalculator")
 
 interface choice<T> {
     name: T,
