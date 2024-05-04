@@ -4,7 +4,6 @@ import User from "./User"
 import Message from "./Message"
 import axios from "axios"
 import Channel from "./Channel"
-import ActionRowBuilder from "./ActionRowBuilder"
 import Guild from "./Guild"
 
 export default class Interaction {
@@ -179,7 +178,7 @@ export class ButtonInteraction extends Interaction {
     }
 }
 
-export class ContentInteraction extends Interaction {
+export class ContextInteraction extends Interaction {
     target_id: string
     message: Message
 

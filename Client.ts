@@ -2,13 +2,15 @@ import WebSocket from 'ws';
 import User from './classes/User';
 import Guild from './classes/Guild';
 import Message from "./classes/Message"
-import Interaction, { ButtonInteraction, ContentInteraction, SlashCommandInteraction } from './classes/Interaction';
+import Interaction, { ButtonInteraction, ContextInteraction, SlashCommandInteraction } from './classes/Interaction';
 import SlashCommandBuilder from './classes/SlashCommandBuilder';
 import ActionRowBuilder from "./classes/ActionRowBuilder"
 import EmbedBuilder from './classes/EmbedBuilder'
 import axios from 'axios';
 import Channel from './classes/Channel';
 import Collector from './classes/Collector';
+import Role from './classes/Role';
+import Member from './classes/Member';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -113,6 +115,7 @@ export default class Client {
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
+    public roles: Role[] = []
     public collectors: Collector[] = []
     public user: User
     public token: string
@@ -289,6 +292,12 @@ export default class Client {
                         _this.emit("messageCreate", new Message(d, _this))
                         break;
                     case "GUILD_CREATE":
+                        for (let i = 0; i < d.roles.length; i++) {
+                            let role = d.roles[i]
+                            role.guild_id = d.id
+                            _this.roles.push(new Role(role))
+                        }
+
                         if (_this.cacheAllUsers) {
                             const allUsers: User[] = []
                             for (let i = 0; i < d.members.length; i++) {
@@ -298,10 +307,12 @@ export default class Client {
 
                             _this.registerUser(allUsers)
                         }
+
                         for (let i = 0; i < d.channels.length; i++) {
                             const channel = d.channels[i];
                             _this.channels.push(new Channel(channel, _this))
                         }
+
                         _this.guilds.push(new Guild(d, _this))
                         _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
                         break
@@ -318,7 +329,22 @@ export default class Client {
                             }
                         } else if (d.type === 2) {
                             if (d.data.type === 3) {
-                                _this.emit("interactionCreate", new ContentInteraction(d, _this))
+                                _this.emit("interactionCreate", new ContextInteraction(d, _this))
+                            }
+                        }
+                        break
+                    case "GUILD_ROLE_UPDATE":
+                        for (let i = 0; i < _this.roles.length; i++) {
+                            if (_this.roles[i].guild_id === d.guild_id) {
+                                _this.roles[i]._update(d.role)
+                                const guild_members = _this.guilds.find(a => a.id === _this.roles[i].guild_id)!.members as Member[]
+                                for (let index = 0; index < guild_members!.length; index++) {
+                                    const member = guild_members[index] as Member;
+                                    const role = member.roles.find(a => a.id === _this.roles[i].id)
+                                    if (role) member.roles.find(a => a.id === _this.roles[i].id)?._update(d.role);
+                                    member._refreshRoles()
+                                }
+                                break
                             }
                         }
                         break
