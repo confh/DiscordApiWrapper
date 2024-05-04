@@ -140,6 +140,7 @@ export default class Client {
     private ws: WebSocket;
     private listeners: {
         event: keyof ClientEvents,
+        once: boolean,
         callback: (...args: any) => any
     }[] = []
     private session_id: string
@@ -147,16 +148,16 @@ export default class Client {
     private initialUrl = 'wss://gateway.discord.gg'
     private url = this.initialUrl
     private cacheAllUsers = false
-    private logger: {
-        info: (...args: any[]) => any,
-        error: (...args: any[]) => any
-    } = console
     private intents = 0
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
     public roles: Role[] = []
     public collectors: Collector[] = []
+    public logger: {
+        info: (...args: any[]) => any,
+        error: (...args: any[]) => any
+    } = console
     public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
@@ -166,6 +167,13 @@ export default class Client {
         return setInterval(() => {
             this.ws.send(JSON.stringify({ op: 1, d: this.seq }))
         }, ms)
+    }
+
+    setDefaultLogger(logger: {
+        info: (...args: any[]) => any,
+        error: (...args: any[]) => any
+    }) {
+        this.logger = logger
     }
 
     constructor(token: string, options?: {
@@ -207,13 +215,27 @@ export default class Client {
     }
 
     private emit<K extends keyof ClientEvents>(event: K, ...args: ClientEvents[K]) {
-        const listener = this.listeners.find(a => a.event === event)
-        if (listener) listener.callback(...args)
+        for (let i = 0; i < this.listeners.length; i++) {
+            const listener = this.listeners[i];
+            if (listener.event === event) {
+                listener.callback(...args)
+                if (listener.once) this.listeners.splice(i, 1)
+            }
+        }
     }
 
     on<K extends keyof ClientEvents>(event: K, callback: (...args: ClientEvents[K]) => any) {
         this.listeners.push({
             event,
+            once: false,
+            callback
+        })
+    }
+
+    once<K extends keyof ClientEvents>(event: K, callback: (...args: ClientEvents[K]) => any) {
+        this.listeners.push({
+            event,
+            once: true,
             callback
         })
     }
