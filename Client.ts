@@ -8,6 +8,7 @@ type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 export interface ClientEvents {
     ready: [client: Client | any],
     messageCreate: [message: Message, client: Client | any],
+    messageUpdate: [message: Message, client: Client | any]
     guildCreate: [guild: Guild, client: Client | any],
     interactionCreate: [interaction: Interaction, client: Client | any],
     resume: [client: Client | any],
@@ -349,6 +350,9 @@ export default class Client {
                         break;
                     case "MESSAGE_CREATE":
                         _this.emit("messageCreate", new Message(d, _this), _this)
+                        break;
+                    case "MESSAGE_UPDATE":
+                        _this.emit("messageUpdate", new Message(d, _this), _this)
                         break;
                     case "GUILD_CREATE":
                         for (let i = 0; i < d.roles.length; i++) {

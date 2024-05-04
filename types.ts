@@ -119,9 +119,6 @@ export class User {
     }
 }
 
-
-
-
 export class SlashCommandBuilder {
     private name: string
     private description: string
@@ -442,7 +439,6 @@ export class Message {
 }
 
 export class Interaction {
-    private current_message: Message
     token: string
     callbackURL: string
     interaction_id: string
@@ -456,6 +452,7 @@ export class Interaction {
     description: string
     guild: Guild
     type: ApplicationCommandTypes
+    acknowledged: boolean = false
 
     constructor(data: BaseData, client: Client) {
         this.client = client
@@ -474,6 +471,7 @@ export class Interaction {
     }
 
     async reply(content: string | ContentOptions) {
+        this.acknowledged = true
         const embeds: any = []
         const components: any[] = []
         if (typeof content !== "string") {
@@ -507,24 +505,17 @@ export class Interaction {
             cause: "Replying to interaction"
         })
 
-        await wait(1000)
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            headers: this.client.getHeaders()
+        })
 
-        if (this.current_message) {
-            return this.current_message
-        } else {
-            const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-                headers: this.client.getHeaders()
-            })
-
-            this.current_message = new Message(originalMsg.data, this.client)
-
-            return this.current_message
-        }
+        return new Message(originalMsg.data, this.client)
     }
 
     async defer(options?: {
         ephemeral?: boolean
     }) {
+        this.acknowledged = true
         await axios.post(this.callbackURL, {
             type: 5, data: {
                 flags: options?.ephemeral ? 64 : 0
@@ -611,6 +602,7 @@ export class ButtonInteraction extends Interaction {
     }
 
     override async defer() {
+        this.acknowledged = true
         await axios.post(this.callbackURL, { type: 6 }, {
             headers: this.client.getHeaders()
         }).then(async a => {
