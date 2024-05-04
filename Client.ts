@@ -1,16 +1,6 @@
-import WebSocket from 'ws';
-import User from './classes/User';
-import Guild from './classes/Guild';
-import Message from "./classes/Message"
-import Interaction, { ButtonInteraction, ContextInteraction, SlashCommandInteraction } from './classes/Interaction';
-import SlashCommandBuilder from './classes/SlashCommandBuilder';
-import ActionRowBuilder from "./classes/ActionRowBuilder"
-import EmbedBuilder from './classes/EmbedBuilder'
 import axios from 'axios';
-import Channel from './classes/Channel';
-import Collector from './classes/Collector';
-import Role from './classes/Role';
-import Member from './classes/Member';
+import WebSocket from 'ws';
+import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, ButtonInteraction, ContextInteraction, Member } from './types';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -296,7 +286,7 @@ export default class Client {
 
         return new Message(data.data, this)
     }
-    
+
     connect() {
         try {
             if (this.ws && this.ws.readyState !== 3) this.ws.close();
