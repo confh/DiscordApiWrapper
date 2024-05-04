@@ -385,11 +385,11 @@ export default class Client {
                         if (d.data.type === 1) {
                             _this.emit("interactionCreate", new SlashCommandInteraction(d, _this), _this)
                         } else if (d.type === 3) {
-                            const collector = _this.collectors.find(a => a.messageId === d.message.id)
-                            if (collector) {
-                                collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
-                            }
                             if (d.data.component_type === 2) {
+                                const collector = _this.collectors.find(a => a.messageId === d.message.id)
+                                if (collector) {
+                                    collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
+                                }
                                 _this.emit("interactionCreate", new ButtonInteraction(d, _this), _this)
                             }
                         } else if (d.type === 2) {
