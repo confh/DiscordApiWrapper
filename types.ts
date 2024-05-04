@@ -532,11 +532,19 @@ export class Interaction {
 
     async edit(content: string | ContentOptions) {
         const embeds: any = []
-        if (typeof content !== "string" && content.embeds) {
-            if (content.embeds?.length) {
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
                     const embed = content.embeds[i];
                     embeds.push(embed.toJson())
+                }
+            }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
                 }
             }
         }
@@ -544,6 +552,7 @@ export class Interaction {
         await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             content: typeof content === "string" ? content : content.content,
             embeds,
+            components
         }, {
             headers: this.client.getHeaders()
         }).then(async a => {
@@ -551,6 +560,45 @@ export class Interaction {
                 cause: "Editing interaction original message"
             })
         })
+    }
+
+    async followUp(content: string | ContentOptions) {
+        const embeds: any = []
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
+        }
+
+        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, {
+            content: typeof content === "string" ? content : content.content,
+            embeds,
+            components,
+            flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+        }, {
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
+        })
+        if (data.status === 400) throw new Error((data.data).message, {
+            cause: "Replying to interaction"
+        })
+
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            headers: this.client.getHeaders()
+        })
+
+        return new Message(originalMsg.data, this.client)
     }
 }
 
