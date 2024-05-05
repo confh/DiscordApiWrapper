@@ -1,6 +1,6 @@
 import axios from 'axios';
 import WebSocket from 'ws';
-import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, ButtonInteraction, ContextInteraction, Member } from './types';
+import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, ButtonInteraction, MessageContextInteraction, Member, UserContextInteraction } from './types';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -40,6 +40,12 @@ export enum ApplicationCommandTypes {
     CHAT_INPUT = 1,
     USER,
     MESSAGE
+}
+
+export enum InteractionTypes {
+    PING = 1,
+    APPLICATION_COMMAND,
+    MESSAGE_COMPONENT
 }
 
 export enum ComponentTypes {
@@ -244,7 +250,12 @@ export default class Client {
     }
 
     async setGlobalCommands(Commands: SlashCommandBuilder[]) {
-        const JSONCommands: any = []
+        const JSONCommands: {
+            name: string,
+            type: number,
+            description?: string,
+            options?: any[]
+        }[] = []
         for (let i = 0; i < Commands.length; i++) {
             const cmd = Commands[i];
             JSONCommands.push(cmd.toJson())
@@ -338,7 +349,7 @@ export default class Client {
                 }
                 switch (t) {
                     case "READY":
-                        _this.uptime = new Date().getTime()
+                        _this.uptime = Date.now()
                         _this.url = d.resume_gateway_url
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
@@ -382,19 +393,25 @@ export default class Client {
                         _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild, _this)
                         break
                     case "INTERACTION_CREATE":
-                        if (d.data.type === 1) {
-                            _this.emit("interactionCreate", new SlashCommandInteraction(d, _this), _this)
-                        } else if (d.type === 3) {
+                        if (d.type === InteractionTypes.APPLICATION_COMMAND) {
+                            switch (d.data.type) {
+                                case ApplicationCommandTypes.CHAT_INPUT:
+                                    _this.emit("interactionCreate", new SlashCommandInteraction(d, _this), _this)
+                                    break;
+                                case ApplicationCommandTypes.USER:
+                                    _this.emit("interactionCreate", new UserContextInteraction(d, _this), _this)
+                                    break;
+                                case ApplicationCommandTypes.MESSAGE:
+                                    _this.emit("interactionCreate", new MessageContextInteraction(d, _this), _this)
+                                    break;
+                            }
+                        } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
                             if (d.data.component_type === 2) {
                                 const collector = _this.collectors.find(a => a.messageId === d.message.id)
                                 if (collector) {
                                     collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
                                 }
                                 _this.emit("interactionCreate", new ButtonInteraction(d, _this), _this)
-                            }
-                        } else if (d.type === 2) {
-                            if (d.data.type === 3) {
-                                _this.emit("interactionCreate", new ContextInteraction(d, _this), _this)
                             }
                         }
                         break

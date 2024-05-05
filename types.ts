@@ -113,9 +113,11 @@ export class User {
     }
 
     getAvatarURL(options?: {
-        size: number
+        size?: number,
+        animated?: boolean
     }) {
-        return `https://cdn.discordapp.com/${this.id}/${this.avatar}.webp?size=${options?.size || 512}`
+        let animated = options?.animated || false
+        return `https://cdn.discordapp.com/${this.id}/${this.avatar}.${animated ? "webp" : "png"}?size=${options?.size || 512}`
     }
 }
 
@@ -297,7 +299,7 @@ export class Role {
     }
 
     hasPermission(permission: keyof typeof PermissionsBitField) {
-        const permissionArray = PermissionCalculator(Number(this.permissions))
+        const permissionArray: string[] = PermissionCalculator(Number(this.permissions))
         if (permissionArray.find(a => a === permission)) return true
         else return false
     }
@@ -670,7 +672,7 @@ export class ButtonInteraction extends Interaction {
     }
 }
 
-export class ContextInteraction extends Interaction {
+export class MessageContextInteraction extends Interaction {
     target_id: string
     message: Message
 
@@ -678,6 +680,24 @@ export class ContextInteraction extends Interaction {
         super(data, client)
         this.target_id = data.data.target_id
         this.message = new Message(data.data.resolved.messages[this.target_id], client)
+    }
+}
+
+export class UserContextInteraction extends Interaction {
+    target_id: string
+    target: {
+        user?: User,
+        member?: Member
+    } = {
+        user: undefined,
+        member: undefined
+    }
+
+    constructor(data: BaseData, client: Client) {
+        super(data, client)
+        this.target_id = data.data.target_id
+        this.target.user = client.users.find(a => a.id === this.target_id) || new User(data.data.resolved.users[this.target_id])
+        this.target.member = this.guild.members.find(a => a.id === this.target_id) || new Member(data.data.resolved.members[this.target_id], client)
     }
 }
 
