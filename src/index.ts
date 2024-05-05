@@ -285,9 +285,40 @@ export class Client {
         this.ws.close()
     }
 
-    async setGuildCommand(guild: string | Guild, commands: SlashCommandBuilder[]) {
+    async getGuildCommands(guild: string | Guild) {
         let id = typeof guild === "string" ? guild : guild.id
-        const data = await axios.put(`${this.baseURL}applications/${this.user.id}/guilds/${id}/commands`,)
+        const data = await axios.get(`${this.baseURL}applications/${this.user.id}/guilds/${id}/commands`, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) throw new Error(data.data.message)
+
+        return data.data
+    }
+
+    async setGuildCommands(guild: string | Guild, commands: SlashCommandBuilder[]) {
+        let id = typeof guild === "string" ? guild : guild.id
+        const allCommands = await this.getGuildCommands(id)
+        const JSONCommands: {
+            name: string,
+            type: number,
+            description?: string,
+            options?: any[]
+        }[] = []
+
+        for (let i = 0; i < commands.length; i++) {
+            const cmd: any = commands[i].toJson();
+            if (allCommands.find(a => a.name === cmd.name)) cmd.id = allCommands.find(a => a.name === cmd.name).id
+            JSONCommands.push(cmd)
+        }
+
+        const data = await axios.put(`${this.baseURL}applications/${this.user.id}/guilds/${id}/commands`, JSONCommands, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) throw new Error(data.data.message)
     }
 
     async getCommands() {
