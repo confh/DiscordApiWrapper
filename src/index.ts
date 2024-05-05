@@ -109,6 +109,21 @@ export interface ContentOptions {
     }
 }
 
+export interface PollMediaObject {
+    text: string,
+    emoji?: PartialEmoji
+}
+
+export interface PollRequestObject {
+    question: PollMediaObject,
+    answers: {
+        answer_id: number,
+        poll_media: PollMediaObject
+    }[],
+    duration: number,
+    allow_multiselect: boolean
+}
+
 export interface JSONCache {
     [x: string]: unknown
 }

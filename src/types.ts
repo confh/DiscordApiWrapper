@@ -1,5 +1,5 @@
 import axios from "axios"
-import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes } from "."
+import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
 
 function JSONToBlob(json: JSONCache) {
@@ -1043,8 +1043,24 @@ export class Channel {
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
+
+        if (data.status === 400) throw new Error(data.data.message)
+
+        return new Message(data.data, this.client)
+    }
+
+    async sendPoll(pollData: PollRequestObject) {
+        const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, {
+            poll: pollData
+        }, {
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) throw new Error(data.data.message);
 
         return new Message(data.data, this.client)
     }
