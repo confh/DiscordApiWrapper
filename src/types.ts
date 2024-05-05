@@ -341,6 +341,7 @@ export class Message {
     pinned: boolean
     type: number
     channel: Channel
+    referenced_message?: Message
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -359,6 +360,9 @@ export class Message {
         this.pinned = data.pinned
         this.type = data.type
         this.channel = client.channels.find(a => a.id === this.channelId) as Channel
+        if (data.referenced_message) {
+            this.referenced_message = new Message(data.referenced_message, client)
+        }
     }
 
     createComponentCollector(options?: {
