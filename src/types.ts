@@ -8,7 +8,7 @@ function JSONToBlob(json: JSONCache) {
     })
 }
 
-function appendFile(json: any, buffer: Buffer, fileName: string, contentType: string) {
+function appendFile(json: JSONCache, buffer: Buffer, fileName: string) {
     const formData = new FormData()
     json.attachments = [
         {
@@ -17,9 +17,7 @@ function appendFile(json: any, buffer: Buffer, fileName: string, contentType: st
         }
     ]
     formData.set("payload_json", JSONToBlob(json), "")
-    formData.set("files[0]", new Blob([buffer], {
-        type: contentType
-    }), fileName)
+    formData.set("files[0]", new Blob([buffer]), fileName)
 
     return formData
 
@@ -440,7 +438,7 @@ export class Message {
         }
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+            payload = appendFile(payload, content.file.buffer, content.file.name)
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
@@ -476,11 +474,11 @@ export class Message {
             content: typeof content === "string" ? content : content.content,
         }
 
-        if (embeds.length) payload.embeds = embeds
-        if (components.length) payload.components = components
+        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+        if (typeof content !== "string" && content.components) payload.components = components
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+            payload = appendFile(payload, content.file.buffer, content.file.name)
         }
 
         const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
@@ -568,7 +566,7 @@ export class Interaction {
         }
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
+            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
         }
 
         const data = await axios.post(this.callbackURL, payload, {
@@ -634,26 +632,29 @@ export class Interaction {
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
         }
 
-        if (embeds.length) payload.embeds = embeds
-        if (components.length) payload.components = components
+        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+        if (typeof content !== "string" && content.components) payload.components = components
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
+            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
         }
 
-
-        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
             headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
-        }).then(async a => {
-            if (a.status === 400) throw new Error("Bad Request in editing interaction message", {
-                cause: "Editing interaction original message"
-            })
         })
+
+        if (data.status === 400) throw new Error("Bad Request in editing interaction message", {
+            cause: "Editing interaction original message"
+        })
+
+        return new Message(data.data, this.client)
     }
 
     async followUp(content: string | ContentOptions) {
-        const embeds: any = []
+        const embeds: any[] = []
+        const includesFiles = typeof content !== "string" && content.file
         const components: any[] = []
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -669,8 +670,7 @@ export class Interaction {
                 }
             }
         }
-
-        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, {
+        let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
             embeds,
             components,
@@ -679,8 +679,14 @@ export class Interaction {
                 replied_user: true
             },
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
-        }, {
-            headers: this.client.getHeaders(),
+        }
+
+        if (includesFiles) {
+            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
+        }
+
+        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
 
@@ -1041,7 +1047,7 @@ export class Channel {
         }
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+            payload = appendFile(payload, content.file.buffer, content.file.name)
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, payload, {

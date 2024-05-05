@@ -101,8 +101,7 @@ export interface ContentOptions {
     ephemeral?: boolean,
     file?: {
         name: string,
-        buffer: Buffer,
-        contentType: string
+        buffer: Buffer
     }
 }
 
@@ -169,7 +168,6 @@ export class Client {
     }[] = []
     private session_id: string
     private seq: number | null = null
-    private test: PartialEmoji
     private initialUrl = 'wss://gateway.discord.gg'
     private url = this.initialUrl
     private cacheAllUsers = false
