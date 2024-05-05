@@ -26,10 +26,7 @@ export interface Emoji {
     available?: boolean
 }
 
-export interface PartialEmoji {
-    id: string
-    name: string
-}
+export type PartialEmoji = Omit<Emoji, "available" | "animated" | "managed" | "require_colons" | "user" | "roles">
 
 export interface BaseData {
     id: string;
@@ -172,6 +169,7 @@ export class Client {
     }[] = []
     private session_id: string
     private seq: number | null = null
+    private test: PartialEmoji
     private initialUrl = 'wss://gateway.discord.gg'
     private url = this.initialUrl
     private cacheAllUsers = false
