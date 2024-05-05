@@ -12,7 +12,7 @@ lerna-debug.log*
 
 yarn.lock
 
-index.ts
+test.ts
 
 commit.sh
 

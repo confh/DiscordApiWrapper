@@ -1,7 +1,31 @@
 import axios from "axios"
-import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji } from "."
+import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
 
+function JSONToBlob(json: {
+    [x: string]: unknown
+}) {
+    return new Blob([JSON.stringify(json)], {
+        type: 'application/json'
+    })
+}
+
+function appendFile(json: any, buffer: Buffer, fileName: string, contentType: string) {
+    const formData = new FormData()
+    json.attachments = [
+        {
+            id: 0,
+            filename: fileName
+        }
+    ]
+    formData.set("payload_json", JSONToBlob(json), "")
+    formData.set("files[0]", new Blob([buffer], {
+        type: contentType
+    }), fileName)
+
+    return formData
+
+}
 
 interface choice<T> {
     name: T,
@@ -383,27 +407,43 @@ export class Message {
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {
+        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
-        if (typeof content !== "string" && content.embeds) {
-            if (content.embeds?.length) {
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
                     const embed = content.embeds[i];
                     embeds.push(embed.toJson())
                 }
             }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
         }
+
         return new Promise((resolve, reject) => {
-            axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, {
+            let payload: { [x: string]: unknown } | FormData = {
                 content: typeof content === "string" ? content : content.content,
                 embeds,
-                tts: false,
+                components,
                 message_reference: {
                     message_id: this.id,
                     channel_id: this.channelId,
                     guild_Id: this.guildId
                 },
-            }, {
-                headers: this.client.getHeaders()
+            }
+
+            if (includesFiles) {
+                payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+            }
+
+            axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
+                headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
             }).then(async e => {
                 if (e.status === 400) throw new Error(e.statusText);
                 const json = e.data
@@ -413,21 +453,38 @@ export class Message {
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
+        if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
+        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
-        if (typeof content !== "string" && content.embeds) {
-            if (content.embeds?.length) {
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
                     const embed = content.embeds[i];
                     embeds.push(embed.toJson())
                 }
             }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
         }
-        if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
-        const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
+
+        let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
             embeds,
-        }, {
-            headers: this.client.getHeaders()
+            components
+        }
+
+        if (includesFiles) {
+            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+        }
+
+        const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
         })
 
         if (data.status === 400) throw new Error(data.data.message);
@@ -478,6 +535,7 @@ export class Interaction {
 
     async reply(content: string | ContentOptions) {
         this.acknowledged = true
+        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
         const components: any[] = []
         if (typeof content !== "string") {
@@ -495,8 +553,8 @@ export class Interaction {
                 }
             }
         }
-
-        const data = await axios.post(this.callbackURL, {
+        let payload: { [x: string]: unknown } | FormData
+        const originalPayload = {
             type: 4,
             data: {
                 content: typeof content === "string" ? content : content.content,
@@ -504,9 +562,20 @@ export class Interaction {
                 components,
                 flags: typeof content !== "string" && content.ephemeral ? 64 : 0
             }
-        }, {
-            headers: this.client.getHeaders()
+        }
+
+        if (includesFiles) {
+            payload = appendFile(originalPayload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
+        } else {
+            payload = originalPayload
+        }
+
+        const data = await axios.post(this.callbackURL, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
         })
+
+        console.log(data.data)
+
         if (data.status === 400) throw new Error((data.data).message, {
             cause: "Replying to interaction"
         })
@@ -538,6 +607,7 @@ export class Interaction {
 
     async edit(content: string | ContentOptions) {
         const embeds: any = []
+        const includesFiles = typeof content !== "string" && content.file
         const components: any[] = []
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
@@ -554,13 +624,23 @@ export class Interaction {
                 }
             }
         }
-
-        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        let payload: { [x: string]: unknown } | FormData
+        const originalPayload = {
             content: typeof content === "string" ? content : content.content,
             embeds,
-            components
-        }, {
-            headers: this.client.getHeaders()
+            components,
+            flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+        }
+
+        if (includesFiles) {
+            payload = appendFile(originalPayload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
+        } else {
+            payload = originalPayload
+        }
+
+
+        await axios.patch(`${this.client.baseURL}/webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
         }).then(async a => {
             if (a.status === 400) throw new Error("Bad Request in editing interaction message", {
                 cause: "Editing interaction original message"

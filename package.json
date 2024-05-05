@@ -16,7 +16,7 @@
     "ws": "^7.5.0"
   },
   "scripts": {
-    "start": "npx tsx index.ts",
+    "start": "npx tsx watch test.ts",
     "build": "rollup -c"
   },
   "devDependencies": {
