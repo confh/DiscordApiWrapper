@@ -994,16 +994,38 @@ export class Channel {
     }
 
     async send(content: string | ContentOptions) {
-        const embeds: EmbedBuilder[] = []
-        if (typeof content !== "string" && content.embeds && content.embeds?.length) {
-            for (let i = 0; i < content.embeds.length; i++) {
-                embeds.push(content.embeds[i])
+        const includesFiles = typeof content !== "string" && content.file
+        const embeds: any = []
+        const components: any[] = []
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
             }
         }
-        const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, {
+        let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
-            embeds
-        }, { headers: this.client.getHeaders() })
+            embeds,
+            components
+        }
+
+        if (includesFiles) {
+            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+        }
+
+        const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+        })
+
         return new Message(data.data, this.client)
     }
 }
