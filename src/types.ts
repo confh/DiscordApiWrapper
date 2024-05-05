@@ -1,10 +1,8 @@
 import axios from "axios"
-import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache } from "."
+import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
 
-function JSONToBlob(json: {
-    [x: string]: unknown
-}) {
+function JSONToBlob(json: JSONCache) {
     return new Blob([JSON.stringify(json)], {
         type: 'application/json'
     })
@@ -426,30 +424,31 @@ export class Message {
             }
         }
 
-        return new Promise((resolve, reject) => {
-            let payload: { [x: string]: unknown } | FormData = {
-                content: typeof content === "string" ? content : content.content,
-                embeds,
-                components,
-                message_reference: {
-                    message_id: this.id,
-                    channel_id: this.channelId,
-                    guild_Id: this.guildId
-                },
+        let payload: JSONCache | FormData = {
+            content: typeof content === "string" ? content : content.content,
+            embeds,
+            components,
+            message_reference: {
+                message_id: this.id,
+                channel_id: this.channelId,
+                guild_Id: this.guildId
+            },
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
             }
+        }
 
-            if (includesFiles) {
-                payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
-            }
+        if (includesFiles) {
+            payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
+        }
 
-            axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
-                headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
-            }).then(async e => {
-                if (e.status === 400) throw new Error(e.statusText);
-                const json = e.data
-                resolve(new Message(json, this.client))
-            })
+        const data = await axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
+            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
         })
+
+        if (data.status === 400) throw new Error(data.data.message);
+        return new Message(data.data, this.client)
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
@@ -553,21 +552,22 @@ export class Interaction {
                 }
             }
         }
-        let payload: { [x: string]: unknown } | FormData
-        const originalPayload = {
+        let payload: JSONCache | FormData = {
             type: 4,
             data: {
                 content: typeof content === "string" ? content : content.content,
                 embeds,
                 components,
+                allowed_mentions: {
+                    parse: [],
+                    replied_user: true
+                },
                 flags: typeof content !== "string" && content.ephemeral ? 64 : 0
             }
         }
 
         if (includesFiles) {
-            payload = appendFile(originalPayload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
-        } else {
-            payload = originalPayload
+            payload = appendFile(payload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
         }
 
         const data = await axios.post(this.callbackURL, payload, {
@@ -624,18 +624,19 @@ export class Interaction {
                 }
             }
         }
-        let payload: { [x: string]: unknown } | FormData
-        const originalPayload = {
+        let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
             embeds,
             components,
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
+            },
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
         }
 
         if (includesFiles) {
-            payload = appendFile(originalPayload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
-        } else {
-            payload = originalPayload
+            payload = appendFile(payload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
         }
 
 
@@ -671,6 +672,10 @@ export class Interaction {
             content: typeof content === "string" ? content : content.content,
             embeds,
             components,
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
+            },
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
         }, {
             headers: this.client.getHeaders(),
@@ -983,6 +988,14 @@ export class Channel {
     type: ChannelTypes
     position?: number
     name?: string
+    permissions?: {
+        id: string,
+        type: OverwriteObjectTypes,
+        allow: string,
+        deny: string
+    }[]
+    topic?: string | null
+    parent?: string | null
     client: Client
 
     constructor(data: BaseData, client: Client) {
@@ -990,7 +1003,10 @@ export class Channel {
         this.type = data.type
         this.position = data.position
         this.name = data.name
+        this.permissions = data.permission_overwrites
         this.client = client
+        this.parent = data.parent_id
+        this.topic = data.topic
     }
 
     async send(content: string | ContentOptions) {
@@ -1015,7 +1031,11 @@ export class Channel {
         let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
             embeds,
-            components
+            components,
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
+            }
         }
 
         if (includesFiles) {
@@ -1092,8 +1112,6 @@ export class ButtonBuilder {
         }
     }
 }
-
-
 
 export class ActionRowBuilder {
     public components!: Array<SUPPORTED_ELEMENTS>;

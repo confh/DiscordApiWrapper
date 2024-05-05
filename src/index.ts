@@ -89,6 +89,12 @@ export enum ApplicationCommandOptionTypes {
 export enum ChannelTypes {
     TEXT,
     DM,
+    CATEGORY = 4
+}
+
+export enum OverwriteObjectTypes {
+    ROLE,
+    MEMBER
 }
 
 export interface ContentOptions {
