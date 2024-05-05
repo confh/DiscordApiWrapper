@@ -30,4 +30,19 @@ module.exports = [{
     plugins: [
         typescript()
     ],
+},
+{
+    input: 'src/types.ts',
+    output:
+    {
+        file: "dist/types.js",
+        format: 'cjs',
+        exports: 'named',
+        sourcemap: true,
+        strict: false
+    }
+    ,
+    plugins: [
+        typescript()
+    ],
 }]
