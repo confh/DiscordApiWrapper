@@ -1,6 +1,6 @@
 {
   "name": "@confis/discordapiwrapper",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
   "keywords": [],
   "license": "ISC",
@@ -21,7 +21,7 @@
   },
   "scripts": {
     "start": "npx tsx index.ts",
-    "build": "tsup"
+    "build": "tsup ./src"
   },
   "devDependencies": {
     "@types/bun": "latest",

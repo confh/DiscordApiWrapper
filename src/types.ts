@@ -1,5 +1,5 @@
 import axios from "axios";
-import Client, { BaseData, ApplicationCommandOptionTypes, ApplicationCommandTypes, ContentOptions, ButtonStyles, ChannelTypes, ComponentTypes, Emoji } from ".";
+import { Client, BaseData, ApplicationCommandOptionTypes, ApplicationCommandTypes, ContentOptions, ButtonStyles, ChannelTypes, ComponentTypes, Emoji } from ".";
 import { PermissionsBitField } from "./PermissionCalculator";
 const PermissionCalculator = require("./PermissionCalculator")
 
@@ -689,9 +689,9 @@ export class UserContextInteraction extends Interaction {
         user?: User,
         member?: Member
     } = {
-        user: undefined,
-        member: undefined
-    }
+            user: undefined,
+            member: undefined
+        }
 
     constructor(data: BaseData, client: Client) {
         super(data, client)
