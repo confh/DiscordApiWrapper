@@ -94,7 +94,7 @@ export enum OverwriteObjectTypes {
     MEMBER
 }
 
-export interface FileOption {
+export interface FileContent {
     name: string,
     buffer: Buffer
 }
@@ -104,7 +104,7 @@ export interface ContentOptions {
     embeds?: EmbedBuilder[],
     components?: ActionRowBuilder[]
     ephemeral?: boolean,
-    file?: FileOption | FileOption[],
+    file?: FileContent | FileContent[],
     poll?: PollRequestObject
 }
 
@@ -382,6 +382,10 @@ export class Client {
         if (data.status === 400) throw new Error(data.data.message);
 
         return new Message(data.data, this)
+    }
+
+    getChannel(channelId: string) {
+        return this.channels.find(a => a.id === channelId)
     }
 
     connect() {

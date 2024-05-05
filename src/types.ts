@@ -1,5 +1,5 @@
 import axios from "axios"
-import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject, FileOption } from "."
+import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject, FileContent } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
 import { PollingWatchKind } from "typescript"
 
@@ -9,7 +9,7 @@ function JSONToBlob(json: JSONCache) {
     })
 }
 
-function JSONToFormDataWithFile(json: JSONCache, ...args: FileOption[]) {
+function JSONToFormDataWithFile(json: JSONCache, ...args: FileContent[]) {
     if (!args.length) return
     const formData = new FormData()
     json.attachments = []
@@ -361,7 +361,8 @@ export class Message {
         filename: string,
         size: number,
         url: string,
-        proxy_url: string
+        proxy_url: string,
+        content_type: string
     }[]
 
     constructor(data: BaseData, client: Client) {
@@ -385,6 +386,10 @@ export class Message {
         }
     }
 
+    get jumpLink() {
+        return `https://discord.com/${this.guildId}/${this.channelId}/${this.id}`
+    }
+
     get mentions() {
         const users: User[] = []
         for (let i = 0; i < this.mentionsIDs.length; i++) {
@@ -404,6 +409,10 @@ export class Message {
 
     get member() {
         return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) as Member
+    }
+
+    get guild() {
+        return this.client.guilds.find(a => a.id === this.guildId) as Guild
     }
 
     createComponentCollector(options?: {
@@ -1063,6 +1072,15 @@ export class Channel {
         this.client = client
         this.parent = data.parent_id
         this.topic = data.topic
+    }
+
+    async sendTyping() {
+        const data = await axios.post(`${this.client.baseURL}channels/${this.id}/typing`, {}, {
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) return new Error(data.data.message)
     }
 
     async send(content: string | ContentOptions) {
