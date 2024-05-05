@@ -66,39 +66,51 @@ async function wait(ms: number) {
 }
 
 export class Member {
+    private rolesIDs: string[] = []
+    private client: Client
     id: string
-    user: User
     nick: string | null
     displayName: string | null
-    roles: Role[] = []
     joined_at: number
-    permissions: (keyof typeof PermissionsBitField)[] = []
 
     constructor(data: BaseData, client: Client) {
+        this.client = client
         this.joined_at = new Date(data.joined_at).getTime()
         this.id = data.user.id
-        this.user = client.users.find(a => a.id === this.id) || new User(data.user)
         this.nick = data.nick
         this.displayName = this.nick || this.user.displayName
-        for (let i = 0; i < data.roles.length; i++) {
-            const roleObject = client.roles.find(a => a.id === data.roles[i])
-            if (roleObject) {
-                this.roles.push(roleObject)
-            }
-        }
-        this._refreshRoles()
     }
 
-    _refreshRoles() {
+    get roles() {
+        const roles: Role[] = []
+        for (let i = 0; i < this.rolesIDs.length; i++) {
+            const role = this.rolesIDs[i];
+            const roleObject = this.client.roles.find(a => a.id === role)
+            if (roleObject) {
+                roles.push(roleObject)
+            }
+        }
+
+        return roles
+    }
+
+    get user() {
+        return this.client.users.find(a => a.id === this.id) as User
+    }
+
+    get permissions() {
+        const perms: (keyof typeof PermissionsBitField)[] = []
         for (let i = 0; i < this.roles.length; i++) {
             const permissions = PermissionCalculator(Number(this.roles[i].permissions))
             for (let i = 0; i < permissions.length; i++) {
                 const permission = permissions[i];
-                if (!this.permissions.find(a => a === permission)) {
-                    this.permissions.push(permission)
+                if (!perms.find(a => a === permission)) {
+                    perms.push(permission)
                 }
             }
         }
+
+        return perms
     }
 }
 
@@ -151,7 +163,6 @@ export class SlashCommandBuilder {
         required?: boolean,
         choices?: choice<any>[]
     }[] = []
-    private ownerOnly = false
     public type: ApplicationCommandTypes = ApplicationCommandTypes.CHAT_INPUT
 
     private addSlashCommandOption(type: number, name: string, desc: string, required: boolean, choices?: choice<any>[]) {
@@ -259,23 +270,6 @@ export class SlashCommandBuilder {
     }
 
     /**
-     * Set command to owner only
-     * @returns SlashCommandBuilder Object
-     */
-    setOwner() {
-        this.ownerOnly = true
-        return this
-    }
-
-    /**
-     * Checks if command is owner only
-     * @returns If command is owner only
-     */
-    isOwner() {
-        return this.ownerOnly
-    }
-
-    /**
      * Turn slash command into json
      * @returns JSON Data
      */
@@ -314,10 +308,6 @@ export class Role {
         Object.assign(this, options)
     }
 
-    _update(options: Role) {
-        Object.assign(this, options)
-    }
-
     hasPermission(permission: keyof typeof PermissionsBitField) {
         const permissionArray: string[] = PermissionCalculator(Number(this.permissions))
         if (permissionArray.find(a => a === permission)) return true
@@ -347,20 +337,18 @@ export class Role {
 }
 
 export class Message {
-    client: Client
+    private client: Client
+    private authorID: string
+    private mentionsIDs: string[]
     id: string
     channelId: string
-    author: User
-    member?: Member
     content: string
     timestamp: number
     edited_timestamp: number | null
-    mentions: User[] = []
     mention_everyone: boolean
     guildId: string
     pinned: boolean
     type: number
-    channel: Channel
     referenced_message?: Message
 
     constructor(data: BaseData, client: Client) {
@@ -368,8 +356,7 @@ export class Message {
         this.client = client
         this.channelId = data.channel_id
         this.guildId = data.guild_id
-        this.author = client.users.find(a => a.id === data.author.id) || new User(data.author.user)
-        this.member = client.guilds.find(a => a.id === this.guildId)?.members.find(a => a.id === this.author.id)
+        this.authorID = data.author.id
         this.content = data.content
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
@@ -379,10 +366,30 @@ export class Message {
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
         this.type = data.type
-        this.channel = client.channels.find(a => a.id === this.channelId) as Channel
         if (data.referenced_message) {
             this.referenced_message = new Message(data.referenced_message, client)
         }
+    }
+
+    get mentions() {
+        const users: User[] = []
+        for (let i = 0; i < this.mentionsIDs.length; i++) {
+            const userID = this.mentionsIDs[i];
+            users.push(this.client.users.find(a => a.id === userID))
+        }
+        return users
+    }
+
+    get channel() {
+        return this.client.channels.find(a => a.id === this.channelId) as Channel
+    }
+
+    get author() {
+        return this.client.users.find(a => a.id === this.authorID) as User
+    }
+
+    get member() {
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) as Member
     }
 
     createComponentCollector(options?: {
@@ -393,7 +400,7 @@ export class Message {
         return this.client.collectors[index]
     }
 
-    getComponentCollectors() {
+    get componentCollectors() {
         const collectors: Collector[] = []
         for (let i = 0; i < this.client.collectors.length; i++) {
             const collector = this.client.collectors[i];
@@ -500,18 +507,16 @@ export class Message {
 }
 
 export class Interaction {
+    private channelId: string
+    private userID: string
     token: string
     callbackURL: string
     interaction_id: string
-    member: Member
     client: Client
     name: string
-    user: User
     id: string
     guildId: string
-    channel: Channel
     description: string
-    guild: Guild
     type: ApplicationCommandTypes
     acknowledged: boolean = false
 
@@ -522,13 +527,27 @@ export class Interaction {
         this.name = data.data.name
         this.id = data.data.id
         this.guildId = data.guild_id
-        this.guild = client.guilds.find(a => a.id === this.guildId) as Guild
-        this.user = client.users.find(a => a.id === data.member.user.id) as User
-        this.member = client.guilds.find(a => a.id === this.guildId)?.members.find(a => a.id === this.user.id) || new Member(data.member, client)
+        this.userID = data.member.user.id
         this.description = data.description
         this.type = data.type
-        this.channel = client.channels.find(a => a.id === data.channel_id) as Channel
+        this.channelId = data.channel_id
         this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
+    }
+
+    get guild() {
+        return this.client.guilds.find(a => a.id === this.guildId) as Guild
+    }
+
+    get channel() {
+        return this.client.channels.find(a => a.id === this.channelId) as Channel
+    }
+
+    get user() {
+        return this.client.users.find(a => a.id === this.userID) as User
+    }
+
+    get member() {
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.userID) as Member
     }
 
     async reply(content: string | ContentOptions) {
@@ -800,15 +819,17 @@ export class UserContextInteraction extends Interaction {
 }
 
 export class Guild {
+    private channelIDs: string[] = []
+    private client: Client
     id: string
     name: string
     ownerId: string
     memberCount: number
     joined_at: number
     members: Member[] = []
-    channels: Channel[] = []
 
     constructor(data: BaseData, client: Client) {
+        this.client = client
         this.id = data.id
         this.name = data.name
         this.ownerId = data.owner_id
@@ -820,8 +841,17 @@ export class Guild {
         }
         for (let i = 0; i < data.channels.length; i++) {
             const channel = data.channels[i];
-            this.channels.push(client.channels.find(a => a.id === channel.id) as Channel)
+            this.channelIDs.push(channel.id)
         }
+    }
+
+    get channels() {
+        const channels: Channel[] = []
+        for (let i = 0; i < this.channelIDs.length; i++) {
+            const channelID = this.channelIDs[i];
+            channels.push(this.client.channels.find(a => a.id === channelID))
+        }
+        return channels
     }
 }
 

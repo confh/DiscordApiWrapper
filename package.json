@@ -1,6 +1,6 @@
 {
   "name": "@confis/discordapiwrapper",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "",
   "keywords": [],
   "license": "ISC",
@@ -21,7 +21,7 @@
     "build": "rollup -c"
   },
   "devDependencies": {
-    "@rollup/plugin-multi-entry": "^6.0.1",
+    "rollup-plugin-typescript2": "^0.35.0",
     "@types/bun": "latest",
     "rollup": "^4.17.2",
     "tslib": "^2.6.2"

@@ -161,6 +161,7 @@ function calculateIntents(intents: Intents[]) {
 export class Client {
     private payload;
     private ws: WebSocket;
+    private readyTimestamp: number
     private listeners: {
         event: keyof ClientEvents,
         once: boolean,
@@ -184,7 +185,6 @@ export class Client {
     public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
-    public uptime: number
 
     private heartbeat(ms: number) {
         return setInterval(() => {
@@ -220,6 +220,13 @@ export class Client {
                 },
             }
         }
+        Object.defineProperty(this, "token", {
+            writable: false
+        })
+    }
+
+    get uptime() {
+        return Date.now() - this.readyTimestamp
     }
 
     private registerUser(user: User | User[]) {
@@ -393,7 +400,7 @@ export class Client {
                 }
                 switch (t) {
                     case "READY":
-                        _this.uptime = Date.now()
+                        _this.readyTimestamp = Date.now()
                         _this.url = d.resume_gateway_url
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
@@ -465,14 +472,7 @@ export class Client {
                         const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role)
                         for (let i = 0; i < _this.roles.length; i++) {
                             if (_this.roles[i].guild_id === d.guild_id) {
-                                _this.roles[i]._update(d.role)
-                                const guild_members = _this.guilds.find(a => a.id === _this.roles[i].guild_id)!.members as Member[]
-                                for (let index = 0; index < guild_members!.length; index++) {
-                                    const member = guild_members[index] as Member;
-                                    const role = member.roles.find(a => a.id === _this.roles[i].id)
-                                    if (role) member.roles.find(a => a.id === _this.roles[i].id)?._update(d.role);
-                                    member._refreshRoles()
-                                }
+                                _this.roles[i] = new Role(d.role)
                                 break
                             }
                         }
