@@ -39,20 +39,20 @@ export const PermissionsBitField = {
 	USE_EXTERNAL_STICKERS: 0x2000000000,
 	SEND_MESSAGES_IN_THREADS: 0x4000000000,
 	START_EMBEDDED_ACTIVITIES: 0x8000000000,
-	MODERATE_MEMBERS : 0x10000000000,
+	MODERATE_MEMBERS: 0x10000000000,
 };
 
-export default (permBitfield: number) => {
-    const currentPermissions: (keyof typeof PermissionsBitField)[] = [];
-    const permissionUpper = Math.floor(permBitfield / 0x100000000);
-    const permissionLower = Math.floor(permBitfield % 0x100000000);
-    for (let key in PermissionsBitField) {
-        if ((PermissionsBitField[key] >= 0x100000000 && (permissionUpper & Math.floor(PermissionsBitField[key] / 0x100000000))) || (PermissionsBitField[key] < 0x100000000 && (permissionLower & PermissionsBitField[key]))) {
-            currentPermissions.push(key as (keyof typeof PermissionsBitField));
-        } else {
-            continue;
-        };
-    };
+export default function PermissionCalculator(permBitfield: number) {
+	const currentPermissions: (keyof typeof PermissionsBitField)[] = [];
+	const permissionUpper = Math.floor(permBitfield / 0x100000000);
+	const permissionLower = Math.floor(permBitfield % 0x100000000);
+	for (let key in PermissionsBitField) {
+		if ((PermissionsBitField[key] >= 0x100000000 && (permissionUpper & Math.floor(PermissionsBitField[key] / 0x100000000))) || (PermissionsBitField[key] < 0x100000000 && (permissionLower & PermissionsBitField[key]))) {
+			currentPermissions.push(key as (keyof typeof PermissionsBitField));
+		} else {
+			continue;
+		};
+	};
 	if (currentPermissions.length === 1 && currentPermissions[0] === "ADMINISTRATOR") {
 		for (let key in PermissionsBitField) {
 			if (key !== "ADMINISTRATOR") {
@@ -60,5 +60,5 @@ export default (permBitfield: number) => {
 			}
 		};
 	}
-    return currentPermissions;
+	return currentPermissions;
 }

@@ -1,6 +1,7 @@
 import axios from "axios"
-import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject } from "."
+import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject, FileOption } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
+import { PollingWatchKind } from "typescript"
 
 function JSONToBlob(json: JSONCache) {
     return new Blob([JSON.stringify(json)], {
@@ -8,16 +9,21 @@ function JSONToBlob(json: JSONCache) {
     })
 }
 
-function appendFile(json: JSONCache, buffer: Buffer, fileName: string) {
+function JSONToFormDataWithFile(json: JSONCache, ...args: FileOption[]) {
+    if (!args.length) return
     const formData = new FormData()
-    json.attachments = [
-        {
-            id: 0,
-            filename: fileName
-        }
-    ]
+    json.attachments = []
+
     formData.set("payload_json", JSONToBlob(json), "")
-    formData.set("files[0]", new Blob([buffer]), fileName)
+
+    for (let i = 0; i < args.length; i++) {
+        const file = args[i];
+        (json.attachments as any[]).push({
+            id: i,
+            filename: file.name
+        })
+        formData.set(`files[${i}]`, new Blob([file.buffer]), file.name)
+    }
 
     return formData
 
@@ -339,7 +345,7 @@ export class Role {
 export class Message {
     private client: Client
     private authorID: string
-    private mentionsIDs: string[]
+    private mentionsIDs: string[] = []
     id: string
     channelId: string
     content: string
@@ -361,7 +367,7 @@ export class Message {
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
         for (let i = 0; i < data.mentions.length; i++) {
-            this.mentions.push(client.users.find(a => a.id === data.mentions[i].id) || new User(data.mentions[i]))
+            this.mentionsIDs.push(data.mentions[i])
         }
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
@@ -410,9 +416,10 @@ export class Message {
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {
-        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
         const components: any[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -444,12 +451,12 @@ export class Message {
             }
         }
 
-        if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name)
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
         if (data.status === 400) throw new Error(data.data.message);
@@ -458,9 +465,10 @@ export class Message {
 
     async edit(content: string | ContentOptions): Promise<Message> {
         if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
-        const includesFiles = typeof content !== "string" && content.file
         const embeds: any[] = []
         const components: any[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -484,12 +492,12 @@ export class Message {
         if (typeof content !== "string" && content.embeds) payload.embeds = embeds
         if (typeof content !== "string" && content.components) payload.components = components
 
-        if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name)
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
         if (data.status === 400) throw new Error(data.data.message);
@@ -552,9 +560,10 @@ export class Interaction {
 
     async reply(content: string | ContentOptions) {
         this.acknowledged = true
-        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
         const components: any[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -584,12 +593,12 @@ export class Interaction {
             }
         }
 
-        if (includesFiles) {
-            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.post(this.callbackURL, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
         console.log(data.data)
@@ -655,7 +664,7 @@ export class Interaction {
         if (typeof content !== "string" && content.components) payload.components = components
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
+            payload = JSONToFormDataWithFile(payload, content.file[0].buffer, content.file[0].name)
         }
 
         const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
@@ -701,7 +710,7 @@ export class Interaction {
         }
 
         if (includesFiles) {
-            payload = appendFile(payload, content.file[0].buffer, content.file[0].name)
+            payload = JSONToFormDataWithFile(payload, content.file[0].buffer, content.file[0].name)
         }
 
         const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, payload, {
@@ -1049,9 +1058,10 @@ export class Channel {
     }
 
     async send(content: string | ContentOptions) {
-        const includesFiles = typeof content !== "string" && content.file
         const embeds: any = []
         const components: any[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -1077,12 +1087,14 @@ export class Channel {
             }
         }
 
-        if (includesFiles) {
-            payload = appendFile(payload, content.file.buffer, content.file.name)
+        if (typeof content !== "string" && content.poll) payload.poll = content.poll
+
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json"),
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
 

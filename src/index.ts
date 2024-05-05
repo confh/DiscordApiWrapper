@@ -1,6 +1,6 @@
 import axios from 'axios';
 import WebSocket from 'ws';
-import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction, Member } from './types';
+import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './types';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -94,15 +94,18 @@ export enum OverwriteObjectTypes {
     MEMBER
 }
 
+export interface FileOption {
+    name: string,
+    buffer: Buffer
+}
+
 export interface ContentOptions {
     content?: string,
     embeds?: EmbedBuilder[],
     components?: ActionRowBuilder[]
     ephemeral?: boolean,
-    file?: {
-        name: string,
-        buffer: Buffer
-    }
+    file?: FileOption | FileOption[],
+    poll?: PollRequestObject
 }
 
 export interface PollMediaObject {
@@ -330,7 +333,7 @@ export class Client {
         const presencePayload = {
             "op": 3,
             "d": {
-                "since": 91879201,
+                "since": null,
                 "activities": typeof data === "string" || !data.activity ? [] : [data.activity],
                 "status": typeof data === "string" ? data : data.status,
                 "afk": false,
