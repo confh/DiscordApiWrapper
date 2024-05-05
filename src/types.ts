@@ -746,6 +746,7 @@ export class SlashCommandInteraction extends Interaction {
     }
 }
 
+
 export class ButtonInteraction extends Interaction {
     message: Message
     custom_id: string
@@ -1074,6 +1075,33 @@ export class Channel {
     }
 }
 
+export class ActionRowBuilder {
+    public components!: Array<SUPPORTED_ELEMENTS>;
+
+    setComponents(...args: Array<SUPPORTED_ELEMENTS>) {
+        this.components = args
+        return this
+    }
+
+    setComponentsArray(components: Array<SUPPORTED_ELEMENTS>) {
+        this.components = components
+        return this
+    }
+
+    toJson() {
+        const JSONArray: any[] = []
+        for (let i = 0; i < this.components.length; i++) {
+            const component = this.components[i];
+            JSONArray.push(component.toJson())
+        }
+
+        return {
+            type: 1,
+            components: JSONArray
+        }
+    }
+}
+
 export class ButtonBuilder {
     private label!: string;
     private style: number = ButtonStyles.PRIMARY;
@@ -1133,33 +1161,6 @@ export class ButtonBuilder {
             disabled: this.disabled,
             emoji: this.emoji,
             url: this.url
-        }
-    }
-}
-
-export class ActionRowBuilder {
-    public components!: Array<SUPPORTED_ELEMENTS>;
-
-    setComponents(...args: Array<SUPPORTED_ELEMENTS>) {
-        this.components = args
-        return this
-    }
-
-    setComponentsArray(components: Array<SUPPORTED_ELEMENTS>) {
-        this.components = components
-        return this
-    }
-
-    toJson() {
-        const JSONArray: any[] = []
-        for (let i = 0; i < this.components.length; i++) {
-            const component = this.components[i];
-            JSONArray.push(component.toJson())
-        }
-
-        return {
-            type: 1,
-            components: JSONArray
         }
     }
 }
