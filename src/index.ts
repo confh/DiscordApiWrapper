@@ -6,13 +6,13 @@ let interval: number | Timer = 0;
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
 export interface ClientEvents {
-    ready: [client: Client | any],
-    messageCreate: [message: Message, client: Client | any],
-    messageUpdate: [message: Message, client: Client | any]
-    guildCreate: [guild: Guild, client: Client | any],
-    interactionCreate: [interaction: Interaction, client: Client | any],
-    resume: [client: Client | any],
-    roleUpdate: [oldRole: Role, newRole: Role, guild: Guild, client: Client | any]
+    ready: [],
+    messageCreate: [message: Message],
+    messageUpdate: [message: Message]
+    guildCreate: [guild: Guild],
+    interactionCreate: [interaction: Interaction],
+    resume: [],
+    roleUpdate: [oldRole: Role, newRole: Role, guild: Guild]
 }
 
 export interface Emoji {
@@ -405,17 +405,17 @@ export class Client {
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
                         _this.registerUser(new User(d.user))
-                        _this.emit("ready", _this)
+                        _this.emit("ready")
                         break;
                     case "RESUMED":
-                        _this.emit("resume", _this)
+                        _this.emit("resume")
                         break;
                     case "MESSAGE_CREATE":
-                        _this.emit("messageCreate", new Message(d, _this), _this)
+                        _this.emit("messageCreate", new Message(d, _this))
                         break;
                     case "MESSAGE_UPDATE":
                         if (d.author) {
-                            _this.emit("messageUpdate", new Message(d, _this), _this)
+                            _this.emit("messageUpdate", new Message(d, _this))
                         }
                         break;
                     case "GUILD_CREATE":
@@ -441,21 +441,21 @@ export class Client {
                         }
 
                         _this.guilds.push(new Guild(d, _this))
-                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild, _this)
+                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
                         break
                     case "INTERACTION_CREATE":
                         if (d.type === InteractionTypes.APPLICATION_COMMAND) {
                             switch (d.data.type) {
                                 case ApplicationCommandTypes.CHAT_INPUT:
-                                    _this.emit("interactionCreate", new SlashCommandInteraction(d, _this), _this)
+                                    _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
                                     break;
                                 case ApplicationCommandTypes.USER:
-                                    _this.emit("interactionCreate", new UserContextInteraction(d, _this), _this)
+                                    _this.emit("interactionCreate", new UserContextInteraction(d, _this))
                                     break; default:
                                     console.log(d)
                                     break;
                                 case ApplicationCommandTypes.MESSAGE:
-                                    _this.emit("interactionCreate", new MessageContextInteraction(d, _this), _this)
+                                    _this.emit("interactionCreate", new MessageContextInteraction(d, _this))
                                     break;
                             }
                         } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
@@ -464,7 +464,7 @@ export class Client {
                                 if (collector) {
                                     collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
                                 }
-                                _this.emit("interactionCreate", new ButtonInteraction(d, _this), _this)
+                                _this.emit("interactionCreate", new ButtonInteraction(d, _this))
                             }
                         }
                         break
@@ -476,7 +476,7 @@ export class Client {
                                 break
                             }
                         }
-                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild, _this)
+                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
                         break
                 }
             })
