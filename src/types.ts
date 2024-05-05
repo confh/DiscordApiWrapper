@@ -356,6 +356,13 @@ export class Message {
     pinned: boolean
     type: number
     referenced_message?: Message
+    attachments: {
+        id: string,
+        filename: string,
+        size: number,
+        url: string,
+        proxy_url: string
+    }[]
 
     constructor(data: BaseData, client: Client) {
         this.id = data.id
@@ -372,6 +379,7 @@ export class Message {
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
         this.type = data.type
+        this.attachments = data.attachments
         if (data.referenced_message) {
             this.referenced_message = new Message(data.referenced_message, client)
         }
