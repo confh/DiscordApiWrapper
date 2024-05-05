@@ -1,29 +1,29 @@
 {
   "name": "@confis/discordapiwrapper",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "",
   "keywords": [],
   "license": "ISC",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
+    "rollup-plugin-typescript2": "^0.35.0",
     "@types/node": "^20.12.8",
     "axios": "^1.6.8",
     "dotenv": "^10.0.0",
     "express": "^4.19.2",
+    "rollup": "^4.17.2",
     "tsc": "^2.0.4",
+    "tslib": "^2.6.2",
     "typescript": "^5.4.5",
     "ws": "^7.5.0"
   },
   "scripts": {
     "start": "npx tsx index.ts",
-    "build": "tsup ./src"
+    "build": "rm -r dist && rollup -c"
   },
   "devDependencies": {
+    "@rollup/plugin-multi-entry": "^6.0.1",
     "@types/bun": "latest",
     "tsup": "^8.0.2"
   },
