@@ -16,6 +16,8 @@ index.ts
 
 commit.sh
 
+/dist
+
 bun.lockb
 
 # Caches

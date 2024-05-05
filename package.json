@@ -1,27 +1,34 @@
 {
-  "name": "gateway-real-time",
+  "name": "@confis/discordapiwrapper",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
   "license": "ISC",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@types/node": "^20.12.8",
     "axios": "^1.6.8",
     "dotenv": "^10.0.0",
     "express": "^4.19.2",
     "tsc": "^2.0.4",
-    "typescript": "^5.0.0",
+    "typescript": "^5.4.5",
     "ws": "^7.5.0"
   },
   "scripts": {
-    "start": "npx tsx watch index.ts"
+    "start": "npx tsx index.ts",
+    "build": "tsup"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "tsup": "^8.0.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "module": "index.ts",
   "type": "commonjs"
 }
