@@ -42,7 +42,7 @@ export const PermissionsBitField = {
 	MODERATE_MEMBERS : 0x10000000000,
 };
 
-module.exports = (permBitfield: number) => {
+export default (permBitfield: number) => {
     const currentPermissions: (keyof typeof PermissionsBitField)[] = [];
     const permissionUpper = Math.floor(permBitfield / 0x100000000);
     const permissionLower = Math.floor(permBitfield % 0x100000000);

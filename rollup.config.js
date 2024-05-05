@@ -20,7 +20,7 @@ module.exports = [{
     input: 'src/PermissionCalculator.ts',
     output:
     {
-        file: pkg.main,
+        file: "dist/PermissionCalculator.js",
         format: 'cjs',
         exports: 'named',
         sourcemap: true,
