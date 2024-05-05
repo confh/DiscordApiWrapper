@@ -30,7 +30,7 @@ interface choice<T> {
     value: T
 }
 
-interface AuthorOptions {
+export interface AuthorOptions {
     name: string,
     url?: string,
     icon_url: string,
@@ -41,19 +41,19 @@ type COLLECTOR_EVENTS = "collect" | "end"
 
 type SUPPORTED_ELEMENTS = ButtonBuilder
 
-interface FieldOptions {
+export interface FieldOptions {
     name: string,
     value: string,
     inline?: boolean
 }
 
-interface FooterOptions {
+export interface FooterOptions {
     text: string,
     icon_url?: string,
     proxy_icon_url?: string
 }
 
-interface ImageOptions {
+export interface ImageOptions {
     url: string,
     height?: number,
     width?: number
@@ -454,7 +454,7 @@ export class Message {
     async edit(content: string | ContentOptions): Promise<Message> {
         if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
         const includesFiles = typeof content !== "string" && content.file
-        const embeds: any = []
+        const embeds: any[] = []
         const components: any[] = []
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
@@ -474,9 +474,10 @@ export class Message {
 
         let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
-            embeds,
-            components
         }
+
+        if (embeds.length) payload.embeds = embeds
+        if (components.length) payload.components = components
 
         if (includesFiles) {
             payload = appendFile(payload, content.file.buffer, content.file.name, content.file.contentType)
@@ -606,7 +607,7 @@ export class Interaction {
     }
 
     async edit(content: string | ContentOptions) {
-        const embeds: any = []
+        const embeds: any[] = []
         const includesFiles = typeof content !== "string" && content.file
         const components: any[] = []
         if (typeof content !== "string") {
@@ -626,14 +627,15 @@ export class Interaction {
         }
         let payload: JSONCache | FormData = {
             content: typeof content === "string" ? content : content.content,
-            embeds,
-            components,
             allowed_mentions: {
                 parse: [],
                 replied_user: true
             },
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
         }
+
+        if (embeds.length) payload.embeds = embeds
+        if (components.length) payload.components = components
 
         if (includesFiles) {
             payload = appendFile(payload, content.file[0].buffer, content.file[0].name, content.file[0].contentType)
