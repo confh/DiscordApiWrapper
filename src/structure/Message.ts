@@ -4,7 +4,7 @@ import { Channel, Guild, Collector, Member, User } from ".."
 
 export class Message {
     private client: Client
-    private authorID: string
+    private authorID?: string
     private mentionsIDs: string[] = []
     id: string
     channelId: string
@@ -65,12 +65,12 @@ export class Message {
         return this.client.channels.find(a => a.id === this.channelId) as Channel
     }
 
-    get author() {
-        return this.client.users.find(a => a.id === this.authorID) || null
+    get author(): User | null {
+        return this.client.users.find(a => a.id === this.authorID) ?? null
     }
 
-    get member() {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) || null
+    get member(): Member | null {
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) ?? null
     }
 
     get guild() {
