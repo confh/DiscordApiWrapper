@@ -14,6 +14,14 @@ let interval: number | Timer = 0;
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
 
+export async function wait(ms: number) {
+    return new Promise(res => {
+        setTimeout(() => {
+            res(null)
+        }, ms);
+    })
+}
+
 /**
  * Convert JSON to a Blob
  * @param json Type of {@link JSONCache}
@@ -764,7 +772,6 @@ export class Client {
                                 member.rolesIDs = data.roles
                                 member.nick = data.nick
                             }
-                            console.log(_this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex].roles)
                         }
                         break;
                     case "GUILD_ROLE_CREATE":

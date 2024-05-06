@@ -1,11 +1,13 @@
 import axios from "axios"
 import { Client, BaseData, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from "../client"
-import { Channel, Guild, Collector, Member, User } from ".."
+import { Channel, Guild, Collector, Member, User, wait } from ".."
+
 
 export class Message {
     private client: Client
     private authorID?: string
     private mentionsIDs: string[] = []
+    private data: any
     id: string
     channelId: string
     content: string
@@ -26,6 +28,7 @@ export class Message {
     }[]
 
     constructor(data: BaseData, client: Client) {
+        this.data = data
         this.id = data.id
         this.client = client
         this.channelId = data.channel_id
@@ -130,58 +133,78 @@ export class Message {
             }
         }
 
-        if (files) {
+        if (files && files.length) {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
-            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files && files.length ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
 
-        if (data.status === 400) throw new Error(data.data.message);
+        if (data.status === 400 || data.status === 404) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.reply(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        };
         return new Message(data.data, this.client)
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
-        if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
-        const embeds: any[] = []
-        const components: any[] = []
-        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+        try {
+            if (!this.author) return;
+            if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
+            const embeds: any[] = []
+            const components: any[] = []
+            const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
 
-        if (typeof content !== "string") {
-            if (content.embeds && content.embeds?.length) {
-                for (let i = 0; i < content.embeds.length; i++) {
-                    const embed = content.embeds[i];
-                    embeds.push(embed.toJson())
+            if (typeof content !== "string") {
+                if (content.embeds && content.embeds?.length) {
+                    for (let i = 0; i < content.embeds.length; i++) {
+                        const embed = content.embeds[i];
+                        embeds.push(embed.toJson())
+                    }
+                }
+
+                if (content.components && content.components?.length) {
+                    for (let i = 0; i < content.components.length; i++) {
+                        const component = content.components[i];
+                        components.push(component.toJson())
+                    }
                 }
             }
 
-            if (content.components && content.components?.length) {
-                for (let i = 0; i < content.components.length; i++) {
-                    const component = content.components[i];
-                    components.push(component.toJson())
+            let payload: JSONCache | FormData = {
+                content: typeof content === "string" ? content : content.content,
+            }
+
+            if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+            if (typeof content !== "string" && content.components) payload.components = components
+
+            if (files) {
+                payload = JSONToFormDataWithFile(payload, ...files)
+            }
+
+            const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
+                headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
+            })
+
+            if (data.status === 400) {
+                if (data.data.retry_after !== null) {
+                    await wait(data.data.retry_after * 1000)
+                    return await this.edit(content)
+                } else {
+                    throw new Error(data.data.message);
                 }
             }
+
+            return data.data
+        } catch (e) {
+            console.log(this.data)
         }
-
-        let payload: JSONCache | FormData = {
-            content: typeof content === "string" ? content : content.content,
-        }
-
-        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
-        if (typeof content !== "string" && content.components) payload.components = components
-
-        if (files) {
-            payload = JSONToFormDataWithFile(payload, ...files)
-        }
-
-        const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
-            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
-        })
-
-        if (data.status === 400) throw new Error(data.data.message);
-
-        return data.data
     }
 
     async delete() {

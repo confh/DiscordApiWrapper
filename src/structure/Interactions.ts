@@ -1,6 +1,6 @@
 import axios from "axios"
 import { Client, ApplicationCommandTypes, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, ApplicationCommandOptionTypes } from "../client"
-import { Guild, Channel, Member, Message, User } from ".."
+import { Guild, Channel, Member, Message, User, wait } from ".."
 
 export class Interaction {
     private channelId: string
@@ -96,12 +96,18 @@ export class Interaction {
         }
 
         const data = await axios.post(this.callbackURL, payload, {
-            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
 
-        if (data.status === 400) throw new Error(data.data.message, {
-            cause: "Replying to interaction"
-        })
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.reply(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
 
         const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders(),
@@ -168,12 +174,17 @@ export class Interaction {
         }
 
         const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
-            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
-
-        if (data.status === 400) throw new Error("Bad Request in editing interaction message", {
-            cause: "Editing interaction original message"
-        })
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.edit(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
 
         return new Message(data.data, this.client)
     }
@@ -218,9 +229,14 @@ export class Interaction {
             validateStatus: () => true
         })
 
-        if (data.status === 400) throw new Error((data.data).message, {
-            cause: "Replying to interaction"
-        })
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.followUp(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
 
         return new Message(data.data, this.client)
     }
