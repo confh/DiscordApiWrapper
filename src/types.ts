@@ -155,7 +155,7 @@ export class User {
         animated?: boolean
     }) {
         let animated = options?.animated || false
-        return `https://cdn.discordapp.com/${this.id}/${this.avatar}.${animated ? "webp" : "png"}?size=${options?.size || 512}`
+        return `https://cdn.discordapp.com/avatars/${this.id}/${this.avatar}.${animated ? "webp" : "png"}?size=${options?.size || 512}`
     }
 }
 
