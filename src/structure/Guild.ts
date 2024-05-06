@@ -1,6 +1,5 @@
-import { Client, BaseData, Role } from ".."
-import { Channel } from "./Channel"
-import { Member } from "./Member"
+import { Client, BaseData } from "../client"
+import { Member, Channel, Role } from ".."
 
 export class Guild {
     private channelIDs: string[] = []

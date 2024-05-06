@@ -1,9 +1,6 @@
 import axios from "axios"
-import { Client, ApplicationCommandTypes, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, ApplicationCommandOptionTypes } from ".."
-import { Guild, Channel } from ".."
-import { Member } from "./Member"
-import { Message } from "./Message"
-import { User } from "./User"
+import { Client, ApplicationCommandTypes, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, ApplicationCommandOptionTypes } from "../client"
+import { Guild, Channel, Member, Message, User } from ".."
 
 export class Interaction {
     private channelId: string

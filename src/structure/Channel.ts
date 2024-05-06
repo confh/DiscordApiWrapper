@@ -1,5 +1,5 @@
 import axios from "axios"
-import { ChannelTypes, OverwriteObjectTypes, Client, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, PollRequestObject } from ".."
+import { ChannelTypes, OverwriteObjectTypes, Client, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, PollRequestObject } from "../client"
 import { Message } from "./Message"
 
 export class Channel {

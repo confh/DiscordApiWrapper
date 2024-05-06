@@ -1,4 +1,4 @@
-import { ButtonStyles, Emoji } from ".."
+import { ButtonStyles, Emoji } from "../client"
 
 type SUPPORTED_ELEMENTS = ButtonBuilder
 

@@ -1,4 +1,4 @@
-import { Client, ComponentTypes } from ".."
+import { Client, ComponentTypes } from "../client"
 import { Message } from "./Message"
 
 type COLLECTOR_EVENTS = "collect" | "end"

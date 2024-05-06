@@ -1,5 +1,6 @@
-import { Client, Guild } from ".."
+import { Client } from "../client"
 import PermissionCalculator, { PermissionsBitField } from "../PermissionCalculator"
+import { Guild } from "./Guild"
 
 export class Role {
     private client: Client

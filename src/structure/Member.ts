@@ -1,7 +1,6 @@
-import { Client, BaseData } from ".."
+import { Client, BaseData } from "../client"
 import PermissionCalculator, { PermissionsBitField } from "../PermissionCalculator"
-import { Role } from ".."
-import { User } from "./User"
+import { User, Role } from ".."
 
 export class Member {
     private client: Client

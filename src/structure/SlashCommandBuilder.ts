@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from ".."
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes } from "../client"
 
 interface choice<T> {
     name: T,

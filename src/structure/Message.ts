@@ -1,8 +1,6 @@
 import axios from "axios"
-import { Client, BaseData, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from ".."
-import { Channel, Guild, Collector } from ".."
-import { Member } from "./Member"
-import { User } from "./User"
+import { Client, BaseData, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from "../client"
+import { Channel, Guild, Collector, Member, User } from ".."
 
 export class Message {
     private client: Client

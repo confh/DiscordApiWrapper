@@ -33,6 +33,20 @@ module.exports = [{
                 plugin
             ],
         },{
+            input: "src/client.ts",
+            output:
+            {
+                file: "dist/client.js",
+                format: 'cjs',
+                exports: 'named',
+                sourcemap: true,
+                strict: false
+            }
+            ,
+            plugins: [
+                plugin
+            ],
+        },{
             input: "src/structure/SlashCommandBuilder.ts",
             output:
             {
