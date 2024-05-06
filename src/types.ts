@@ -618,8 +618,6 @@ export class Interaction {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
-        console.log(data.data)
-
         if (data.status === 400) throw new Error((data.data).message, {
             cause: "Replying to interaction"
         })

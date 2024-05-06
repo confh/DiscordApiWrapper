@@ -496,7 +496,6 @@ export class Client {
                                     _this.emit("interactionCreate", new UserContextInteraction(d, _this))
                                     break;
                                 case ApplicationCommandTypes.MESSAGE:
-                                    console.log(d)
                                     _this.emit("interactionCreate", new MessageContextInteraction(d, _this))
                                     break;
                             }
