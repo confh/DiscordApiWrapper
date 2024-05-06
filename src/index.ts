@@ -162,6 +162,7 @@ function calculateIntents(intents: Intents[]) {
 }
 
 export class Client {
+    private isReady = false
     private payload;
     private ws: WebSocket;
     private readyTimestamp: number
@@ -248,6 +249,7 @@ export class Client {
     }
 
     private emit<K extends keyof ClientEvents>(event: K, ...args: ClientEvents[K]) {
+        if(!this.isReady) return
         for (let i = 0; i < this.listeners.length; i++) {
             const listener = this.listeners[i];
             if (listener.event === event) {
@@ -443,7 +445,10 @@ export class Client {
                         _this.session_id = d.session_id
                         _this.user = new User(d.user)
                         _this.registerUser(new User(d.user))
-                        _this.emit("ready")
+                        setTimeout(() => {
+                            _this.isReady = true
+                            _this.emit("ready")
+                        }, 1000);
                         break;
                     case "RESUMED":
                         _this.emit("resume")
@@ -489,10 +494,9 @@ export class Client {
                                     break;
                                 case ApplicationCommandTypes.USER:
                                     _this.emit("interactionCreate", new UserContextInteraction(d, _this))
-                                    break; default:
-                                    console.log(d)
                                     break;
                                 case ApplicationCommandTypes.MESSAGE:
+                                    console.log(d)
                                     _this.emit("interactionCreate", new MessageContextInteraction(d, _this))
                                     break;
                             }

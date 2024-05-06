@@ -822,6 +822,7 @@ export class MessageContextInteraction extends Interaction {
     constructor(data: BaseData, client: Client) {
         super(data, client)
         this.target_id = data.data.target_id
+        data.data.resolved.messages[this.target_id].guild_id = this.guildId
         this.message = new Message(data.data.resolved.messages[this.target_id], client)
     }
 }
