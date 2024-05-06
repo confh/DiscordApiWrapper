@@ -3,3 +3,4 @@ test.ts
 node_modules/
 roolup.config.js
 tsconfig.json
+commit.sh
