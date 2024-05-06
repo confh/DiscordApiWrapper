@@ -1,4 +1,4 @@
-import { Client, BaseData } from ".."
+import { Client, BaseData, Role } from ".."
 import { Channel } from "./Channel"
 import { Member } from "./Member"
 
@@ -27,6 +27,10 @@ export class Guild {
             const channel = data.channels[i];
             this.channelIDs.push(channel.id)
         }
+    }
+
+    get roles() {
+        return this.client.roles.filter(a => a.guild_id === this.id) as Role[]
     }
 
     get channels() {

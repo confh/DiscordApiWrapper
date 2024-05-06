@@ -1,6 +1,8 @@
+import { Client, Guild } from ".."
 import PermissionCalculator, { PermissionsBitField } from "../PermissionCalculator"
 
 export class Role {
+    private client: Client
     id: string
     name: string
     color: number
@@ -18,7 +20,8 @@ export class Role {
     flags: number
     guild_id: string
 
-    constructor(options: Role) {
+    constructor(options: Role, client: Client) {
+        this.client = client
         Object.assign(this, options)
     }
 
@@ -26,6 +29,10 @@ export class Role {
         const permissionArray: string[] = PermissionCalculator(Number(this.permissions))
         if (permissionArray.find(a => a === permission)) return true
         else return false
+    }
+
+    get guild() {
+        return this.client.guilds.find(a => a.id === this.guild_id) as Guild
     }
 
     toJson() {

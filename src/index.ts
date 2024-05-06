@@ -39,14 +39,52 @@ export function JSONToFormDataWithFile(json: JSONCache, ...args: FileContent[]) 
 
 }
 
+interface APIGuildMemberUpdate {
+    guild_id: string,
+    roles: string[],
+    user: APIUser,
+    nick?: string | null,
+    avatar: string | null,
+    joined_at: string,
+
+}
+
+interface APIUser {
+    id: string,
+    username: string,
+    discriminator: string,
+    global_name: string | null,
+    avatar: string | null,
+    bot?: boolean,
+    system?: boolean,
+
+}
+
+interface APIRole {
+    id: string,
+    name: string,
+    color: number,
+    hoist: boolean,
+    icon?: string | null,
+    unicode_emoji?: string | null,
+    position: number,
+    permissions: string[],
+    managed: boolean,
+    mentionable: boolean,
+    flags: number
+}
+
 export interface ClientEvents {
     ready: [],
     messageCreate: [message: Message],
     messageUpdate: [message: Message]
     guildCreate: [guild: Guild],
+    guildDelete: [guild: Guild],
     interactionCreate: [interaction: Interaction],
     resume: [],
     roleUpdate: [oldRole: Role, newRole: Role, guild: Guild],
+    channelCreate: [channel: Channel],
+    channelDelete: [channel: Channel]
 }
 
 export interface Emoji {
@@ -432,7 +470,7 @@ export class Client {
         for (let i = 0; i < IDs.length; i++) {
             const id = IDs[i];
             const index = this.channels.findIndex(a => a.id === id)
-            if (index) {
+            if (index > -1) {
                 this.channels.splice(index, 1)
             }
         }
@@ -510,30 +548,32 @@ export class Client {
                         }
                         break;
                     case "GUILD_CREATE":
-                        for (let i = 0; i < d.roles.length; i++) {
-                            let role = d.roles[i]
-                            role.guild_id = d.id
-                            _this.roles.push(new Role(role))
-                        }
-
-                        if (_this.cacheAllUsers) {
-                            const allUsers: User[] = []
-                            for (let i = 0; i < d.members.length; i++) {
-                                const user = d.members[i].user;
-                                allUsers.push(new User(user))
+                        {
+                            for (let i = 0; i < d.roles.length; i++) {
+                                let role = d.roles[i]
+                                role.guild_id = d.id
+                                _this.roles.push(new Role(role, _this))
                             }
 
-                            _this.registerUser(allUsers)
-                        }
+                            if (_this.cacheAllUsers) {
+                                const allUsers: User[] = []
+                                for (let i = 0; i < d.members.length; i++) {
+                                    const user = d.members[i].user;
+                                    allUsers.push(new User(user))
+                                }
 
-                        for (let i = 0; i < d.channels.length; i++) {
-                            const channel = d.channels[i];
-                            d.channels[i].guild_id = d.id
-                            _this.channels.push(new Channel(channel, _this))
-                        }
+                                _this.registerUser(allUsers)
+                            }
 
-                        _this.guilds.push(new Guild(d, _this))
-                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                            for (let i = 0; i < d.channels.length; i++) {
+                                const channel = d.channels[i];
+                                d.channels[i].guild_id = d.id
+                                _this.channels.push(new Channel(channel, _this))
+                            }
+
+                            _this.guilds.push(new Guild(d, _this))
+                            _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                        }
                         break
                     case "INTERACTION_CREATE":
                         if (d.type === InteractionTypes.APPLICATION_COMMAND) {
@@ -559,33 +599,100 @@ export class Client {
                         }
                         break
                     case "GUILD_ROLE_UPDATE":
-                        const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role)
-                        for (let i = 0; i < _this.roles.length; i++) {
-                            if (_this.roles[i].guild_id === d.guild_id) {
-                                _this.roles[i] = new Role(d.role)
-                                break
+                        {
+                            const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role, _this)
+                            for (let i = 0; i < _this.roles.length; i++) {
+                                if (_this.roles[i].guild_id === d.guild_id) {
+                                    _this.roles[i] = new Role(d.role, _this)
+                                    break
+                                }
                             }
+                            _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
                         }
-                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
                         break
                     case "CHANNEL_CREATE":
-                        if (d.type === ChannelTypes.TEXT) {
-                            _this.channels.push(new Channel(d, _this))
+                        {
+                            if (d.type === ChannelTypes.TEXT) {
+                                const index = _this.channels.push(new Channel(d, _this)) - 1
+                                _this.emit("channelCreate", _this.channels[index])
+                            }
                         }
                         break;
                     case "CHANNEL_DELETE":
-                        const index = _this.channels.findIndex(channel => channel.id === d.id)
-                        if (index) _this.channels.splice(index, 1);
-                        break;
-                    case "GUILD_DELETE":
-                        let channelIDs: string[] = []
-                        for (let i = 0; i < _this.channels.length; i++) {
-                            const channel = _this.channels[i]
-                            if (channel.guild_id && channel.guild_id === d.id) {
-                                channelIDs.push(channel.id)
+                        {
+                            const index = _this.channels.findIndex(channel => channel.id === d.id)
+                            const channel = _this.channels[index]
+
+                            if (index > -1) {
+                                _this.channels.splice(index, 1)
+                                _this.emit("channelDelete", channel)
                             }
                         }
-                        _this._deleteChannels(channelIDs)
+                        break;
+                    case "GUILD_DELETE":
+                        {
+                            let channelIDs: string[] = []
+                            for (let i = 0; i < _this.channels.length; i++) {
+                                const channel = _this.channels[i]
+                                if (channel.guild_id && channel.guild_id === d.id) {
+                                    channelIDs.push(channel.id)
+                                }
+                            }
+                            _this._deleteChannels(channelIDs)
+                            const guildIndex = _this.guilds.findIndex(guild => guild.id === d.id)
+                            const guild = _this.guilds[guildIndex]
+
+                            if (guildIndex > -1) {
+                                _this.guilds.splice(guildIndex, 1)
+                                _this.emit("guildDelete", guild)
+                            }
+                        }
+                        break;
+                    case "GUILD_MEMBER_UPDATE":
+                        {
+                            const data = d as APIGuildMemberUpdate
+                            const guildMemberIndex = _this.guilds.find(a => a.id === data.guild_id).members.findIndex(a => a.user.id === data.user.id)
+                            if (guildMemberIndex > -1) {
+                                const member = _this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex]
+                                member.rolesIDs = data.roles
+                                member.nick = data.nick
+                            }
+                            console.log(_this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex].roles)
+                        }
+                        break;
+                    case "GUILD_ROLE_CREATE":
+                        {
+                            const data = d as {
+                                guild_id: string,
+                                role: APIRole | any
+                            }
+                            data.role.guild_id = data.guild_id
+                            _this.roles.push(new Role(data.role, _this))
+                        }
+                        break;
+                    case "GUILD_ROLE_DELETE":
+                        {
+                            const data = d as {
+                                guild_id: string,
+                                role_id: string
+                            }
+                            const index = _this.roles.findIndex(a => a.guild_id === data.guild_id && a.id === data.role_id)
+                            if (index > -1) {
+                                _this.roles.splice(index, 1)
+                            }
+                        }
+                        break;
+                    case "USER_UPDATE":
+                        {
+                            const data = d as APIUser
+                            const index = _this.users.findIndex(a => a.id === data.id)
+                            if (index > -1) {
+                                const user = _this.users[index]
+                                user.username = data.username
+                                user.avatar = data.avatar
+                                user.displayName = data.global_name
+                            }
+                        }
                         break;
                 }
             })

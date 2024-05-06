@@ -4,11 +4,10 @@ import { Role } from ".."
 import { User } from "./User"
 
 export class Member {
-    private rolesIDs: string[] = []
     private client: Client
+    rolesIDs: string[] = []
     id: string
     nick: string | null
-    displayName: string | null
     joined_at: number
 
     constructor(data: BaseData, client: Client) {
@@ -16,7 +15,10 @@ export class Member {
         this.joined_at = new Date(data.joined_at).getTime()
         this.id = data.user.id
         this.nick = data.nick
-        this.displayName = this.nick || this.user.displayName
+    }
+
+    get displayName() {
+        return this.nick || this.user.displayName
     }
 
     get roles() {
