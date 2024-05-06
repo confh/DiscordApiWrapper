@@ -1,6 +1,9 @@
 src/
 test.ts
 node_modules/
-roolup.config.js
+rollup.config.js
 tsconfig.json
 commit.sh
+generateConfig.ts
+yarn.lock
+README.md
