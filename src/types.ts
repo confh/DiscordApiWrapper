@@ -575,6 +575,16 @@ export class Interaction {
         return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.userID) as Member
     }
 
+    async getOriginalMessage() {
+        const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            headers: this.client.getHeaders()
+        })
+
+        if (data.status === 400) throw new Error(data.data.message)
+
+        return new Message(data.data, this.client)
+    }
+
     async reply(content: string | ContentOptions) {
         this.acknowledged = true
         const embeds: any = []
