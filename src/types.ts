@@ -1,7 +1,6 @@
 import axios from "axios"
 import { BaseData, Client, ApplicationCommandTypes, ApplicationCommandOptionTypes, ComponentTypes, ContentOptions, ChannelTypes, ButtonStyles, Emoji, JSONCache, OverwriteObjectTypes, PollRequestObject, FileContent } from "."
 import PermissionCalculator, { PermissionsBitField } from "./PermissionCalculator"
-import { PollingWatchKind } from "typescript"
 
 function JSONToBlob(json: JSONCache) {
     return new Blob([JSON.stringify(json)], {
@@ -374,8 +373,10 @@ export class Message {
         this.content = data.content
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
-        for (let i = 0; i < data.mentions.length; i++) {
-            this.mentionsIDs.push(data.mentions[i].id)
+        if (data.mentions) {
+            for (let i = 0; i < data.mentions.length; i++) {
+                this.mentionsIDs.push(data.mentions[i].id)
+            }
         }
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
@@ -628,13 +629,16 @@ export class Interaction {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
-        if (data.status === 400) throw new Error((data.data).message, {
+        if (data.status === 400) throw new Error(data.data.message, {
             cause: "Replying to interaction"
         })
 
         const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
-            headers: this.client.getHeaders()
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
         })
+
+        if (originalMsg.status === 400) throw new Error(originalMsg.data.message)
 
         return new Message(originalMsg.data, this.client)
     }

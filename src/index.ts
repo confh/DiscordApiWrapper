@@ -12,7 +12,7 @@ export interface ClientEvents {
     guildCreate: [guild: Guild],
     interactionCreate: [interaction: Interaction],
     resume: [],
-    roleUpdate: [oldRole: Role, newRole: Role, guild: Guild]
+    roleUpdate: [oldRole: Role, newRole: Role, guild: Guild],
 }
 
 export interface Emoji {
@@ -162,21 +162,21 @@ function calculateIntents(intents: Intents[]) {
 }
 
 export class Client {
-    private isReady = false
-    private payload;
-    private ws: WebSocket;
-    private readyTimestamp: number
-    private listeners: {
+    protected isReady = false
+    protected payload;
+    protected ws: WebSocket;
+    protected readyTimestamp: number
+    protected listeners: {
         event: keyof ClientEvents,
         once: boolean,
         callback: (...args: any) => any
     }[] = []
-    private session_id: string
-    private seq: number | null = null
-    private initialUrl = 'wss://gateway.discord.gg'
-    private url = this.initialUrl
-    private cacheAllUsers = false
-    private intents = 0
+    protected session_id: string
+    protected seq: number | null = null
+    protected initialUrl = 'wss://gateway.discord.gg'
+    protected url = this.initialUrl
+    protected cacheAllUsers = false
+    protected intents = 0
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
@@ -186,9 +186,12 @@ export class Client {
         info: (...args: any[]) => any,
         error: (...args: any[]) => any
     } = console
-    public user: User
     public token: string
     public readonly baseURL = "https://discord.com/api/v10/"
+
+    get user() {
+        return this.users[0] as User
+    }
 
     private heartbeat(ms: number) {
         return setInterval(() => {
@@ -453,7 +456,6 @@ export class Client {
                         _this.readyTimestamp = Date.now()
                         _this.url = d.resume_gateway_url
                         _this.session_id = d.session_id
-                        _this.user = new User(d.user)
                         _this.registerUser(new User(d.user))
                         setTimeout(() => {
                             _this.isReady = true
@@ -464,7 +466,9 @@ export class Client {
                         _this.emit("resume")
                         break;
                     case "MESSAGE_CREATE":
-                        _this.emit("messageCreate", new Message(d, _this))
+                        if (d.author) {
+                            _this.emit("messageCreate", new Message(d, _this))
+                        }
                         break;
                     case "MESSAGE_UPDATE":
                         if (d.author) {
