@@ -1059,6 +1059,7 @@ export class Collector {
 }
 
 export class Channel {
+    guild_id?: string
     id: string
     type: ChannelTypes
     position?: number
@@ -1082,6 +1083,11 @@ export class Channel {
         this.client = client
         this.parent = data.parent_id
         this.topic = data.topic
+        this.guild_id = data.guild_id
+    }
+
+    get guild() {
+        return this.client.guilds.find(a => a.id === this.guild_id)
     }
 
     async sendTyping() {

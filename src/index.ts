@@ -249,7 +249,7 @@ export class Client {
     }
 
     private emit<K extends keyof ClientEvents>(event: K, ...args: ClientEvents[K]) {
-        if(!this.isReady) return
+        if (!this.isReady) return
         for (let i = 0; i < this.listeners.length; i++) {
             const listener = this.listeners[i];
             if (listener.event === event) {
@@ -390,10 +390,20 @@ export class Client {
         return this.channels.find(a => a.id === channelId)
     }
 
+    private _deleteChannels(id: string | string[]) {
+        const IDs = typeof id === "string" ? [id] : id
+        for (let i = 0; i < IDs.length; i++) {
+            const id = IDs[i];
+            const index = this.channels.findIndex(a => a.id === id)
+            if (index) {
+                this.channels.splice(index, 1)
+            }
+        }
+    }
+
     connect() {
         try {
             if (this.ws && this.ws.readyState !== 3) this.ws.close();
-
 
             const _this = this
             this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
@@ -480,6 +490,7 @@ export class Client {
 
                         for (let i = 0; i < d.channels.length; i++) {
                             const channel = d.channels[i];
+                            d.channels[i].guild_id = d.id
                             _this.channels.push(new Channel(channel, _this))
                         }
 
@@ -519,6 +530,25 @@ export class Client {
                         }
                         _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
                         break
+                    case "CHANNEL_CREATE":
+                        if (d.type === ChannelTypes.TEXT) {
+                            _this.channels.push(new Channel(d, _this))
+                        }
+                        break;
+                    case "CHANNEL_DELETE":
+                        const index = _this.channels.findIndex(channel => channel.id === d.id)
+                        if (index) _this.channels.splice(index, 1);
+                        break;
+                    case "GUILD_DELETE":
+                        let channelIDs: string[] = []
+                        for (let i = 0; i < _this.channels.length; i++) {
+                            const channel = _this.channels[i]
+                            if (channel.guild_id && channel.guild_id === d.id) {
+                                channelIDs.push(channel.id)
+                            }
+                        }
+                        _this._deleteChannels(channelIDs)
+                        break;
                 }
             })
         } catch (e) {
