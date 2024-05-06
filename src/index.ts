@@ -1,9 +1,43 @@
 import axios from 'axios';
 import WebSocket from 'ws';
-import { Message, Guild, Interaction, Role, User, EmbedBuilder, ActionRowBuilder, Channel, Collector, SlashCommandBuilder, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './types';
+import { User } from './structure/User';
+import { SlashCommandBuilder } from './structure/SlashCommandBuilder';
+import { EmbedBuilder, ActionRowBuilder } from './structure/Builders';
+import { Channel } from './structure/Channel';
+import { Collector } from './structure/Collector';
+import { Guild } from './structure/Guild';
+import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './structure/Interactions';
+import { Message } from './structure/Message';
+import { Role } from './structure/Role';
 let interval: number | Timer = 0;
 
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
+
+export function JSONToBlob(json: JSONCache) {
+    return new Blob([JSON.stringify(json)], {
+        type: 'application/json'
+    })
+}
+
+export function JSONToFormDataWithFile(json: JSONCache, ...args: FileContent[]) {
+    if (!args.length) return json
+    const formData = new FormData()
+    json.attachments = []
+
+    formData.set("payload_json", JSONToBlob(json), "")
+
+    for (let i = 0; i < args.length; i++) {
+        const file = args[i];
+        (json.attachments as any[]).push({
+            id: i,
+            filename: file.name
+        })
+        formData.set(`files[${i}]`, new Blob([file.buffer]), file.name)
+    }
+
+    return formData
+
+}
 
 export interface ClientEvents {
     ready: [],
@@ -561,5 +595,15 @@ export class Client {
     }
 
 }
+
 export * from "./PermissionCalculator"
-export * from "./types"
+export * from "./structure/Member"
+export * from "./structure/User"
+export * from "./structure/SlashCommandBuilder"
+export * from "./structure/Builders"
+export * from "./structure/Channel"
+export * from "./structure/Collector"
+export * from "./structure/Guild"
+export * from "./structure/Interactions"
+export * from "./structure/Message"
+export * from "./structure/Role"
