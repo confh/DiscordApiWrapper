@@ -387,7 +387,7 @@ export class Message {
     }
 
     get jumpLink() {
-        return `https://discord.com/${this.guildId}/${this.channelId}/${this.id}`
+        return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`
     }
 
     get mentions() {
