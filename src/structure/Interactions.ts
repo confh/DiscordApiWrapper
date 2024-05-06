@@ -254,7 +254,7 @@ export class Interaction {
 }
 
 export class SlashCommandInteraction extends Interaction {
-    options: {
+    options?: {
         value: string,
         type: ApplicationCommandOptionTypes,
         name: string
@@ -268,7 +268,21 @@ export class SlashCommandInteraction extends Interaction {
     }
 
     getString(name: string) {
-        return this.options.find(a => a.type === ApplicationCommandOptionTypes.STRING && a.name === name)
+        if (this.options) {
+            return this.options.find(a => a.type === ApplicationCommandOptionTypes.STRING && a.name === name)
+        } else return null
+    }
+
+    getBoolean(name: string) {
+        if (this.options) {
+            return this.options.find(a => a.type === ApplicationCommandOptionTypes.BOOLEAN && a.name === name)
+        } else return null
+    }
+
+    getNumber(name: string) {
+        if (this.options) {
+            return this.options.find(a => a.type === ApplicationCommandOptionTypes.INTEGER && a.name === name)
+        } else return null
     }
 
     getAttachment(name: string) {

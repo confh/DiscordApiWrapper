@@ -606,7 +606,8 @@ export class Client {
 
             // Listen for websocket errors
             this.ws.on("error", (e) => {
-                console.log(e.message)
+                _this.logger.error(e.message)
+                _this.connect()
             })
 
             // Listen for websocket messages

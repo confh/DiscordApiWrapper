@@ -65,7 +65,10 @@ export class Message {
     }
 
     get channel() {
-        return this.client.channels.find(a => a.id === this.channelId) as Channel
+        return this.client.channels.find(a => a.id === this.channelId) || {
+            id: "0",
+            type: 55
+        }
     }
 
     get author(): User | null {
@@ -137,7 +140,7 @@ export class Message {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-        const data = await axios.post(`${this.client.baseURL}/channels/${this.channelId}/messages`, payload, {
+        const data = await axios.post(`${this.client.baseURL}channels/${this.channelId}/messages`, payload, {
             headers: this.client.getHeaders(files && files.length ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
