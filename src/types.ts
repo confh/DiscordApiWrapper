@@ -370,7 +370,7 @@ export class Message {
         this.client = client
         this.channelId = data.channel_id
         this.guildId = data.guild_id
-        this.authorID = data.author.id
+        if (data.author) this.authorID = data.author.id
         this.content = data.content
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
