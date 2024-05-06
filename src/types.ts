@@ -375,7 +375,7 @@ export class Message {
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
         for (let i = 0; i < data.mentions.length; i++) {
-            this.mentionsIDs.push(data.mentions[i])
+            this.mentionsIDs.push(data.mentions[i].id)
         }
         this.mention_everyone = data.mention_everyone
         this.pinned = data.pinned
