@@ -66,11 +66,11 @@ export class Message {
     }
 
     get author() {
-        return this.client.users.find(a => a.id === this.authorID) as User
+        return this.client.users.find(a => a.id === this.authorID) || null
     }
 
     get member() {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) as Member
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) || null
     }
 
     get guild() {
