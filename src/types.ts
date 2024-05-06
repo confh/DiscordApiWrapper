@@ -651,8 +651,9 @@ export class Interaction {
 
     async edit(content: string | ContentOptions) {
         const embeds: any[] = []
-        const includesFiles = typeof content !== "string" && content.file
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
         const components: any[] = []
+
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
                 for (let i = 0; i < content.embeds.length; i++) {
@@ -680,12 +681,12 @@ export class Interaction {
         if (typeof content !== "string" && content.embeds) payload.embeds = embeds
         if (typeof content !== "string" && content.components) payload.components = components
 
-        if (includesFiles) {
-            payload = JSONToFormDataWithFile(payload, content.file[0].buffer, content.file[0].name)
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json")
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
         })
 
         if (data.status === 400) throw new Error("Bad Request in editing interaction message", {
@@ -697,7 +698,7 @@ export class Interaction {
 
     async followUp(content: string | ContentOptions) {
         const embeds: any[] = []
-        const includesFiles = typeof content !== "string" && content.file
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
         const components: any[] = []
 
         if (typeof content !== "string") {
@@ -726,12 +727,12 @@ export class Interaction {
             flags: typeof content !== "string" && content.ephemeral ? 64 : 0
         }
 
-        if (includesFiles) {
-            payload = JSONToFormDataWithFile(payload, content.file[0].buffer, content.file[0].name)
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
         }
 
         const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, payload, {
-            headers: this.client.getHeaders(includesFiles ? "multipart/form-data" : "application/json"),
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
 
