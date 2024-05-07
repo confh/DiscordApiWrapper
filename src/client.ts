@@ -355,7 +355,7 @@ export class Client {
             headers: this.getHeaders(),
             validateStatus: () => true
         })
-        
+
         if (data.status === 400) return
 
         this.channels.push(new Channel(data.data, this))
@@ -632,6 +632,10 @@ export class Client {
                         interval = _this.heartbeat(heartbeat_interval)
 
                         if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
+                        break;
+                    case 7:
+                        _this.connect()
+                        return
                         break;
                     case 0:
                         _this.seq = s
