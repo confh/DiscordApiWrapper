@@ -4,6 +4,7 @@ import { User, Role, APIMember } from ".."
 import { Base } from "../internal/Base"
 
 export class Member extends Base {
+    readonly #guildId: string
     #rolesIDs: string[] = []
     readonly id: string
     nick: string | null
@@ -14,6 +15,12 @@ export class Member extends Base {
         this.joined_at = new Date(data.joined_at).getTime()
         this.id = data.user.id
         this.nick = data.nick
+        this.#guildId = data.guild_id
+        this.#rolesIDs = data.roles
+    }
+
+    get guild() {
+        return this.client.guilds.get(this.#guildId)
     }
 
     get displayName() {
@@ -24,12 +31,11 @@ export class Member extends Base {
         const roles: Role[] = []
         for (let i = 0; i < this.#rolesIDs.length; i++) {
             const role = this.#rolesIDs[i];
-            const roleObject = this.client.roles.find(a => a.id === role)
+            const roleObject = this.client.roles.get(role)
             if (roleObject) {
                 roles.push(roleObject)
             }
         }
-
         return roles
     }
 
@@ -38,13 +44,19 @@ export class Member extends Base {
     }
 
     get permissions() {
-        const perms: (keyof typeof PermissionsBitField)[] = []
-        for (let i = 0; i < this.roles.length; i++) {
-            const permissions = PermissionCalculator(Number(this.roles[i].permissions))
-            for (let i = 0; i < permissions.length; i++) {
-                const permission = permissions[i];
-                if (!perms.find(a => a === permission)) {
-                    perms.push(permission)
+        const perms: string[] = []
+        if (this.id === this.guild.ownerId) {
+            for (const key in PermissionsBitField) {
+                perms.push(key)
+            }
+        } else {
+            for (let i = 0; i < this.roles.length; i++) {
+                const permissions = PermissionCalculator(Number(this.roles[i].permissions))
+                for (let i = 0; i < permissions.length; i++) {
+                    const permission = permissions[i];
+                    if (!perms.find(a => a === permission)) {
+                        perms.push(permission)
+                    }
                 }
             }
         }

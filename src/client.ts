@@ -10,6 +10,7 @@ import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageCo
 import { Message } from './structure/Message';
 import { Role } from './structure/Role';
 import { Manager } from './internal/Manager';
+import { Member } from './structure/Member';
 let interval: number | Timer = 0;
 
 // Type of presence status
@@ -133,14 +134,18 @@ export interface APIRole {
 export interface ClientEvents {
     ready: [],
     messageCreate: [message: Message],
-    messageUpdate: [message: Message]
+    messageUpdate: [message: Message],
     guildCreate: [guild: Guild],
     guildDelete: [guild: Guild],
+    memberUpdate: [oldMember: Member, newMember: Member],
     interactionCreate: [interaction: Interaction],
     resume: [],
+    roleCreate: [role: Role],
     roleUpdate: [oldRole: Role, newRole: Role, guild: Guild],
+    roleDelete: [role: Role],
     channelCreate: [channel: Channel],
-    channelDelete: [channel: Channel]
+    channelDelete: [channel: Channel],
+    userUpdate: [oldUser: User, newUser: User]
 }
 
 export interface Emoji {
@@ -298,33 +303,33 @@ function calculateIntents(intents: Intents[]) {
 // Client class
 export class Client {
     // Important variables
-    protected isReady = false
-    protected payload;
-    protected lastHeartbeat: number
-    protected ws: WebSocket;
-    protected readyTimestamp: number
-    protected listeners: {
+    #isReady = false
+    #payload;
+    #lastHeartbeat: number
+    #ws: WebSocket;
+    readyTimestamp: number
+    #listeners: {
         event: keyof ClientEvents,
         once: boolean,
         callback: (...args: any) => any
     }[] = []
-    protected session_id: string
-    protected seq: number | null = null
-    protected initialUrl = 'wss://gateway.discord.gg'
-    protected url = this.initialUrl
-    protected cacheAllUsers = false
-    protected intents = 0
+    #session_id: string
+    #seq: number | null = null
+    readonly #initialUrl = 'wss://gateway.discord.gg'
+    #url = this.#initialUrl
+    readonly #cacheAllUsers: boolean
+    #intents = 0
+    readonly #token: string
     public shards: number
-    public users = new Manager<User>()
-    public guilds = new Manager<Guild>()
-    public channels = new Manager<Channel>()
-    public roles: Role[] = []
+    public readonly users = new Manager<User>()
+    public readonly guilds = new Manager<Guild>()
+    public readonly channels = new Manager<Channel>()
+    public readonly roles = new Manager<Role>()
     public collectors: Collector[] = []
     public logger: {
         info: (...args: any[]) => any,
         error: (...args: any[]) => any
     } = console
-    public token: string
     public ping = -1
     public readonly baseURL = "https://discord.com/api/v10/"
 
@@ -339,8 +344,8 @@ export class Client {
      */
     private _heartbeat(ms: number) {
         return setInterval(() => {
-            this.lastHeartbeat = Date.now()
-            this.ws.send(JSON.stringify({ op: 1, d: this.seq }))
+            this.#lastHeartbeat = Date.now()
+            this.#ws.send(JSON.stringify({ op: 1, d: this.#seq }))
         }, ms)
     }
 
@@ -361,10 +366,10 @@ export class Client {
         shards?: "auto" | number
     }) {
         const shards = options.shards || "auto"
-        this.token = token
-        this.cacheAllUsers = options?.cacheAllUsers || false
+        this.#token = token
+        this.#cacheAllUsers = options?.cacheAllUsers || false
         if (options?.intents && options.intents.length) {
-            this.intents = calculateIntents(options.intents)
+            this.#intents = calculateIntents(options.intents)
         }
         if (shards === "auto") {
             this._registerShards()
@@ -379,11 +384,11 @@ export class Client {
     }
 
     private _definePayload() {
-        this.payload = {
+        this.#payload = {
             op: 2,
             d: {
-                token: this.token,
-                intents: this.intents,
+                token: this.#token,
+                intents: this.#intents,
                 properties: {
                     $os: 'linux',
                     $browser: 'chrome',
@@ -427,12 +432,12 @@ export class Client {
 
 
     private emit<K extends keyof ClientEvents>(event: K, ...args: ClientEvents[K]) {
-        if (!this.isReady) return
-        for (let i = 0; i < this.listeners.length; i++) {
-            const listener = this.listeners[i];
+        if (!this.#isReady) return
+        for (let i = 0; i < this.#listeners.length; i++) {
+            const listener = this.#listeners[i];
             if (listener.event === event) {
                 listener.callback(...args)
-                if (listener.once) this.listeners.splice(i, 1)
+                if (listener.once) this.#listeners.splice(i, 1)
             }
         }
     }
@@ -443,7 +448,7 @@ export class Client {
      * @param callback Event callback
      */
     on<K extends keyof ClientEvents>(event: K, callback: (...args: ClientEvents[K]) => any) {
-        this.listeners.push({
+        this.#listeners.push({
             event,
             once: false,
             callback
@@ -456,7 +461,7 @@ export class Client {
      * @param callback Event callback
      */
     once<K extends keyof ClientEvents>(event: K, callback: (...args: ClientEvents[K]) => any) {
-        this.listeners.push({
+        this.#listeners.push({
             event,
             once: true,
             callback
@@ -465,7 +470,7 @@ export class Client {
 
     getHeaders(contentType?: string) {
         return {
-            "Authorization": `Bot ${this.token}`,
+            "Authorization": `Bot ${this.#token}`,
             "Content-Type": contentType || "application/json"
         }
     }
@@ -474,9 +479,8 @@ export class Client {
      * Close websocket and remove all its listeners
      */
     disconnect() {
-        this.ws.removeAllListeners()
-        this.ws.close(1000)
-        this.token = null
+        this.#ws.removeAllListeners()
+        this.#ws.close(1000)
     }
 
     /**
@@ -586,7 +590,7 @@ export class Client {
                 "afk": false,
             }
         }
-        this.ws.send(JSON.stringify(presencePayload))
+        this.#ws.send(JSON.stringify(presencePayload))
     }
 
     /**
@@ -628,32 +632,32 @@ export class Client {
      */
     async connect() {
         // If websocket is opened close it
-        if (this.ws && this.ws.readyState !== 3) this.ws.close(4000);
+        if (this.#ws && this.#ws.readyState !== 3) this.#ws.close(4000);
 
         const _this = this
 
         // Open the websocket
-        this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
+        this.#ws = new WebSocket(this.#url + "/?v=10&encoding=json")
 
-        this.ws.on('open', function open(data: any) {
+        this.#ws.on('open', function open(data: any) {
             // If this isn't the first time the client connects send resumePayload
-            if (_this.initialUrl !== _this.url) {
+            if (_this.#initialUrl !== _this.#url) {
                 const resumePayload = {
                     op: 6,
                     d: {
-                        token: _this.token,
-                        session_id: _this.session_id,
-                        seq: _this.seq,
+                        token: _this.#token,
+                        session_id: _this.#session_id,
+                        seq: _this.#seq,
                         shard: [0, _this.shards]
                     }
                 }
 
-                _this.ws.send(JSON.stringify(resumePayload))
+                _this.#ws.send(JSON.stringify(resumePayload))
             }
         })
 
         // Listen for when websocket closes and reconnect
-        this.ws.on("close", function close(code) {
+        this.#ws.on("close", function close(code) {
             switch (code) {
                 case 4004:
                     throw new Error("Invalid token")
@@ -665,7 +669,7 @@ export class Client {
                     this.removeAllListeners()
                     this.close(4000, "Reconnecting")
                     setTimeout(() => {
-                        _this.ws = null
+                        _this.#ws = null
                         _this.connect()
                     }, 1000);
                     break;
@@ -673,18 +677,18 @@ export class Client {
         })
 
         // Listen for websocket errors
-        this.ws.on("error", (e) => {
+        this.#ws.on("error", (e) => {
             _this.logger.error(e.message)
-            _this.ws.removeAllListeners()
-            _this.ws = null
+            _this.#ws.removeAllListeners()
+            _this.#ws = null
             setTimeout(() => {
-                _this.ws = null
+                _this.#ws = null
                 _this.connect()
             }, 1000);
         })
 
         // Listen for websocket messages
-        this.ws.on('message', async function incoming(data: any) {
+        this.#ws.on('message', async function incoming(data: any) {
             let payload = JSON.parse(data)
             const { t, op, d, s } = payload;
 
@@ -693,39 +697,39 @@ export class Client {
                     const { heartbeat_interval } = d;
                     interval = _this._heartbeat(heartbeat_interval)
 
-                    if (_this.url === _this.initialUrl) this.send(JSON.stringify(_this.payload))
+                    if (_this.#url === _this.#initialUrl) this.send(JSON.stringify(_this.#payload))
                     break;
                 case 7:
                     this.removeAllListeners()
                     this.close(4000, "Reconnecting")
-                    _this.ws = null
+                    _this.#ws = null
                     _this.connect()
                     return;
                     break;
                 case 9:
-                    _this.url = _this.initialUrl
-                    _this.session_id = null
-                    _this.seq = null
+                    _this.#url = _this.#initialUrl
+                    _this.#session_id = null
+                    _this.#seq = null
                     this.removeAllListeners()
                     this.close(4000, "Reconnecting")
                     _this.connect()
                     return;
                     break;
                 case 11:
-                    _this.ping = Date.now() - _this.lastHeartbeat
+                    _this.ping = Date.now() - _this.#lastHeartbeat
                     break;
                 case 0:
-                    _this.seq = s
+                    _this.#seq = s
                     break;
             }
             switch (t) {
                 case "READY":
                     _this.readyTimestamp = Date.now()
-                    _this.url = d.resume_gateway_url
-                    _this.session_id = d.session_id
+                    _this.#url = d.resume_gateway_url
+                    _this.#session_id = d.session_id
                     _this.users.cache(new User(d.user, _this))
                     setTimeout(() => {
-                        _this.isReady = true
+                        _this.#isReady = true
                         _this.emit("ready")
                     }, 1000);
                     break;
@@ -749,11 +753,11 @@ export class Client {
                         for (let i = 0; i < d.roles.length; i++) {
                             let role = d.roles[i]
                             role.guild_id = d.id
-                            _this.roles.push(new Role(role, _this))
+                            _this.roles.cache(new Role(role, _this))
                         }
 
                         // Cache all users
-                        if (_this.cacheAllUsers) {
+                        if (_this.#cacheAllUsers) {
                             const allUsers: User[] = []
                             for (let i = 0; i < d.members.length; i++) {
                                 const user = d.members[i].user;
@@ -803,14 +807,9 @@ export class Client {
                 case "GUILD_ROLE_UPDATE":
                     {
                         // Update the cached role
-                        const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role, _this)
-                        for (let i = 0; i < _this.roles.length; i++) {
-                            if (_this.roles[i].guild_id === d.guild_id) {
-                                _this.roles[i]._patch(d.role)
-                                break
-                            }
-                        }
-                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.get(d.guild_id) as Guild)
+                        let oldRole = _this.roles.get(d.role.id)._clone()
+                        _this.roles.update(d.role.id, d.role)
+                        _this.emit("roleUpdate", oldRole, _this.roles.get(d.role.id) as Role, _this.guilds.get(d.guild_id) as Guild)
                     }
                     break
                 case "CHANNEL_CREATE":
@@ -853,7 +852,9 @@ export class Client {
                     {
                         // Update cached member
                         const data = d as APIGuildMemberUpdate
+                        const oldMember = _this.guilds.get(data.guild_id).members.get(data.user.id)._clone()
                         _this.guilds.get(data.guild_id).members.update(data.user.id, data)
+                        _this.emit("memberUpdate", oldMember, _this.guilds.get(data.guild_id).members.get(data.user.id))
                     }
                     break;
                 case "GUILD_ROLE_CREATE":
@@ -864,7 +865,8 @@ export class Client {
                             role: APIRole | any
                         }
                         data.role.guild_id = data.guild_id
-                        _this.roles.push(new Role(data.role, _this))
+                        _this.roles.cache(new Role(data.role, _this))
+                        _this.emit("roleCreate", _this.roles.get(data.role.id))
                     }
                     break;
                 case "GUILD_ROLE_DELETE":
@@ -874,17 +876,18 @@ export class Client {
                             guild_id: string,
                             role_id: string
                         }
-                        const index = _this.roles.findIndex(a => a.guild_id === data.guild_id && a.id === data.role_id)
-                        if (index > -1) {
-                            _this.roles.splice(index, 1)
-                        }
+                        const oldRole = _this.roles.get(data.role_id)._clone()
+                        _this.roles.delete(data.role_id)
+                        _this.emit("roleDelete", oldRole)
                     }
                     break;
                 case "USER_UPDATE":
                     {
                         // Update cached user
                         const data = d as APIUser
+                        const oldUser = _this.users.get(data.id)._clone()
                         _this.users.update(data.id, data)
+                        _this.emit("userUpdate", oldUser, _this.users.get(data.id))
                     }
                     break;
             }

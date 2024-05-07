@@ -20,7 +20,8 @@ export class Guild extends Base {
         this.memberCount = data.member_count
         this.joined_at = new Date(data.joined_at).getTime()
         for (let i = 0; i < data.members.length; i++) {
-            const member = data.members[i];
+            let member = data.members[i];
+            member.guild_id = this.id
             this.members.cache(new Member(member, client))
         }
         for (let i = 0; i < data.channels.length; i++) {
@@ -30,7 +31,7 @@ export class Guild extends Base {
     }
 
     get roles() {
-        return this.client.roles.filter(a => a.guild_id === this.id) as Role[]
+        return this.client.roles.array.filter(a => a.guild_id === this.id) as Role[]
     }
 
     get channels() {
