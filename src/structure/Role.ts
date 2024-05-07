@@ -1,10 +1,10 @@
 import { Client } from "../client"
+import { Base } from "../internal/Base"
 import PermissionCalculator, { PermissionsBitField } from "../PermissionCalculator"
 import { Guild } from "./Guild"
 
-export class Role {
-    private client: Client
-    id: string
+export class Role extends Base {
+    readonly id: string
     name: string
     color: number
     hoist: boolean
@@ -19,10 +19,10 @@ export class Role {
         integration_id?: string
     }
     flags: number
-    guild_id: string
+    readonly guild_id: string
 
     constructor(options: Role, client: Client) {
-        this.client = client
+        super(client)
         Object.assign(this, options)
     }
 
@@ -36,7 +36,11 @@ export class Role {
         return this.client.guilds.find(a => a.id === this.guild_id) as Guild
     }
 
-    toJson() {
+    _patch(data: Role): void {
+        Object.assign(this, data)
+    }
+
+    override toJson() {
         return {
             id: this.id,
             name: this.name,

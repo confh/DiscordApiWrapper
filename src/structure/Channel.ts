@@ -1,11 +1,12 @@
 import axios from "axios"
 import { ChannelTypes, OverwriteObjectTypes, Client, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, PollRequestObject } from "../client"
 import { Message } from "./Message"
+import { Base } from "../internal/Base"
 
-export class Channel {
-    guild_id?: string
-    id: string
-    type: ChannelTypes
+export class Channel extends Base {
+    readonly #guild_id: string
+    readonly id: string
+    readonly type: ChannelTypes
     position?: number
     name?: string
     permissions?: {
@@ -16,22 +17,21 @@ export class Channel {
     }[]
     topic?: string | null
     parent?: string | null
-    client: Client
 
     constructor(data: BaseData, client: Client) {
+        super(client)
         this.id = data.id
         this.type = data.type
         this.position = data.position
         this.name = data.name
         this.permissions = data.permission_overwrites
-        this.client = client
         this.parent = data.parent_id
         this.topic = data.topic
-        this.guild_id = data.guild_id
+        this.#guild_id = data.guild_id
     }
 
     get guild() {
-        return this.client.guilds.find(a => a.id === this.guild_id)
+        return this.client.guilds.find(a => a.id === this.#guild_id)
     }
 
     async sendTyping() {
@@ -85,19 +85,6 @@ export class Channel {
         })
 
         if (data.status === 400) throw new Error(data.data.message)
-
-        return new Message(data.data, this.client)
-    }
-
-    async sendPoll(pollData: PollRequestObject) {
-        const data = await axios.post(`${this.client.baseURL}/channels/${this.id}/messages`, {
-            poll: pollData
-        }, {
-            headers: this.client.getHeaders(),
-            validateStatus: () => true
-        })
-
-        if (data.status === 400) throw new Error(data.data.message);
 
         return new Message(data.data, this.client)
     }

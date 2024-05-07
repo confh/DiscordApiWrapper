@@ -60,17 +60,11 @@ export function JSONToFormDataWithFile(json: JSONCache, ...files: FileContent[])
 }
 
 // TYPES OF API OBJECTS start
-interface APIGuildMemberUpdate {
+export interface APIGuildMemberUpdate extends APIMember {
     guild_id: string,
-    roles: string[],
-    user: APIUser,
-    nick?: string | null,
-    avatar: string | null,
-    joined_at: string,
-
 }
 
-interface APIUser {
+export interface APIUser {
     id: string,
     username: string,
     discriminator: string,
@@ -81,7 +75,45 @@ interface APIUser {
 
 }
 
-interface APIRole {
+export interface APIMember {
+    user: APIUser,
+    nick?: string | null,
+    avatar?: string | null,
+    roles: APIRole[],
+    joined_at: string,
+    deaf: boolean,
+    mute: boolean,
+    flags: number,
+    permissions: string
+}
+
+export interface APIMessageAttachment {
+    id: string,
+    filename: string,
+    size: number,
+    url: string,
+    proxy_url: string
+}
+
+export interface APIMessage {
+    id: string,
+    channel_id: string
+    author: APIUser,
+    content: string,
+    timestamp: string,
+    edited_timestamp: string,
+    tts: boolean,
+    mention_everyone: boolean,
+    mentions: APIUser[],
+    mention_roles: APIRole[],
+    pinned: boolean,
+    type: number,
+    referenced_message?: APIMessage,
+    guild_id: string,
+    attachments: APIMessageAttachment[],
+}
+
+export interface APIRole {
     id: string,
     name: string,
     color: number,
@@ -629,7 +661,7 @@ export class Client {
                     op: 6,
                     d: {
                         token: _this.token,
-                        sessionId: _this.session_id,
+                        session_id: _this.session_id,
                         seq: _this.seq,
                         shard: [0, _this.shards]
                     }
@@ -654,7 +686,7 @@ export class Client {
                     setTimeout(() => {
                         _this.ws = null
                         _this.connect()
-                    }, 2500);
+                    }, 1000);
                     break;
             }
         })
@@ -662,6 +694,12 @@ export class Client {
         // Listen for websocket errors
         this.ws.on("error", (e) => {
             _this.logger.error(e.message)
+            _this.ws.removeAllListeners()
+            _this.ws = null
+            setTimeout(() => {
+                _this.ws = null
+                _this.connect()
+            }, 1000);
         })
 
         // Listen for websocket messages
@@ -704,7 +742,7 @@ export class Client {
                     _this.readyTimestamp = Date.now()
                     _this.url = d.resume_gateway_url
                     _this.session_id = d.session_id
-                    _this.registerUser(new User(d.user))
+                    _this.registerUser(new User(d.user, _this))
                     setTimeout(() => {
                         _this.isReady = true
                         _this.emit("ready")
@@ -738,7 +776,7 @@ export class Client {
                             const allUsers: User[] = []
                             for (let i = 0; i < d.members.length; i++) {
                                 const user = d.members[i].user;
-                                allUsers.push(new User(user))
+                                allUsers.push(new User(user, _this))
                             }
 
                             _this.registerUser(allUsers)
@@ -787,7 +825,7 @@ export class Client {
                         const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role, _this)
                         for (let i = 0; i < _this.roles.length; i++) {
                             if (_this.roles[i].guild_id === d.guild_id) {
-                                _this.roles[i] = new Role(d.role, _this)
+                                _this.roles[i]._patch(d.role)
                                 break
                             }
                         }
@@ -819,7 +857,7 @@ export class Client {
                         let channelIDs: string[] = []
                         for (let i = 0; i < _this.channels.length; i++) {
                             const channel = _this.channels[i]
-                            if (channel.guild_id && channel.guild_id === d.id) {
+                            if (channel.guild.id && channel.guild.id === d.id) {
                                 channelIDs.push(channel.id)
                             }
                         }
@@ -842,8 +880,7 @@ export class Client {
                         const guildMemberIndex = _this.guilds.find(a => a.id === data.guild_id).members.findIndex(a => a.user.id === data.user.id)
                         if (guildMemberIndex > -1) {
                             const member = _this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex]
-                            member.rolesIDs = data.roles
-                            member.nick = data.nick
+                            member._patch(data)
                         }
                     }
                     break;

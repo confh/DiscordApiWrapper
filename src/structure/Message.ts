@@ -1,45 +1,36 @@
 import axios from "axios"
-import { Client, BaseData, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from "../client"
-import { Channel, Guild, Collector, Member, User, wait } from ".."
+import { Client, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from "../client"
+import { Channel, Guild, Collector, Member, User, wait, APIMessage, APIMessageAttachment } from ".."
+import { Base } from "../internal/Base"
 
 
-export class Message {
-    private client: Client
-    private authorID?: string
-    private mentionsIDs: string[] = []
-    private data: any
-    id: string
-    channelId: string
-    content: string
-    timestamp: number
-    edited_timestamp: number | null
-    mention_everyone: boolean
-    guildId: string
-    pinned: boolean
-    type: number
-    referenced_message?: Message
-    attachments: {
-        id: string,
-        filename: string,
-        size: number,
-        url: string,
-        proxy_url: string,
-        content_type: string
-    }[]
+export class Message extends Base {
+    readonly #authorID?: string
+    readonly #mentionsIDs: string[] = []
+    readonly id: string
+    readonly channelId: string
+    readonly content: string
+    readonly timestamp: number
+    readonly edited_timestamp: number | null
+    readonly mention_everyone: boolean
+    readonly guildId: string
+    readonly pinned: boolean
+    readonly type: number
+    readonly referenced_message?: Message
+    readonly attachments: APIMessageAttachment[]
 
-    constructor(data: BaseData, client: Client) {
-        this.data = data
+    constructor(data: APIMessage, client: Client) {
+        super(client)
         this.id = data.id
-        this.client = client
         this.channelId = data.channel_id
         this.guildId = data.guild_id
-        if (data.author) this.authorID = data.author.id
+        if (data.author) this.#authorID = data.author.id
         this.content = data.content
         this.timestamp = new Date(data.timestamp).getTime()
         this.edited_timestamp = data.edited_timestamp ? new Date(data.edited_timestamp).getTime() : null
         if (data.mentions) {
             for (let i = 0; i < data.mentions.length; i++) {
-                this.mentionsIDs.push(data.mentions[i].id)
+                this.#mentionsIDs.push(data.mentions[i].id)
             }
         }
         this.mention_everyone = data.mention_everyone
@@ -57,8 +48,8 @@ export class Message {
 
     get mentions() {
         const users: User[] = []
-        for (let i = 0; i < this.mentionsIDs.length; i++) {
-            const userID = this.mentionsIDs[i];
+        for (let i = 0; i < this.#mentionsIDs.length; i++) {
+            const userID = this.#mentionsIDs[i];
             users.push(this.client.users.find(a => a.id === userID))
         }
         return users
@@ -69,11 +60,11 @@ export class Message {
     }
 
     get author(): User | null {
-        return this.client.users.find(a => a.id === this.authorID) ?? null
+        return this.client.users.find(a => a.id === this.#authorID) ?? null
     }
 
     get member(): Member | null {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.authorID) ?? null
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.#authorID) ?? null
     }
 
     get guild() {
@@ -154,57 +145,53 @@ export class Message {
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
-        try {
-            if (!this.author) return;
-            if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
-            const embeds: any[] = []
-            const components: any[] = []
-            const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+        if (!this.author) return;
+        if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
+        const embeds: any[] = []
+        const components: any[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
 
-            if (typeof content !== "string") {
-                if (content.embeds && content.embeds?.length) {
-                    for (let i = 0; i < content.embeds.length; i++) {
-                        const embed = content.embeds[i];
-                        embeds.push(embed.toJson())
-                    }
-                }
-
-                if (content.components && content.components?.length) {
-                    for (let i = 0; i < content.components.length; i++) {
-                        const component = content.components[i];
-                        components.push(component.toJson())
-                    }
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
                 }
             }
 
-            let payload: JSONCache | FormData = {
-                content: typeof content === "string" ? content : content.content,
-            }
-
-            if (typeof content !== "string" && content.embeds) payload.embeds = embeds
-            if (typeof content !== "string" && content.components) payload.components = components
-
-            if (files) {
-                payload = JSONToFormDataWithFile(payload, ...files)
-            }
-
-            const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
-                headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
-            })
-
-            if (data.status === 400) {
-                if (data.data.retry_after !== null) {
-                    await wait(data.data.retry_after * 1000)
-                    return await this.edit(content)
-                } else {
-                    throw new Error(data.data.message);
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
                 }
             }
-
-            return data.data
-        } catch (e) {
-            console.log(this.data)
         }
+
+        let payload: JSONCache | FormData = {
+            content: typeof content === "string" ? content : content.content,
+        }
+
+        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+        if (typeof content !== "string" && content.components) payload.components = components
+
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
+        }
+
+        const data = await axios.patch(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, payload, {
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json")
+        })
+
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.edit(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
+
+        return data.data
     }
 
     async delete() {

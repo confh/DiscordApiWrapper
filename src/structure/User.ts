@@ -1,31 +1,22 @@
-export class User {
-    public verified: boolean
+import { APIUser, Client } from ".."
+import { Base } from "../internal/Base"
+
+export class User extends Base {
     public username: string
-    public mfa_enabled: boolean
-    public id: string
+    public readonly id: string
     public displayName: string | null
     public discriminator: string | null
-    public bot: boolean
+    public readonly bot: boolean
     public avatar: string
 
-    constructor(options: {
-        verified: boolean,
-        username: string,
-        mfa_enabled: boolean,
-        id: string,
-        global_name: string | null,
-        discriminator: string,
-        bot: boolean,
-        avatar: string
-    }) {
-        this.verified = options.verified || false
-        this.username = options.username
-        this.mfa_enabled = options.mfa_enabled
-        this.id = options.id
-        this.displayName = options.global_name || this.username
-        this.discriminator = options.discriminator
-        this.bot = options.bot
-        this.avatar = options.avatar
+    constructor(data: APIUser, client: Client) {
+        super(client)
+        this.username = data.username
+        this.id = data.id
+        this.displayName = data.global_name || this.username
+        this.discriminator = data.discriminator
+        this.bot = data.bot
+        this.avatar = data.avatar
     }
 
     getAvatarURL(options?: {

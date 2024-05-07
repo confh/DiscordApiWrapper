@@ -1,18 +1,18 @@
 import { Client, BaseData } from "../client"
 import { Member, Channel, Role } from ".."
+import { Base } from "../internal/Base"
 
-export class Guild {
-    private channelIDs: string[] = []
-    private client: Client
-    id: string
-    name: string
-    ownerId: string
-    memberCount: number
-    joined_at: number
-    members: Member[] = []
+export class Guild extends Base {
+    readonly #channelIDs: string[] = []
+    readonly id: string
+    readonly name: string
+    readonly ownerId: string
+    readonly memberCount: number
+    readonly joined_at: number
+    readonly members: Member[] = []
 
     constructor(data: BaseData, client: Client) {
-        this.client = client
+        super(client)
         this.id = data.id
         this.name = data.name
         this.ownerId = data.owner_id
@@ -24,7 +24,7 @@ export class Guild {
         }
         for (let i = 0; i < data.channels.length; i++) {
             const channel = data.channels[i];
-            this.channelIDs.push(channel.id)
+            this.#channelIDs.push(channel.id)
         }
     }
 
@@ -34,8 +34,8 @@ export class Guild {
 
     get channels() {
         const channels: Channel[] = []
-        for (let i = 0; i < this.channelIDs.length; i++) {
-            const channelID = this.channelIDs[i];
+        for (let i = 0; i < this.#channelIDs.length; i++) {
+            const channelID = this.#channelIDs[i];
             channels.push(this.client.channels.find(a => a.id === channelID))
         }
         return channels

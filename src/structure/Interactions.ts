@@ -1,33 +1,33 @@
 import axios from "axios"
 import { Client, ApplicationCommandTypes, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, ApplicationCommandOptionTypes } from "../client"
 import { Guild, Channel, Member, Message, User, wait } from ".."
+import { Base } from "../internal/Base"
 
-export class Interaction {
-    private channelId: string
-    private userID: string
-    token: string
-    callbackURL: string
-    interaction_id: string
-    client: Client
-    name: string
-    id: string
-    guildId: string
-    description: string
-    type: ApplicationCommandTypes
+export class Interaction extends Base {
+    #channelId: string
+    #userID: string
+    readonly #token: string
+    readonly callbackURL: string
+    readonly interaction_id: string
+    readonly name: string
+    readonly id: string
+    readonly guildId: string
+    readonly description?: string
+    readonly type: ApplicationCommandTypes
     acknowledged: boolean = false
 
     constructor(data: BaseData, client: Client) {
-        this.client = client
+        super(client)
         this.interaction_id = data.id
-        this.token = data.token
+        this.#token = data.token
         this.name = data.data.name
         this.id = data.data.id
         this.guildId = data.guild_id
-        this.userID = data.member.user.id
+        this.#userID = data.member.user.id
         this.description = data.description
         this.type = data.type
-        this.channelId = data.channel_id
-        this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
+        this.#channelId = data.channel_id
+        this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.#token}/callback`
     }
 
     get guild() {
@@ -35,19 +35,19 @@ export class Interaction {
     }
 
     get channel() {
-        return this.client.channels.find(a => a.id === this.channelId) as Channel
+        return this.client.channels.find(a => a.id === this.#channelId) as Channel
     }
 
     get user() {
-        return this.client.users.find(a => a.id === this.userID) as User
+        return this.client.users.find(a => a.id === this.#userID) as User
     }
 
     get member() {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.userID) as Member
+        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.#userID) as Member
     }
 
     async getOriginalMessage() {
-        const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
             headers: this.client.getHeaders()
         })
 
@@ -109,7 +109,7 @@ export class Interaction {
             }
         }
 
-        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
             headers: this.client.getHeaders(),
             validateStatus: () => true
         })
@@ -173,7 +173,7 @@ export class Interaction {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
@@ -224,7 +224,7 @@ export class Interaction {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, payload, {
+        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
@@ -242,7 +242,7 @@ export class Interaction {
     }
 
     async delete() {
-        const data = await axios.delete(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+        const data = await axios.delete(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
             headers: this.client.getHeaders(),
             validateStatus: () => true
         })
@@ -306,8 +306,8 @@ export class SlashCommandInteraction extends Interaction {
 
 
 export class ButtonInteraction extends Interaction {
-    message: Message
-    custom_id: string
+    readonly message: Message
+    readonly custom_id: string
 
     constructor(data: BaseData, client: Client) {
         super(data, client)
@@ -329,8 +329,8 @@ export class ButtonInteraction extends Interaction {
 }
 
 export class MessageContextInteraction extends Interaction {
-    target_id: string
-    message: Message
+    readonly target_id: string
+    readonly message: Message
 
     constructor(data: BaseData, client: Client) {
         super(data, client)
@@ -341,8 +341,8 @@ export class MessageContextInteraction extends Interaction {
 }
 
 export class UserContextInteraction extends Interaction {
-    target_id: string
-    target: {
+    readonly target_id: string
+    readonly target: {
         user?: User,
         member?: Member
     } = {
