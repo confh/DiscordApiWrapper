@@ -33,6 +33,20 @@ module.exports = [{
                 plugin
             ],
         },{
+            input: "src/internal",
+            output:
+            {
+                file: "dist/internal",
+                format: 'cjs',
+                exports: 'named',
+                sourcemap: false,
+                strict: false
+            }
+            ,
+            plugins: [
+                plugin
+            ],
+        },{
             input: "src/client.ts",
             output:
             {
@@ -177,6 +191,20 @@ module.exports = [{
             output:
             {
                 file: "dist/Interactions.js",
+                format: 'cjs',
+                exports: 'named',
+                sourcemap: false,
+                strict: false
+            }
+            ,
+            plugins: [
+                plugin
+            ],
+        },{
+            input: "src/internal/Base.ts",
+            output:
+            {
+                file: "dist/Base.js",
                 format: 'cjs',
                 exports: 'named',
                 sourcemap: false,
