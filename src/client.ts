@@ -597,7 +597,7 @@ export class Client {
 
             this.ws.on('open', function open(data: any) {
                 // If this isn't the first time the client connects send resumePayload
-                if (_this.initialUrl !== this.url) {
+                if (_this.initialUrl !== _this.url) {
                     const resumePayload = {
                         op: 6,
                         d: {
@@ -638,7 +638,14 @@ export class Client {
                         break;
                     case 7:
                         _this.connect()
-                        return
+                        return;
+                        break;
+                    case 9:
+                        _this.url = _this.initialUrl
+                        _this.session_id = null
+                        _this.seq = null
+                        _this.connect()
+                        return;
                         break;
                     case 11:
                         _this.ping = Date.now() - _this.lastHeartbeat
