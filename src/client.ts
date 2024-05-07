@@ -280,6 +280,7 @@ export class Client {
     protected url = this.initialUrl
     protected cacheAllUsers = false
     protected intents = 0
+    public shards: number
     public users: User[] = []
     public guilds: Guild[] = []
     public channels: Channel[] = []
@@ -322,13 +323,28 @@ export class Client {
      */
     constructor(token: string, options?: {
         cacheAllUsers?: boolean,
-        intents?: Intents[]
+        intents?: Intents[],
+        shards?: "auto" | number
     }) {
+        const shards = options.shards || "auto"
         this.token = token
         this.cacheAllUsers = options?.cacheAllUsers || false
         if (options?.intents && options.intents.length) {
             this.intents = calculateIntents(options.intents)
         }
+        if (shards === "auto") {
+            this._registerShards()
+        } else {
+            this.shards = shards
+            this._definePayload()
+            Object.defineProperty(this, "shards", { writable: false })
+        }
+        Object.defineProperty(this, "token", {
+            writable: false
+        })
+    }
+
+    private _definePayload() {
         this.payload = {
             op: 2,
             d: {
@@ -339,11 +355,22 @@ export class Client {
                     $browser: 'chrome',
                     $device: 'chrome'
                 },
+                shard: [0, this.shards]
             }
         }
-        Object.defineProperty(this, "token", {
-            writable: false
+    }
+
+    private async _registerShards() {
+        const data = await axios.get(`${this.baseURL}gateway/bot`, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
         })
+
+        if (data.status === 400 || data.status === 401) throw new Error(data.data.message);
+
+        this.shards = data.data.shards
+        this._definePayload()
+        Object.defineProperty(this, "shards", { writable: false })
     }
 
     /**
@@ -586,265 +613,274 @@ export class Client {
     /**
      * Connect to discord websocket
      */
-    connect() {
-        try {
-            // If websocket is opened close it
-            if (this.ws && this.ws.readyState !== 3) this.ws.close();
+    async connect() {
+        // If websocket is opened close it
+        if (this.ws && this.ws.readyState !== 3) this.ws.close();
 
-            const _this = this
-            // Open the websocket
-            this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
+        const _this = this
 
-            this.ws.on('open', function open(data: any) {
-                // If this isn't the first time the client connects send resumePayload
-                if (_this.initialUrl !== _this.url) {
-                    const resumePayload = {
-                        op: 6,
-                        d: {
-                            token: _this.token,
-                            sessionId: _this.session_id,
-                            seq: _this.seq
+        // Open the websocket
+        this.ws = new WebSocket(this.url + "/?v=10&encoding=json")
+
+        this.ws.on('open', function open(data: any) {
+            // If this isn't the first time the client connects send resumePayload
+            if (_this.initialUrl !== _this.url) {
+                const resumePayload = {
+                    op: 6,
+                    d: {
+                        token: _this.token,
+                        sessionId: _this.session_id,
+                        seq: _this.seq,
+                        shard: [0, _this.shards]
+                    }
+                }
+
+                _this.ws.send(JSON.stringify(resumePayload))
+            }
+        })
+
+        // Listen for when websocket closes and reconnect
+        this.ws.on("close", function close(code) {
+            switch (code) {
+                case 4004:
+                    throw new Error("Invalid token")
+                    break;
+                case 4012:
+                    throw new Error("Invalid API version")
+                    break;
+                default:
+                    setTimeout(() => {
+                        _this.connect()
+                    }, 2500);
+                    break;
+            }
+        })
+
+        // Listen for websocket errors
+        this.ws.on("error", (e) => {
+            _this.logger.error(e.message)
+        })
+
+        // Listen for websocket messages
+        this.ws.on('message', async function incoming(data: any) {
+            let payload = JSON.parse(data)
+            const { t, op, d, s } = payload;
+
+            switch (op) {
+                case 10:
+                    const { heartbeat_interval } = d;
+                    interval = _this._heartbeat(heartbeat_interval)
+
+                    if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
+                    break;
+                case 7:
+                    this.removeAllListeners()
+                    this.close()
+                    _this.ws = null
+                    _this.connect()
+                    return;
+                    break;
+                case 9:
+                    _this.url = _this.initialUrl
+                    _this.session_id = null
+                    _this.seq = null
+                    _this.connect()
+                    return;
+                    break;
+                case 11:
+                    _this.ping = Date.now() - _this.lastHeartbeat
+                    break;
+                case 0:
+                    _this.seq = s
+                    break;
+            }
+            switch (t) {
+                case "READY":
+                    _this.readyTimestamp = Date.now()
+                    _this.url = d.resume_gateway_url
+                    _this.session_id = d.session_id
+                    _this.registerUser(new User(d.user))
+                    setTimeout(() => {
+                        _this.isReady = true
+                        _this.emit("ready")
+                    }, 1000);
+                    break;
+                case "RESUMED":
+                    _this.emit("resume")
+                    break;
+                case "MESSAGE_CREATE":
+                    if (d.author) {
+                        if (!_this.channels.find(a => a.id === d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
+                        _this.emit("messageCreate", new Message(d, _this))
+                    }
+                    break;
+                case "MESSAGE_UPDATE":
+                    if (d.author) {
+                        _this.emit("messageUpdate", new Message(d, _this))
+                    }
+                    break;
+                case "GUILD_CREATE":
+                    {
+                        // Cache all guild roles
+                        for (let i = 0; i < d.roles.length; i++) {
+                            let role = d.roles[i]
+                            role.guild_id = d.id
+                            _this.roles.push(new Role(role, _this))
+                        }
+
+                        // Cache all users
+                        if (_this.cacheAllUsers) {
+                            const allUsers: User[] = []
+                            for (let i = 0; i < d.members.length; i++) {
+                                const user = d.members[i].user;
+                                allUsers.push(new User(user))
+                            }
+
+                            _this.registerUser(allUsers)
+                        }
+
+                        // Cache all channels
+                        for (let i = 0; i < d.channels.length; i++) {
+                            const channel = d.channels[i];
+                            d.channels[i].guild_id = d.id
+                            _this.channels.push(new Channel(channel, _this))
+                        }
+
+                        // Cache guild
+                        _this.guilds.push(new Guild(d, _this))
+                        // Emit a guildCreate event
+                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                    }
+                    break
+                case "INTERACTION_CREATE":
+                    if (d.type === InteractionTypes.APPLICATION_COMMAND) {
+                        // Emit interactionCreate event with the argument according to the interaction type
+                        switch (d.data.type) {
+                            case ApplicationCommandTypes.CHAT_INPUT:
+                                _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
+                                break;
+                            case ApplicationCommandTypes.USER:
+                                _this.emit("interactionCreate", new UserContextInteraction(d, _this))
+                                break;
+                            case ApplicationCommandTypes.MESSAGE:
+                                _this.emit("interactionCreate", new MessageContextInteraction(d, _this))
+                                break;
+                        }
+                    } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
+                        if (d.data.component_type === 2) {
+                            const collector = _this.collectors.find(a => a.messageId === d.message.id)
+                            if (collector) {
+                                collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
+                            }
+                            _this.emit("interactionCreate", new ButtonInteraction(d, _this))
                         }
                     }
-
-                    _this.ws.send(JSON.stringify(resumePayload))
-                }
-            })
-
-            // Listen for when websocket closes and reconnect
-            this.ws.on("close", function close() {
-                setTimeout(() => {
-                    _this.connect()
-                }, 2500);
-            })
-
-            // Listen for websocket errors
-            this.ws.on("error", (e) => {
-                _this.logger.error(e.message)
-                _this.connect()
-            })
-
-            // Listen for websocket messages
-            this.ws.on('message', async function incoming(data: any) {
-                let payload = JSON.parse(data)
-                const { t, op, d, s } = payload;
-
-                switch (op) {
-                    case 10:
-                        const { heartbeat_interval } = d;
-                        interval = _this._heartbeat(heartbeat_interval)
-
-                        if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
-                        break;
-                    case 7:
-                        _this.connect()
-                        return;
-                        break;
-                    case 9:
-                        _this.url = _this.initialUrl
-                        _this.session_id = null
-                        _this.seq = null
-                        _this.connect()
-                        return;
-                        break;
-                    case 11:
-                        _this.ping = Date.now() - _this.lastHeartbeat
-                        break;
-                    case 0:
-                        _this.seq = s
-                        break;
-                }
-                switch (t) {
-                    case "READY":
-                        _this.readyTimestamp = Date.now()
-                        _this.url = d.resume_gateway_url
-                        _this.session_id = d.session_id
-                        _this.registerUser(new User(d.user))
-                        setTimeout(() => {
-                            _this.isReady = true
-                            _this.emit("ready")
-                        }, 1000);
-                        break;
-                    case "RESUMED":
-                        _this.emit("resume")
-                        break;
-                    case "MESSAGE_CREATE":
-                        if (d.author) {
-                            if (!_this.channels.find(a => a.id === d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
-                            _this.emit("messageCreate", new Message(d, _this))
-                        }
-                        break;
-                    case "MESSAGE_UPDATE":
-                        if (d.author) {
-                            _this.emit("messageUpdate", new Message(d, _this))
-                        }
-                        break;
-                    case "GUILD_CREATE":
-                        {
-                            // Cache all guild roles
-                            for (let i = 0; i < d.roles.length; i++) {
-                                let role = d.roles[i]
-                                role.guild_id = d.id
-                                _this.roles.push(new Role(role, _this))
-                            }
-
-                            // Cache all users
-                            if (_this.cacheAllUsers) {
-                                const allUsers: User[] = []
-                                for (let i = 0; i < d.members.length; i++) {
-                                    const user = d.members[i].user;
-                                    allUsers.push(new User(user))
-                                }
-
-                                _this.registerUser(allUsers)
-                            }
-
-                            // Cache all channels
-                            for (let i = 0; i < d.channels.length; i++) {
-                                const channel = d.channels[i];
-                                d.channels[i].guild_id = d.id
-                                _this.channels.push(new Channel(channel, _this))
-                            }
-
-                            // Cache guild
-                            _this.guilds.push(new Guild(d, _this))
-                            // Emit a guildCreate event
-                            _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
-                        }
-                        break
-                    case "INTERACTION_CREATE":
-                        if (d.type === InteractionTypes.APPLICATION_COMMAND) {
-                            // Emit interactionCreate event with the argument according to the interaction type
-                            switch (d.data.type) {
-                                case ApplicationCommandTypes.CHAT_INPUT:
-                                    _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))
-                                    break;
-                                case ApplicationCommandTypes.USER:
-                                    _this.emit("interactionCreate", new UserContextInteraction(d, _this))
-                                    break;
-                                case ApplicationCommandTypes.MESSAGE:
-                                    _this.emit("interactionCreate", new MessageContextInteraction(d, _this))
-                                    break;
-                            }
-                        } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
-                            if (d.data.component_type === 2) {
-                                const collector = _this.collectors.find(a => a.messageId === d.message.id)
-                                if (collector) {
-                                    collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
-                                }
-                                _this.emit("interactionCreate", new ButtonInteraction(d, _this))
+                    break
+                case "GUILD_ROLE_UPDATE":
+                    {
+                        // Update the cached role
+                        const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role, _this)
+                        for (let i = 0; i < _this.roles.length; i++) {
+                            if (_this.roles[i].guild_id === d.guild_id) {
+                                _this.roles[i] = new Role(d.role, _this)
+                                break
                             }
                         }
-                        break
-                    case "GUILD_ROLE_UPDATE":
-                        {
-                            // Update the cached role
-                            const oldRole = new Role(_this.roles.find(a => a.id === d.role.id)?.toJson() as Role, _this)
-                            for (let i = 0; i < _this.roles.length; i++) {
-                                if (_this.roles[i].guild_id === d.guild_id) {
-                                    _this.roles[i] = new Role(d.role, _this)
-                                    break
-                                }
-                            }
-                            _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
-                        }
-                        break
-                    case "CHANNEL_CREATE":
-                        {
-                            // Cache the channel
-                            const index = _this.channels.push(new Channel(d, _this)) - 1
-                            _this.emit("channelCreate", _this.channels[index])
-                        }
-                        break;
-                    case "CHANNEL_DELETE":
-                        {
-                            // Remove channel from cache
-                            const index = _this.channels.findIndex(channel => channel.id === d.id)
-                            const channel = _this.channels[index]
+                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
+                    }
+                    break
+                case "CHANNEL_CREATE":
+                    {
+                        // Cache the channel
+                        const index = _this.channels.push(new Channel(d, _this)) - 1
+                        _this.emit("channelCreate", _this.channels[index])
+                    }
+                    break;
+                case "CHANNEL_DELETE":
+                    {
+                        // Remove channel from cache
+                        const index = _this.channels.findIndex(channel => channel.id === d.id)
+                        const channel = _this.channels[index]
 
-                            if (index > -1) {
-                                _this.channels.splice(index, 1)
-                                _this.emit("channelDelete", channel)
+                        if (index > -1) {
+                            _this.channels.splice(index, 1)
+                            _this.emit("channelDelete", channel)
+                        }
+                    }
+                    break;
+                case "GUILD_DELETE":
+                    {
+                        // Remove all cached channels that are related to the guild
+                        let channelIDs: string[] = []
+                        for (let i = 0; i < _this.channels.length; i++) {
+                            const channel = _this.channels[i]
+                            if (channel.guild_id && channel.guild_id === d.id) {
+                                channelIDs.push(channel.id)
                             }
                         }
-                        break;
-                    case "GUILD_DELETE":
-                        {
-                            // Remove all cached channels that are related to the guild
-                            let channelIDs: string[] = []
-                            for (let i = 0; i < _this.channels.length; i++) {
-                                const channel = _this.channels[i]
-                                if (channel.guild_id && channel.guild_id === d.id) {
-                                    channelIDs.push(channel.id)
-                                }
-                            }
-                            _this._deleteChannels(channelIDs)
+                        _this._deleteChannels(channelIDs)
 
-                            // Delete the cached guild
-                            const guildIndex = _this.guilds.findIndex(guild => guild.id === d.id)
-                            const guild = _this.guilds[guildIndex]
+                        // Delete the cached guild
+                        const guildIndex = _this.guilds.findIndex(guild => guild.id === d.id)
+                        const guild = _this.guilds[guildIndex]
 
-                            if (guildIndex > -1) {
-                                _this.guilds.splice(guildIndex, 1)
-                                _this.emit("guildDelete", guild)
-                            }
+                        if (guildIndex > -1) {
+                            _this.guilds.splice(guildIndex, 1)
+                            _this.emit("guildDelete", guild)
                         }
-                        break;
-                    case "GUILD_MEMBER_UPDATE":
-                        {
-                            // Update cached member
-                            const data = d as APIGuildMemberUpdate
-                            const guildMemberIndex = _this.guilds.find(a => a.id === data.guild_id).members.findIndex(a => a.user.id === data.user.id)
-                            if (guildMemberIndex > -1) {
-                                const member = _this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex]
-                                member.rolesIDs = data.roles
-                                member.nick = data.nick
-                            }
+                    }
+                    break;
+                case "GUILD_MEMBER_UPDATE":
+                    {
+                        // Update cached member
+                        const data = d as APIGuildMemberUpdate
+                        const guildMemberIndex = _this.guilds.find(a => a.id === data.guild_id).members.findIndex(a => a.user.id === data.user.id)
+                        if (guildMemberIndex > -1) {
+                            const member = _this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex]
+                            member.rolesIDs = data.roles
+                            member.nick = data.nick
                         }
-                        break;
-                    case "GUILD_ROLE_CREATE":
-                        {
-                            // Update cached role
-                            const data = d as {
-                                guild_id: string,
-                                role: APIRole | any
-                            }
-                            data.role.guild_id = data.guild_id
-                            _this.roles.push(new Role(data.role, _this))
+                    }
+                    break;
+                case "GUILD_ROLE_CREATE":
+                    {
+                        // Update cached role
+                        const data = d as {
+                            guild_id: string,
+                            role: APIRole | any
                         }
-                        break;
-                    case "GUILD_ROLE_DELETE":
-                        {
-                            // Remove role from cache
-                            const data = d as {
-                                guild_id: string,
-                                role_id: string
-                            }
-                            const index = _this.roles.findIndex(a => a.guild_id === data.guild_id && a.id === data.role_id)
-                            if (index > -1) {
-                                _this.roles.splice(index, 1)
-                            }
+                        data.role.guild_id = data.guild_id
+                        _this.roles.push(new Role(data.role, _this))
+                    }
+                    break;
+                case "GUILD_ROLE_DELETE":
+                    {
+                        // Remove role from cache
+                        const data = d as {
+                            guild_id: string,
+                            role_id: string
                         }
-                        break;
-                    case "USER_UPDATE":
-                        {
-                            // Update cached user
-                            const data = d as APIUser
-                            const index = _this.users.findIndex(a => a.id === data.id)
-                            if (index > -1) {
-                                const user = _this.users[index]
-                                user.username = data.username
-                                user.avatar = data.avatar
-                                user.displayName = data.global_name
-                            }
+                        const index = _this.roles.findIndex(a => a.guild_id === data.guild_id && a.id === data.role_id)
+                        if (index > -1) {
+                            _this.roles.splice(index, 1)
                         }
-                        break;
-                }
-            })
-        } catch (e) {
-            this.logger.error(e.message)
-            this.connect()
-        }
+                    }
+                    break;
+                case "USER_UPDATE":
+                    {
+                        // Update cached user
+                        const data = d as APIUser
+                        const index = _this.users.findIndex(a => a.id === data.id)
+                        if (index > -1) {
+                            const user = _this.users[index]
+                            user.username = data.username
+                            user.avatar = data.avatar
+                            user.displayName = data.global_name
+                        }
+                    }
+                    break;
+            }
+        })
     }
 
 }
