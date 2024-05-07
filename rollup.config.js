@@ -33,20 +33,6 @@ module.exports = [{
                 plugin
             ],
         },{
-            input: "src/internal",
-            output:
-            {
-                file: "dist/internal",
-                format: 'cjs',
-                exports: 'named',
-                sourcemap: false,
-                strict: false
-            }
-            ,
-            plugins: [
-                plugin
-            ],
-        },{
             input: "src/client.ts",
             output:
             {

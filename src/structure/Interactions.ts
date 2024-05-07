@@ -353,7 +353,7 @@ export class UserContextInteraction extends Interaction {
     constructor(data: BaseData, client: Client) {
         super(data, client)
         this.target_id = data.data.target_id
-        this.target.user = client.users.find(a => a.id === this.target_id) || new User(data.data.resolved.users[this.target_id])
+        this.target.user = client.users.find(a => a.id === this.target_id) || new User(data.data.resolved.users[this.target_id], this.client)
         this.target.member = this.guild.members.find(a => a.id === this.target_id) || new Member(data.data.resolved.members[this.target_id], client)
     }
 }
