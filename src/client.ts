@@ -459,7 +459,7 @@ export class Client {
      */
     disconnect() {
         this.ws.removeAllListeners()
-        this.ws.close()
+        this.ws.close(1000)
         this.token = null
     }
 
@@ -615,7 +615,7 @@ export class Client {
      */
     async connect() {
         // If websocket is opened close it
-        if (this.ws && this.ws.readyState !== 3) this.ws.close();
+        if (this.ws && this.ws.readyState !== 3) this.ws.close(4000);
 
         const _this = this
 
@@ -650,7 +650,9 @@ export class Client {
                     break;
                 default:
                     this.removeAllListeners()
+                    this.close(4000, "Reconnecting")
                     setTimeout(() => {
+                        _this.ws = null
                         _this.connect()
                     }, 2500);
                     break;
@@ -672,11 +674,11 @@ export class Client {
                     const { heartbeat_interval } = d;
                     interval = _this._heartbeat(heartbeat_interval)
 
-                    if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
+                    if (_this.url === _this.initialUrl) this.send(JSON.stringify(_this.payload))
                     break;
                 case 7:
                     this.removeAllListeners()
-                    this.close()
+                    this.close(4000, "Reconnecting")
                     _this.ws = null
                     _this.connect()
                     return;
@@ -685,6 +687,8 @@ export class Client {
                     _this.url = _this.initialUrl
                     _this.session_id = null
                     _this.seq = null
+                    this.removeAllListeners()
+                    this.close(4000, "Reconnecting")
                     _this.connect()
                     return;
                     break;
