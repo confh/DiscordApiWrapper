@@ -266,6 +266,7 @@ export class Client {
     // Important variables
     protected isReady = false
     protected payload;
+    protected lastHeartbeat: number
     protected ws: WebSocket;
     protected readyTimestamp: number
     protected listeners: {
@@ -289,6 +290,7 @@ export class Client {
         error: (...args: any[]) => any
     } = console
     public token: string
+    public ping = -1
     public readonly baseURL = "https://discord.com/api/v10/"
 
     get user() {
@@ -300,8 +302,9 @@ export class Client {
      * @param ms Milliseconds
      * @returns Interval
      */
-    private heartbeat(ms: number) {
+    private _heartbeat(ms: number) {
         return setInterval(() => {
+            this.lastHeartbeat = Date.now()
             this.ws.send(JSON.stringify({ op: 1, d: this.seq }))
         }, ms)
     }
@@ -629,13 +632,16 @@ export class Client {
                 switch (op) {
                     case 10:
                         const { heartbeat_interval } = d;
-                        interval = _this.heartbeat(heartbeat_interval)
+                        interval = _this._heartbeat(heartbeat_interval)
 
                         if (_this.url === _this.initialUrl) _this.ws.send(JSON.stringify(_this.payload))
                         break;
                     case 7:
                         _this.connect()
                         return
+                        break;
+                    case 11:
+                        _this.ping = Date.now() - _this.lastHeartbeat
                         break;
                     case 0:
                         _this.seq = s
