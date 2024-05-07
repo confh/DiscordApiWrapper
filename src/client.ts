@@ -92,7 +92,8 @@ export interface APIMessageAttachment {
     filename: string,
     size: number,
     url: string,
-    proxy_url: string
+    proxy_url: string,
+    content_type?: string
 }
 
 export interface APIMessage {
