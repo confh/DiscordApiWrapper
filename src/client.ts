@@ -816,6 +816,7 @@ export class Client {
             })
         } catch (e) {
             this.logger.error(e.message)
+            this.connect()
         }
     }
 
