@@ -649,6 +649,7 @@ export class Client {
                     throw new Error("Invalid API version")
                     break;
                 default:
+                    this.removeAllListeners()
                     setTimeout(() => {
                         _this.connect()
                     }, 2500);
