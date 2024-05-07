@@ -64,11 +64,8 @@ export class Message {
         return users
     }
 
-    get channel() {
-        return this.client.channels.find(a => a.id === this.channelId) || {
-            id: "0",
-            type: 55
-        }
+    get channel(): Channel | null {
+        return this.client.channels.find(a => a.id === this.channelId) ?? null
     }
 
     get author(): User | null {
