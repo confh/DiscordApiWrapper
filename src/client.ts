@@ -852,9 +852,12 @@ export class Client {
                     {
                         // Update cached member
                         const data = d as APIGuildMemberUpdate
-                        const oldMember = _this.guilds.get(data.guild_id).members.get(data.user.id)._clone()
-                        _this.guilds.get(data.guild_id).members.update(data.user.id, data)
-                        _this.emit("memberUpdate", oldMember, _this.guilds.get(data.guild_id).members.get(data.user.id))
+                        let oldMember = _this.guilds.get(data.guild_id).members.get(data.user.id)
+                        if (oldMember) {
+                            oldMember = oldMember._clone()
+                            _this.guilds.get(data.guild_id).members.update(data.user.id, data)
+                            _this.emit("memberUpdate", oldMember, _this.guilds.get(data.guild_id).members.get(data.user.id))
+                        }
                     }
                     break;
                 case "GUILD_ROLE_CREATE":
