@@ -350,6 +350,17 @@ export class Client {
         return Date.now() - this.readyTimestamp
     }
 
+    async registerChannelFromAPI(channelId: string) {
+        const data = await axios.get(`${this.baseURL}channels/${channelId}`, {
+            headers: this.getHeaders(),
+            validateStatus: () => true
+        })
+        
+        if (data.status === 400) return
+
+        this.channels.push(new Channel(data.data, this))
+    }
+
     /**
      * Caches user(s)
      * @param user {@link User} to cache
@@ -611,7 +622,7 @@ export class Client {
             })
 
             // Listen for websocket messages
-            this.ws.on('message', function incoming(data: any) {
+            this.ws.on('message', async function incoming(data: any) {
                 let payload = JSON.parse(data)
                 const { t, op, d, s } = payload;
 
@@ -642,6 +653,7 @@ export class Client {
                         break;
                     case "MESSAGE_CREATE":
                         if (d.author) {
+                            if (!_this.channels.find(a => a.id === d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
                             _this.emit("messageCreate", new Message(d, _this))
                         }
                         break;
@@ -723,10 +735,8 @@ export class Client {
                     case "CHANNEL_CREATE":
                         {
                             // Cache the channel
-                            if (d.type === ChannelTypes.TEXT) {
-                                const index = _this.channels.push(new Channel(d, _this)) - 1
-                                _this.emit("channelCreate", _this.channels[index])
-                            }
+                            const index = _this.channels.push(new Channel(d, _this)) - 1
+                            _this.emit("channelCreate", _this.channels[index])
                         }
                         break;
                     case "CHANNEL_DELETE":
