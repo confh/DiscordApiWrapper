@@ -26,4 +26,10 @@ export class User extends Base {
         let animated = options?.animated || false
         return `https://cdn.discordapp.com/avatars/${this.id}/${this.avatar}.${animated ? "webp" : "png"}?size=${options?.size || 512}`
     }
+
+    _patch(data: APIUser) {
+        this.username = data.username
+        this.displayName = data.global_name || this.username
+        this.avatar = data.avatar
+    }
 }

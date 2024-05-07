@@ -34,7 +34,7 @@ export class Member extends Base {
     }
 
     get user() {
-        return this.client.users.find(a => a.id === this.id) as User
+        return this.client.users.get(this.id) as User
     }
 
     get permissions() {

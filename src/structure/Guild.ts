@@ -1,6 +1,7 @@
 import { Client, BaseData } from "../client"
 import { Member, Channel, Role } from ".."
 import { Base } from "../internal/Base"
+import { Manager } from "../internal/Manager"
 
 export class Guild extends Base {
     readonly #channelIDs: string[] = []
@@ -9,7 +10,7 @@ export class Guild extends Base {
     readonly ownerId: string
     readonly memberCount: number
     readonly joined_at: number
-    readonly members: Member[] = []
+    readonly members = new Manager<Member>()
 
     constructor(data: BaseData, client: Client) {
         super(client)
@@ -20,7 +21,7 @@ export class Guild extends Base {
         this.joined_at = new Date(data.joined_at).getTime()
         for (let i = 0; i < data.members.length; i++) {
             const member = data.members[i];
-            this.members.push(new Member(member, client))
+            this.members.cache(new Member(member, client))
         }
         for (let i = 0; i < data.channels.length; i++) {
             const channel = data.channels[i];
@@ -36,7 +37,7 @@ export class Guild extends Base {
         const channels: Channel[] = []
         for (let i = 0; i < this.#channelIDs.length; i++) {
             const channelID = this.#channelIDs[i];
-            channels.push(this.client.channels.find(a => a.id === channelID))
+            channels.push(this.client.channels.get(channelID))
         }
         return channels
     }

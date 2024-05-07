@@ -187,6 +187,20 @@ module.exports = [{
                 plugin
             ],
         },{
+            input: "src/internal/Manager.ts",
+            output:
+            {
+                file: "dist/Manager.js",
+                format: 'cjs',
+                exports: 'named',
+                sourcemap: false,
+                strict: false
+            }
+            ,
+            plugins: [
+                plugin
+            ],
+        },{
             input: "src/internal/Base.ts",
             output:
             {

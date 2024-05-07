@@ -33,7 +33,7 @@ export class Role extends Base {
     }
 
     get guild() {
-        return this.client.guilds.find(a => a.id === this.guild_id) as Guild
+        return this.client.guilds.get(this.guild_id) as Guild
     }
 
     _patch(data: Role): void {

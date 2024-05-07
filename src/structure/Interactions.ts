@@ -31,19 +31,19 @@ export class Interaction extends Base {
     }
 
     get guild() {
-        return this.client.guilds.find(a => a.id === this.guildId) as Guild
+        return this.client.guilds.get(this.guildId) as Guild
     }
 
     get channel() {
-        return this.client.channels.find(a => a.id === this.#channelId) as Channel
+        return this.client.channels.get(this.#channelId) as Channel
     }
 
     get user() {
-        return this.client.users.find(a => a.id === this.#userID) as User
+        return this.client.users.get(this.#userID) as User
     }
 
     get member() {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.#userID) as Member
+        return this.client.guilds.get(this.guildId).members.get(this.#userID) as Member
     }
 
     async getOriginalMessage() {
@@ -353,7 +353,7 @@ export class UserContextInteraction extends Interaction {
     constructor(data: BaseData, client: Client) {
         super(data, client)
         this.target_id = data.data.target_id
-        this.target.user = client.users.find(a => a.id === this.target_id) || new User(data.data.resolved.users[this.target_id], this.client)
-        this.target.member = this.guild.members.find(a => a.id === this.target_id) || new Member(data.data.resolved.members[this.target_id], client)
+        this.target.user = client.users.get(this.target_id) || new User(data.data.resolved.users[this.target_id], this.client)
+        this.target.member = this.guild.members.get(this.target_id) || new Member(data.data.resolved.members[this.target_id], client)
     }
 }

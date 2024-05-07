@@ -9,6 +9,7 @@ import { Guild } from './structure/Guild';
 import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './structure/Interactions';
 import { Message } from './structure/Message';
 import { Role } from './structure/Role';
+import { Manager } from './internal/Manager';
 let interval: number | Timer = 0;
 
 // Type of presence status
@@ -314,9 +315,9 @@ export class Client {
     protected cacheAllUsers = false
     protected intents = 0
     public shards: number
-    public users: User[] = []
-    public guilds: Guild[] = []
-    public channels: Channel[] = []
+    public users = new Manager<User>()
+    public guilds = new Manager<Guild>()
+    public channels = new Manager<Channel>()
     public roles: Role[] = []
     public collectors: Collector[] = []
     public logger: {
@@ -328,7 +329,7 @@ export class Client {
     public readonly baseURL = "https://discord.com/api/v10/"
 
     get user() {
-        return this.users[0] as User
+        return this.users.getByIndex(0)
     }
 
     /**
@@ -421,27 +422,9 @@ export class Client {
 
         if (data.status === 400) return
 
-        this.channels.push(new Channel(data.data, this))
+        this.channels.cache(new Channel(data.data, this))
     }
 
-    /**
-     * Caches user(s)
-     * @param user {@link User} to cache
-     */
-    private registerUser(user: User | User[]) {
-        if (Array.isArray(user)) {
-            for (let i = 0; i < user.length; i++) {
-                const userObject = user[i];
-                if (!this.users.find(a => a.id === userObject.id)) {
-                    this.users.push(userObject)
-                }
-            }
-        } else {
-            if (!this.users.find(a => a.id === user.id)) {
-                this.users.push(user)
-            }
-        }
-    }
 
     private emit<K extends keyof ClientEvents>(event: K, ...args: ClientEvents[K]) {
         if (!this.isReady) return
@@ -629,17 +612,14 @@ export class Client {
      * @returns A {@link Channel} object
      */
     getChannel(channelId: string) {
-        return this.channels.find(a => a.id === channelId)
+        return this.channels.get(channelId)
     }
 
     private _deleteChannels(id: string | string[]) {
         const IDs = typeof id === "string" ? [id] : id
         for (let i = 0; i < IDs.length; i++) {
             const id = IDs[i];
-            const index = this.channels.findIndex(a => a.id === id)
-            if (index > -1) {
-                this.channels.splice(index, 1)
-            }
+            this.channels.delete(id)
         }
     }
 
@@ -743,7 +723,7 @@ export class Client {
                     _this.readyTimestamp = Date.now()
                     _this.url = d.resume_gateway_url
                     _this.session_id = d.session_id
-                    _this.registerUser(new User(d.user, _this))
+                    _this.users.cache(new User(d.user, _this))
                     setTimeout(() => {
                         _this.isReady = true
                         _this.emit("ready")
@@ -754,7 +734,7 @@ export class Client {
                     break;
                 case "MESSAGE_CREATE":
                     if (d.author) {
-                        if (!_this.channels.find(a => a.id === d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
+                        if (!_this.channels.get(d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
                         _this.emit("messageCreate", new Message(d, _this))
                     }
                     break;
@@ -780,20 +760,20 @@ export class Client {
                                 allUsers.push(new User(user, _this))
                             }
 
-                            _this.registerUser(allUsers)
+                            _this.users.cache(allUsers)
                         }
 
                         // Cache all channels
                         for (let i = 0; i < d.channels.length; i++) {
                             const channel = d.channels[i];
                             d.channels[i].guild_id = d.id
-                            _this.channels.push(new Channel(channel, _this))
+                            _this.channels.cache(new Channel(channel, _this))
                         }
 
                         // Cache guild
-                        _this.guilds.push(new Guild(d, _this))
+                        _this.guilds.cache(new Guild(d, _this))
                         // Emit a guildCreate event
-                        _this.emit("guildCreate", _this.guilds.find(a => a.id === d.id) as Guild)
+                        _this.emit("guildCreate", _this.guilds.get(d.id) as Guild)
                     }
                     break
                 case "INTERACTION_CREATE":
@@ -830,25 +810,23 @@ export class Client {
                                 break
                             }
                         }
-                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.find(a => a.id === d.guild_id) as Guild)
+                        _this.emit("roleUpdate", oldRole, _this.roles.find(a => a.id === d.role.id) as Role, _this.guilds.get(d.guild_id) as Guild)
                     }
                     break
                 case "CHANNEL_CREATE":
                     {
                         // Cache the channel
-                        const index = _this.channels.push(new Channel(d, _this)) - 1
-                        _this.emit("channelCreate", _this.channels[index])
+                        const channel = _this.channels.cache(new Channel(d, _this))
+                        _this.emit("channelCreate", channel)
                     }
                     break;
                 case "CHANNEL_DELETE":
                     {
                         // Remove channel from cache
-                        const index = _this.channels.findIndex(channel => channel.id === d.id)
-                        const channel = _this.channels[index]
-
-                        if (index > -1) {
-                            _this.channels.splice(index, 1)
-                            _this.emit("channelDelete", channel)
+                        const oldChannel = _this.channels.get(d.id)
+                        if (oldChannel) {
+                            _this.channels.delete(d.id)
+                            _this.emit("channelDelete", oldChannel)
                         }
                     }
                     break;
@@ -865,24 +843,17 @@ export class Client {
                         _this._deleteChannels(channelIDs)
 
                         // Delete the cached guild
-                        const guildIndex = _this.guilds.findIndex(guild => guild.id === d.id)
-                        const guild = _this.guilds[guildIndex]
+                        const oldGuild = _this.guilds.get(d.id)._clone()
+                        _this.guilds.delete(d.id)
 
-                        if (guildIndex > -1) {
-                            _this.guilds.splice(guildIndex, 1)
-                            _this.emit("guildDelete", guild)
-                        }
+                        _this.emit("guildDelete", oldGuild)
                     }
                     break;
                 case "GUILD_MEMBER_UPDATE":
                     {
                         // Update cached member
                         const data = d as APIGuildMemberUpdate
-                        const guildMemberIndex = _this.guilds.find(a => a.id === data.guild_id).members.findIndex(a => a.user.id === data.user.id)
-                        if (guildMemberIndex > -1) {
-                            const member = _this.guilds.find(a => a.id === data.guild_id).members[guildMemberIndex]
-                            member._patch(data)
-                        }
+                        _this.guilds.get(data.guild_id).members.update(data.user.id, data)
                     }
                     break;
                 case "GUILD_ROLE_CREATE":
@@ -913,13 +884,7 @@ export class Client {
                     {
                         // Update cached user
                         const data = d as APIUser
-                        const index = _this.users.findIndex(a => a.id === data.id)
-                        if (index > -1) {
-                            const user = _this.users[index]
-                            user.username = data.username
-                            user.avatar = data.avatar
-                            user.displayName = data.global_name
-                        }
+                        _this.users.update(data.id, data)
                     }
                     break;
             }

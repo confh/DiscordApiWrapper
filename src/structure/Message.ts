@@ -50,25 +50,25 @@ export class Message extends Base {
         const users: User[] = []
         for (let i = 0; i < this.#mentionsIDs.length; i++) {
             const userID = this.#mentionsIDs[i];
-            users.push(this.client.users.find(a => a.id === userID))
+            users.push(this.client.users.get(userID))
         }
         return users
     }
 
     get channel(): Channel | null {
-        return this.client.channels.find(a => a.id === this.channelId) ?? null
+        return this.client.channels.get(this.channelId) ?? null
     }
 
     get author(): User | null {
-        return this.client.users.find(a => a.id === this.#authorID) ?? null
+        return this.client.users.get(this.#authorID) ?? null
     }
 
     get member(): Member | null {
-        return this.client.guilds.find(a => a.id === this.guildId).members.find(a => a.id === this.#authorID) ?? null
+        return this.client.guilds.get(this.guildId).members.get(this.#authorID) ?? null
     }
 
     get guild() {
-        return this.client.guilds.find(a => a.id === this.guildId) as Guild
+        return this.client.guilds.get(this.guildId) as Guild
     }
 
     createComponentCollector(options?: {
