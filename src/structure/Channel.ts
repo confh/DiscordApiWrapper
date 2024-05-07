@@ -73,8 +73,6 @@ export class Channel extends Base {
             }
         }
 
-        if (typeof content !== "string" && content.poll) payload.poll = content.poll
-
         if (files) {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
@@ -84,7 +82,10 @@ export class Channel extends Base {
             validateStatus: () => true
         })
 
-        if (data.status === 400) throw new Error(data.data.message)
+        if (data.status === 400) {
+            console.log(`Payload is ${payload}`)
+            throw new Error(data.data.message)
+        }
 
         return new Message(data.data, this.client)
     }
