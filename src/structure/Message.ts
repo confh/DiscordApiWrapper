@@ -3,7 +3,6 @@ import { Client, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFi
 import { Channel, Guild, Collector, Member, User, wait, APIMessage, APIMessageAttachment } from ".."
 import { Base } from "../internal/Base"
 
-
 export class Message extends Base {
     readonly #authorID?: string
     readonly #mentionsIDs: string[] = []
@@ -50,7 +49,8 @@ export class Message extends Base {
         const users: User[] = []
         for (let i = 0; i < this.#mentionsIDs.length; i++) {
             const userID = this.#mentionsIDs[i];
-            users.push(this.client.users.get(userID))
+            const user = this.client.users.get(userID)
+            if (user) users.push(user)
         }
         return users
     }

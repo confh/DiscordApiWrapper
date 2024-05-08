@@ -306,6 +306,7 @@ export class Client {
     #isReady = false
     #payload;
     #lastHeartbeat: number
+    #lastHeartbeatAck: number
     #ws: WebSocket;
     readyTimestamp: number
     #listeners: {
@@ -330,11 +331,22 @@ export class Client {
         info: (...args: any[]) => any,
         error: (...args: any[]) => any
     } = console
-    public ping = -1
     public readonly baseURL = "https://discord.com/api/v10/"
 
     get user() {
         return this.users.getByIndex(0)
+    }
+
+    get token() {
+        return this.#token
+    }
+
+    get ping() {
+        if (this.#lastHeartbeatAck) {
+            return this.#lastHeartbeatAck - this.#lastHeartbeat
+        } else {
+            return -1
+        }
     }
 
     /**
@@ -376,11 +388,7 @@ export class Client {
         } else {
             this.shards = shards
             this._definePayload()
-            Object.defineProperty(this, "shards", { writable: false })
         }
-        Object.defineProperty(this, "token", {
-            writable: false
-        })
     }
 
     private _definePayload() {
@@ -716,7 +724,7 @@ export class Client {
                     return;
                     break;
                 case 11:
-                    _this.ping = Date.now() - _this.#lastHeartbeat
+                    _this.#lastHeartbeatAck = Date.now()
                     break;
                 case 0:
                     _this.#seq = s
@@ -731,7 +739,7 @@ export class Client {
                     setTimeout(() => {
                         _this.#isReady = true
                         _this.emit("ready")
-                    }, 1000);
+                    }, 500);
                     break;
                 case "RESUMED":
                     _this.emit("resume")
