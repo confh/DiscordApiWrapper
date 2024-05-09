@@ -266,7 +266,13 @@ export interface JSONCache {
     [x: string]: unknown
 }
 
-// Bot itents
+export enum MessageTypes {
+    DEFAULT,
+    USER_JOIN = 7,
+    REPLY = 19
+}
+
+// Bot intents
 export enum Intents {
     GUILDS = 1 << 0,
     GUILD_MEMBERS = 1 << 1,
@@ -751,6 +757,7 @@ export class Client {
                     _this.emit("resume")
                     break;
                 case "MESSAGE_CREATE":
+                    if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
                     if (!_this.channels.get(d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
                     if (d.author && !d.webhook_id) {
                         _this.emit("messageCreate", new Message(d, _this))
@@ -759,6 +766,7 @@ export class Client {
                     }
                     break;
                 case "MESSAGE_UPDATE":
+                    if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
                     if (d.author) {
                         _this.emit("messageUpdate", new Message(d, _this))
                     }
