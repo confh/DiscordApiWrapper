@@ -7,7 +7,7 @@ import { Channel } from './structure/Channel';
 import { Collector } from './structure/Collector';
 import { Guild } from './structure/Guild';
 import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './structure/Interactions';
-import { Message } from './structure/Message';
+import { Message, WebhookMessage } from './structure/Message';
 import { Role } from './structure/Role';
 import { Manager } from './internal/Manager';
 import { Member } from './structure/Member';
@@ -116,6 +116,11 @@ export interface APIMessage {
     attachments: APIMessageAttachment[],
 }
 
+export interface APIWebhookMessage extends Omit<APIMessage, "author"> {
+    webhook_id?: string,
+    author: JSONCache
+}
+
 export interface APIRole {
     id: string,
     name: string,
@@ -145,7 +150,8 @@ export interface ClientEvents {
     roleDelete: [role: Role],
     channelCreate: [channel: Channel],
     channelDelete: [channel: Channel],
-    userUpdate: [oldUser: User, newUser: User]
+    userUpdate: [oldUser: User, newUser: User],
+    webhookMessageCreate: [message: WebhookMessage]
 }
 
 export interface Emoji {
@@ -745,9 +751,11 @@ export class Client {
                     _this.emit("resume")
                     break;
                 case "MESSAGE_CREATE":
-                    if (d.author) {
-                        if (!_this.channels.get(d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
+                    if (!_this.channels.get(d.channel_id)) await _this.registerChannelFromAPI(d.channel_id)
+                    if (d.author && !d.webhook_id) {
                         _this.emit("messageCreate", new Message(d, _this))
+                    } else if (d.author && d.webhook_id) {
+                        _this.emit("webhookMessageCreate", new WebhookMessage(d, _this))
                     }
                     break;
                 case "MESSAGE_UPDATE":

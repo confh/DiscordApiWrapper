@@ -1,6 +1,6 @@
 import axios from "axios"
 import { Client, ComponentTypes, ContentOptions, JSONCache, JSONToFormDataWithFile } from "../client"
-import { Channel, Guild, Collector, Member, User, wait, APIMessage, APIMessageAttachment } from ".."
+import { Channel, Guild, Collector, Member, User, wait, APIMessage, APIMessageAttachment, APIWebhookMessage } from ".."
 import { Base } from "../internal/Base"
 
 export class Message extends Base {
@@ -200,5 +200,16 @@ export class Message extends Base {
         })
 
         if (data.status === 400) throw new Error(data.data.message)
+    }
+}
+
+export class WebhookMessage extends Message {
+    readonly webhook_id: string
+    readonly authorData: JSONCache
+
+    constructor(data: APIWebhookMessage, client: Client) {
+        super(data as unknown as APIMessage, client)
+        this.webhook_id = data.webhook_id
+        this.authorData = data.author as JSONCache
     }
 }
