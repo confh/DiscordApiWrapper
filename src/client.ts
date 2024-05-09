@@ -247,6 +247,11 @@ export interface ContentOptions {
     poll?: PollRequestObject
 }
 
+export interface WebhookContentOptions extends ContentOptions {
+    username?: string,
+    avatar_url?: string
+}
+
 export interface PollMediaObject {
     text: string,
     emoji?: PartialEmoji
