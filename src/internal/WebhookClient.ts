@@ -42,7 +42,6 @@ export class WebhookClient extends Base {
                 parse: [],
                 replied_user: true
             },
-            wait: true
         }
 
         if (typeof content !== "string" && content.username) payload.username = content.username
@@ -51,7 +50,7 @@ export class WebhookClient extends Base {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-        const data = await axios.post(`${this.client.baseURL}webhooks/${this.id}/${this.token}`, payload, {
+        const data = await axios.post(`${this.client.baseURL}webhooks/${this.id}/${this.token}?wait=true`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
