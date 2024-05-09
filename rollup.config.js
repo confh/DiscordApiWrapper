@@ -215,10 +215,10 @@ module.exports = [{
                 plugin
             ],
         },{
-            input: "src/internal/Webhook.ts",
+            input: "src/internal/WebhookClient.ts",
             output:
             {
-                file: "dist/Webhook.js",
+                file: "dist/WebhookClient.js",
                 format: 'cjs',
                 exports: 'named',
                 sourcemap: false,

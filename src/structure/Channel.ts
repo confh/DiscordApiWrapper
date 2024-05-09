@@ -1,5 +1,5 @@
 import axios from "axios"
-import { ChannelTypes, OverwriteObjectTypes, Client, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, PollRequestObject } from "../client"
+import { ChannelTypes, OverwriteObjectTypes, Client, BaseData, ContentOptions, JSONCache, JSONToFormDataWithFile, PollRequestObject, APIWebhookObject, wait } from "../client"
 import { Message } from "./Message"
 import { Base } from "../internal/Base"
 
@@ -83,10 +83,38 @@ export class Channel extends Base {
         })
 
         if (data.status === 400) {
-            console.log(`Payload is ${payload}`)
-            throw new Error(data.data.message)
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.send(content)
+            } else {
+                throw new Error(data.data.message);
+            }
         }
 
         return new Message(data.data, this.client)
+    }
+
+    async getWebhooks(): Promise<APIWebhookObject[]> {
+        if (!this.guild.me.permissions.includes("MANAGE_WEBHOOKS")) throw new Error("Missing access");
+        const webhooks: APIWebhookObject[] = []
+        const data = await axios.get(`${this.client.baseURL}channels/${this.id}/webhooks`, {
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.getWebhooks()
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
+
+        for (let i = 0; i < data.data.length; i++) {
+            webhooks.push(data.data[i])
+        }
+
+        return webhooks
     }
 }

@@ -66,6 +66,25 @@ export interface APIGuildMemberUpdate extends APIMember {
     guild_id: string,
 }
 
+export enum WebhookTypes {
+    INCOMING = 1,
+    CHANNEL_FOLLOWER,
+    APPLICATION
+}
+
+export interface APIWebhookObject {
+    id: string,
+    type: WebhookTypes,
+    guild_id?: string | null,
+    channel_id: string | null,
+    user?: APIUser,
+    name: string | null,
+    avatar: string | null,
+    token?: string,
+    application_id: string | null,
+    url?: string
+}
+
 export interface APIUser {
     id: string,
     username: string,

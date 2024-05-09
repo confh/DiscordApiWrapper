@@ -2,7 +2,7 @@ import axios from "axios";
 import { Client, JSONCache, JSONToFormDataWithFile, Message, WebhookContentOptions } from "..";
 import { Base } from "./Base";
 
-export class Webhook extends Base {
+export class WebhookClient extends Base {
     readonly id: string
     readonly token: string
 
