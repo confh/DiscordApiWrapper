@@ -11,7 +11,7 @@ export class Role extends Base {
     icon?: string
     unicode_emoji?: string
     position: number
-    #permissions: string
+    permissions: string
     managed: boolean
     mentionable: boolean
     tags?: {
@@ -26,12 +26,12 @@ export class Role extends Base {
         Object.assign(this, options)
     }
 
-    get permissions() {
-        return PermissionCalculator(Number(this.#permissions))
+    getPermissions() {
+        return PermissionCalculator(Number(this.permissions))
     }
 
     hasPermission(permission: keyof typeof PermissionsBitField) {
-        const permissionArray = this.permissions
+        const permissionArray = this.getPermissions()
         if (permissionArray.find(a => a === permission)) return true
         else return false
     }
@@ -53,7 +53,7 @@ export class Role extends Base {
             icon: this.icon,
             unicode_emoji: this.unicode_emoji,
             position: this.position,
-            permissions: this.#permissions,
+            permissions: this.permissions,
             managed: this.managed,
             mentionable: this.mentionable,
             tags: {
