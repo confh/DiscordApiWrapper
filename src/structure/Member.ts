@@ -44,14 +44,14 @@ export class Member extends Base {
     }
 
     get permissions() {
-        const perms: string[] = []
+        let perms: string[] = []
         if (this.id === this.guild.ownerId) {
             for (const key in PermissionsBitField) {
                 perms.push(key)
             }
         } else {
             for (let i = 0; i < this.roles.length; i++) {
-                const permissions = PermissionCalculator(Number(this.roles[i].permissions))
+                const permissions = this.roles[i].permissions
                 for (let i = 0; i < permissions.length; i++) {
                     const permission = permissions[i];
                     if (!perms.find(a => a === permission)) {

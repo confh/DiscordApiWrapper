@@ -53,9 +53,9 @@ export default function PermissionCalculator(permBitfield: number) {
 			continue;
 		};
 	};
-	if (currentPermissions.length === 1 && currentPermissions[0] === "ADMINISTRATOR") {
+	if (currentPermissions.includes("ADMINISTRATOR")) {
 		for (let key in PermissionsBitField) {
-			if (key !== "ADMINISTRATOR") {
+			if (!currentPermissions.find(a => a === key)) {
 				currentPermissions.push(key as (keyof typeof PermissionsBitField));
 			}
 		};

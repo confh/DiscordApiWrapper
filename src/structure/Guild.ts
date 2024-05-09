@@ -30,6 +30,10 @@ export class Guild extends Base {
         }
     }
 
+    get me() {
+        return this.members.get(this.client.user.id)
+    }
+
     get roles() {
         return this.client.roles.array.filter(a => a.guild_id === this.id) as Role[]
     }
