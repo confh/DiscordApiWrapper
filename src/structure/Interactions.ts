@@ -56,7 +56,7 @@ export class Interaction extends Base {
         return new Message(data.data, this.client)
     }
 
-    async reply(content: string | ContentOptions) {
+    async reply(content: string | ContentOptions): Promise<Message> {
         this.acknowledged = true
         const embeds: any = []
         const components: any[] = []
@@ -138,9 +138,9 @@ export class Interaction extends Base {
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
-        const embeds: any[] = []
+        const embeds: JSONCache[] = []
         const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
-        const components: any[] = []
+        const components: JSONCache[] = []
 
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
@@ -172,6 +172,7 @@ export class Interaction extends Base {
         if (files) {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
+
 
         const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
@@ -324,7 +325,17 @@ export class ButtonInteraction extends Interaction {
                 cause: "Defering reply to interaction"
             })
         })
+    }
 
+    async update() {
+        this.acknowledged = true
+        await axios.post(this.callbackURL, { type: 7 }, {
+            headers: this.client.getHeaders()
+        }).then(async a => {
+            if (a.status === 400) throw new Error(a.data.message, {
+                cause: "Defering reply to interaction"
+            })
+        })
     }
 }
 
@@ -351,6 +362,18 @@ export class StringSelectMenuInteraction extends Interaction {
             })
         })
 
+    }
+
+
+    async update() {
+        this.acknowledged = true
+        await axios.post(this.callbackURL, { type: 7 }, {
+            headers: this.client.getHeaders()
+        }).then(async a => {
+            if (a.status === 400) throw new Error(a.data.message, {
+                cause: "Defering reply to interaction"
+            })
+        })
     }
 }
 

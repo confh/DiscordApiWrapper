@@ -145,7 +145,6 @@ export class Message extends Base {
     }
 
     async edit(content: string | ContentOptions): Promise<Message> {
-        if (!this.author) return;
         if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
         const embeds: any[] = []
         const components: any[] = []
