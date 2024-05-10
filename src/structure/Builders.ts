@@ -1,6 +1,6 @@
-import { ButtonStyles, Emoji } from "../client"
+import { ButtonStyles, Emoji, JSONCache, PartialEmoji } from "../client"
 
-type SUPPORTED_ELEMENTS = ButtonBuilder
+type SUPPORTED_ELEMENTS = ButtonBuilder | StringSelectMenuBuilder
 
 export interface FieldOptions {
     name: string,
@@ -114,35 +114,35 @@ export class EmbedBuilder {
     }
 }
 export class ButtonBuilder {
-    private label!: string;
-    private style: number = ButtonStyles.PRIMARY;
-    private custom_id!: string;
-    private disabled = false
-    private emoji?: Partial<Emoji>
-    private url!: string
+    #label!: string;
+    #style: number = ButtonStyles.PRIMARY;
+    #custom_id!: string;
+    #disabled = false
+    #emoji?: Partial<PartialEmoji>
+    #url!: string
 
     setUrl(url: string) {
-        this.url = url
+        this.#url = url
         return this
     }
 
     setLabel(label: string) {
-        this.label = label
+        this.#label = label
         return this
     }
 
     setStyle(style: number) {
-        this.style = style
+        this.#style = style
         return this
     }
 
     setCustomid(id: string) {
-        this.custom_id = id
+        this.#custom_id = id
         return this
     }
 
     setDisabled(disabled: boolean) {
-        this.disabled = disabled
+        this.#disabled = disabled
         return this
     }
 
@@ -150,12 +150,12 @@ export class ButtonBuilder {
         if (emoji.includes("<")) {
             const name = emoji.split(":")[1]
             const id = emoji.split(":")[2].replace(">", "")
-            this.emoji = {
+            this.#emoji = {
                 name,
                 id
             }
         } else {
-            this.emoji = {
+            this.#emoji = {
                 name: emoji
             }
         }
@@ -166,12 +166,116 @@ export class ButtonBuilder {
     toJson() {
         return {
             type: 2,
-            label: this.label,
-            style: this.style,
-            custom_id: this.custom_id,
-            disabled: this.disabled,
-            emoji: this.emoji,
-            url: this.url
+            label: this.#label,
+            style: this.#style,
+            custom_id: this.#custom_id,
+            disabled: this.#disabled,
+            emoji: this.#emoji,
+            url: this.#url
+        }
+    }
+}
+
+export class StringSelectMenuBuilder {
+    #placeHolder!: string;
+    #custom_id!: string;
+    #disabled = false
+    options!: StringSelect[]
+
+    setPlaceholder(placeholder: string) {
+        this.#placeHolder = placeholder
+        return this
+    }
+
+    setCustomid(id: string) {
+        this.#custom_id = id
+        return this
+    }
+
+    setDisabled(disabled: boolean) {
+        this.#disabled = disabled
+        return this
+    }
+
+    setOptions(...args: StringSelect[]) {
+        Object.defineProperty(this, "options", {
+            writable: true
+        })
+        this.options = args
+        Object.defineProperty(this, "options", {
+            writable: false
+        })
+        return this
+    }
+
+    toJson() {
+        const optionsJSON: JSONCache[] = []
+        for (let i = 0; i < this.options.length; i++) {
+            optionsJSON.push(this.options[i].toJson())
+        }
+
+        return {
+            type: 3,
+            custom_id: this.#custom_id,
+            options: optionsJSON,
+            placeholder: this.#placeHolder,
+            disabled: this.#disabled
+        }
+    }
+}
+
+export class StringSelect {
+    #label!: string
+    #value!: string
+    #description?: string
+    #emoji?: Partial<PartialEmoji>
+    #default?: boolean
+
+    setLabel(label: string) {
+        this.#label = label
+        return this
+    }
+
+    setValue(value: string) {
+        this.#value = value
+        return this
+    }
+
+    setDescription(desc: string) {
+        this.#description = desc
+        return this
+    }
+
+    setEmoji(emoji: string) {
+        if (emoji.includes("<")) {
+            const name = emoji.split(":")[1]
+            const id = emoji.split(":")[2].replace(">", "")
+            this.#emoji = {
+                name,
+                id
+            }
+        } else {
+            this.#emoji = {
+                name: emoji
+            }
+        }
+
+        return this
+    }
+
+
+    setDefault(value: boolean) {
+        this.#default = value
+        return this
+    }
+
+    toJson() {
+        return {
+            label: this.#label,
+            value: this.#value,
+            description: this.#description,
+            emoji: this.#emoji,
+            default: this.#default
         }
     }
 }

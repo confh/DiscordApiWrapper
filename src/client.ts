@@ -6,7 +6,7 @@ import { EmbedBuilder, ActionRowBuilder } from './structure/Builders';
 import { Channel } from './structure/Channel';
 import { Collector } from './structure/Collector';
 import { Guild } from './structure/Guild';
-import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction } from './structure/Interactions';
+import { Interaction, SlashCommandInteraction, UserContextInteraction, MessageContextInteraction, ButtonInteraction, StringSelectMenuInteraction } from './structure/Interactions';
 import { Message, WebhookMessage } from './structure/Message';
 import { Role } from './structure/Role';
 import { Manager } from './internal/Manager';
@@ -62,7 +62,7 @@ export function JSONToFormDataWithFile(json: JSONCache, ...files: FileContent[])
 }
 
 // TYPES OF API OBJECTS start
-export interface APIGuildMemberUpdate extends APIMember {
+export interface APIGuildMemberEvent extends APIMember {
     guild_id: string,
 }
 
@@ -828,6 +828,35 @@ export class Client {
                         _this.emit("guildCreate", _this.guilds.get(d.id) as Guild)
                     }
                     break
+                case "GUILD_MEMBER_ADD":
+                    {
+                        const guild = _this.guilds.get(d.guild_id)
+                        if (guild) _this.guilds.get(d.guild_id).members.cache(new Member(d, _this));
+                        _this.users.cache(new User(d.user as APIUser, _this))
+                    }
+                    break;
+                case "GUILD_MEMBER_REMOVE":
+                    {
+                        const data = d as {
+                            guild_id: string,
+                            user: APIUser
+                        }
+                        const guild = _this.guilds.get(data.guild_id)
+                        if (guild) _this.guilds.get(data.guild_id).members.delete(data.user.id)
+                    }
+                    break;
+                case "GUILD_MEMBER_UPDATE":
+                    {
+                        // Update cached member
+                        const data = d as APIGuildMemberEvent
+                        let oldMember = _this.guilds.get(data.guild_id).members.get(data.user.id)
+                        if (oldMember) {
+                            oldMember = oldMember._clone()
+                            _this.guilds.get(data.guild_id).members.update(data.user.id, data)
+                            _this.emit("memberUpdate", oldMember, _this.guilds.get(data.guild_id).members.get(data.user.id))
+                        }
+                    }
+                    break;
                 case "INTERACTION_CREATE":
                     if (d.type === InteractionTypes.APPLICATION_COMMAND) {
                         // Emit interactionCreate event with the argument according to the interaction type
@@ -843,12 +872,18 @@ export class Client {
                                 break;
                         }
                     } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
-                        if (d.data.component_type === 2) {
+                        if (d.data.component_type === ComponentTypes.BUTTON) {
                             const collector = _this.collectors.find(a => a.messageId === d.message.id)
                             if (collector) {
                                 collector.emit("collect", d.data.component_type, new ButtonInteraction(d, _this))
                             }
                             _this.emit("interactionCreate", new ButtonInteraction(d, _this))
+                        } else if (d.data.component_type === ComponentTypes.STRING_SELECT) {
+                            const collector = _this.collectors.find(a => a.messageId === d.message.id)
+                            if (collector) {
+                                collector.emit("collect", d.data.component_type, new StringSelectMenuInteraction(d, _this))
+                            }
+                            _this.emit("interactionCreate", new StringSelectMenuInteraction(d, _this))
                         }
                     }
                     break
@@ -894,18 +929,6 @@ export class Client {
                         _this.guilds.delete(d.id)
 
                         _this.emit("guildDelete", oldGuild)
-                    }
-                    break;
-                case "GUILD_MEMBER_UPDATE":
-                    {
-                        // Update cached member
-                        const data = d as APIGuildMemberUpdate
-                        let oldMember = _this.guilds.get(data.guild_id).members.get(data.user.id)
-                        if (oldMember) {
-                            oldMember = oldMember._clone()
-                            _this.guilds.get(data.guild_id).members.update(data.user.id, data)
-                            _this.emit("memberUpdate", oldMember, _this.guilds.get(data.guild_id).members.get(data.user.id))
-                        }
                     }
                     break;
                 case "GUILD_ROLE_CREATE":

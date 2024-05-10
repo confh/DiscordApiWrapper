@@ -328,6 +328,32 @@ export class ButtonInteraction extends Interaction {
     }
 }
 
+
+export class StringSelectMenuInteraction extends Interaction {
+    readonly data: {
+        component_type: number,
+        custom_id: string,
+        values: string[]
+    }
+
+    constructor(data: BaseData, client: Client) {
+        super(data, client)
+        this.data = data.data
+    }
+
+    override async defer() {
+        this.acknowledged = true
+        await axios.post(this.callbackURL, { type: 6 }, {
+            headers: this.client.getHeaders()
+        }).then(async a => {
+            if (a.status === 400) throw new Error(a.data.message, {
+                cause: "Defering reply to interaction"
+            })
+        })
+
+    }
+}
+
 export class MessageContextInteraction extends Interaction {
     readonly target_id: string
     readonly message: Message
