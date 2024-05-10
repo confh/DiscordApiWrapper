@@ -1,6 +1,6 @@
 src/
 test.ts
-node_modules/
+node_modules
 rollup.config.js
 tsconfig.json
 commit.sh

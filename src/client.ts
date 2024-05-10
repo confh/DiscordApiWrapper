@@ -917,7 +917,7 @@ export class Client {
                         // Remove all cached channels that are related to the guild
                         let channelIDs: string[] = []
                         for (let i = 0; i < _this.channels.length; i++) {
-                            const channel = _this.channels[i]
+                            const channel = _this.channels.getByIndex(i)
                             if (channel.guild.id && channel.guild.id === d.id) {
                                 channelIDs.push(channel.id)
                             }
