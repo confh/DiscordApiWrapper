@@ -329,9 +329,9 @@ export class ButtonInteraction extends Interaction {
 
     async update(content: string | ContentOptions) {
         this.acknowledged = true
-        const embeds: JSONCache[] = []
+        const embeds: any = []
+        const components: any[] = []
         const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
-        const components: JSONCache[] = []
 
         if (typeof content !== "string") {
             if (content.embeds && content.embeds?.length) {
@@ -349,36 +349,45 @@ export class ButtonInteraction extends Interaction {
             }
         }
         let payload: JSONCache | FormData = {
-            content: typeof content === "string" ? content : content.content,
-            allowed_mentions: {
-                parse: [],
-                replied_user: true
-            },
-            flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+            type: 7,
+            data: {
+                content: typeof content === "string" ? content : content.content,
+                embeds,
+                components,
+                allowed_mentions: {
+                    parse: [],
+                    replied_user: true
+                },
+                flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+            }
         }
-
-        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
-        if (typeof content !== "string" && content.components) payload.components = components
 
         if (files) {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-
-        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+        const data = await axios.post(this.callbackURL, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
+
         if (data.status === 400) {
             if (data.data.retry_after !== null) {
                 await wait(data.data.retry_after * 1000)
-                return await this.edit(content)
+                return await this.reply(content)
             } else {
                 throw new Error(data.data.message);
             }
         }
 
-        return new Message(data.data, this.client)
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
+            headers: this.client.getHeaders(),
+            validateStatus: () => true
+        })
+
+        if (originalMsg.status === 400) throw new Error(originalMsg.data.message)
+
+        return new Message(originalMsg.data, this.client)
     }
 }
 
