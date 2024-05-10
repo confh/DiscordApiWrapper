@@ -137,7 +137,7 @@ export class Interaction extends Base {
 
     }
 
-    async edit(content: string | ContentOptions) {
+    async edit(content: string | ContentOptions): Promise<Message> {
         const embeds: any[] = []
         const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
         const components: any[] = []
