@@ -198,13 +198,7 @@ export class StringSelectMenuBuilder {
     }
 
     setOptions(...args: StringSelect[]) {
-        Object.defineProperty(this, "options", {
-            writable: true
-        })
         this.options = args
-        Object.defineProperty(this, "options", {
-            writable: false
-        })
         return this
     }
 
