@@ -6,7 +6,7 @@ import { Base } from "../internal/Base"
 export class Interaction extends Base {
     #channelId: string
     #userID: string
-    readonly #token: string
+    readonly token: string
     readonly callbackURL: string
     readonly interaction_id: string
     readonly name: string
@@ -19,7 +19,7 @@ export class Interaction extends Base {
     constructor(data: BaseData, client: Client) {
         super(client)
         this.interaction_id = data.id
-        this.#token = data.token
+        this.token = data.token
         this.name = data.data.name
         this.id = data.data.id
         this.guildId = data.guild_id
@@ -27,7 +27,7 @@ export class Interaction extends Base {
         this.description = data.description
         this.type = data.type
         this.#channelId = data.channel_id
-        this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.#token}/callback`
+        this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
     }
 
     get guild() {
@@ -47,7 +47,7 @@ export class Interaction extends Base {
     }
 
     async getOriginalMessage() {
-        const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
+        const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders()
         })
 
@@ -109,7 +109,7 @@ export class Interaction extends Base {
             }
         }
 
-        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
+        const originalMsg = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders(),
             validateStatus: () => true
         })
@@ -174,7 +174,7 @@ export class Interaction extends Base {
         }
 
 
-        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, payload, {
+        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
@@ -225,7 +225,7 @@ export class Interaction extends Base {
             payload = JSONToFormDataWithFile(payload, ...files)
         }
 
-        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}`, payload, {
+        const data = await axios.post(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`, payload, {
             headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
             validateStatus: () => true
         })
@@ -243,7 +243,7 @@ export class Interaction extends Base {
     }
 
     async delete() {
-        const data = await axios.delete(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.#token}/messages/@original`, {
+        const data = await axios.delete(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders(),
             validateStatus: () => true
         })
@@ -327,15 +327,58 @@ export class ButtonInteraction extends Interaction {
         })
     }
 
-    async update() {
+    async update(content: string | ContentOptions) {
         this.acknowledged = true
-        await axios.post(this.callbackURL, { type: 7 }, {
-            headers: this.client.getHeaders()
-        }).then(async a => {
-            if (a.status === 400) throw new Error(a.data.message, {
-                cause: "Defering reply to interaction"
-            })
+        const embeds: JSONCache[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+        const components: JSONCache[] = []
+
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
+        }
+        let payload: JSONCache | FormData = {
+            content: typeof content === "string" ? content : content.content,
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
+            },
+            flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+        }
+
+        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+        if (typeof content !== "string" && content.components) payload.components = components
+
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
+        }
+
+
+        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.edit(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
+
+        return new Message(data.data, this.client)
     }
 }
 
@@ -364,16 +407,58 @@ export class StringSelectMenuInteraction extends Interaction {
 
     }
 
-
-    async update() {
+    async update(content: string | ContentOptions) {
         this.acknowledged = true
-        await axios.post(this.callbackURL, { type: 7 }, {
-            headers: this.client.getHeaders()
-        }).then(async a => {
-            if (a.status === 400) throw new Error(a.data.message, {
-                cause: "Defering reply to interaction"
-            })
+        const embeds: JSONCache[] = []
+        const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
+        const components: JSONCache[] = []
+
+        if (typeof content !== "string") {
+            if (content.embeds && content.embeds?.length) {
+                for (let i = 0; i < content.embeds.length; i++) {
+                    const embed = content.embeds[i];
+                    embeds.push(embed.toJson())
+                }
+            }
+
+            if (content.components && content.components?.length) {
+                for (let i = 0; i < content.components.length; i++) {
+                    const component = content.components[i];
+                    components.push(component.toJson())
+                }
+            }
+        }
+        let payload: JSONCache | FormData = {
+            content: typeof content === "string" ? content : content.content,
+            allowed_mentions: {
+                parse: [],
+                replied_user: true
+            },
+            flags: typeof content !== "string" && content.ephemeral ? 64 : 0
+        }
+
+        if (typeof content !== "string" && content.embeds) payload.embeds = embeds
+        if (typeof content !== "string" && content.components) payload.components = components
+
+        if (files) {
+            payload = JSONToFormDataWithFile(payload, ...files)
+        }
+
+
+        const data = await axios.patch(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, payload, {
+            headers: this.client.getHeaders(files ? "multipart/form-data" : "application/json"),
+            validateStatus: () => true
         })
+        if (data.status === 400) {
+            if (data.data.retry_after !== null) {
+                await wait(data.data.retry_after * 1000)
+                return await this.edit(content)
+            } else {
+                throw new Error(data.data.message);
+            }
+        }
+
+        return new Message(data.data, this.client)
     }
 }
 
