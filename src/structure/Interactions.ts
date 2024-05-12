@@ -23,15 +23,16 @@ export class Interaction extends Base {
         this.name = data.data.name
         this.id = data.data.id
         this.guildId = data.guild_id
-        this.#userID = data.member.user.id
+        if (data.member) this.#userID = data.member.user.id;
+        else this.#userID = data.user.id;
         this.description = data.description
         this.type = data.type
         this.#channelId = data.channel_id
         this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`
     }
 
-    get guild() {
-        return this.client.guilds.get(this.guildId) as Guild
+    get guild(): Guild | null {
+        return this.client.guilds.get(this.guildId) ?? null
     }
 
     get channel() {
@@ -42,8 +43,8 @@ export class Interaction extends Base {
         return this.client.users.get(this.#userID) as User
     }
 
-    get member() {
-        return this.client.guilds.get(this.guildId).members.get(this.#userID) as Member
+    get member(): Member | null {
+        return this.client.guilds.get(this.guildId).members.get(this.#userID) ?? null
     }
 
     async getOriginalMessage() {
