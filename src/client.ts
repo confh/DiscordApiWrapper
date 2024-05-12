@@ -159,6 +159,10 @@ export interface ClientEvents {
     ready: [],
     messageCreate: [message: Message],
     messageUpdate: [message: Message],
+    messageDelete: [messageData: {
+        id: string,
+        channel_id: string
+    }],
     guildCreate: [guild: Guild],
     guildDelete: [guild: Guild],
     memberUpdate: [oldMember: Member, newMember: Member],
@@ -790,9 +794,19 @@ export class Client {
                     }
                     break;
                 case "MESSAGE_UPDATE":
-                    if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
-                    if (d.author) {
-                        _this.emit("messageUpdate", new Message(d, _this))
+                    {
+                        if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
+                        if (d.author) {
+                            _this.emit("messageUpdate", new Message(d, _this))
+                        }
+                    }
+                    break;
+                case "MESSAGE_DELETE":
+                    {
+                        _this.emit("messageDelete", {
+                            id: d.id,
+                            channel_id: d.channel_id
+                        })
                     }
                     break;
                 case "GUILD_CREATE":
