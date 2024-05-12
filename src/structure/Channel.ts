@@ -43,7 +43,7 @@ export class Channel extends Base {
         if (data.status === 400) return new Error(data.data.message)
     }
 
-    async send(content: string | ContentOptions) {
+    async send(content: string | ContentOptions): Promise<Message> {
         const embeds: any = []
         const components: any[] = []
         const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
