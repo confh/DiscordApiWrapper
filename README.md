@@ -1,4 +1,4 @@
-**# DiscordApiWrapper: A High-Performance Discord.js Library for Node.js**
+# DiscordApiWrapper: A High-Performance Discord.js Library for Node.js
 
 **Introduction**
 
