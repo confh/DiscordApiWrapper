@@ -80,12 +80,7 @@ export class Message extends Base {
     }
 
     get componentCollectors() {
-        const collectors: Collector[] = []
-        for (let i = 0; i < this.client.collectors.length; i++) {
-            const collector = this.client.collectors[i];
-            if (collector.messageId === this.id) collectors.push(collector)
-        }
-        return collectors
+        return this.client.collectors.filter(collector => collector.messageId == this.id)
     }
 
     async reply(content: string | ContentOptions): Promise<Message> {

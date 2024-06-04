@@ -1,5 +1,5 @@
 import { Client, BaseData } from "../client"
-import PermissionCalculator, { PermissionsBitField } from "../PermissionCalculator"
+import { PermissionsBitField } from "../PermissionCalculator"
 import { User, Role, APIMember } from ".."
 import { Base } from "../internal/Base"
 
@@ -64,7 +64,7 @@ export class Member extends Base {
         return perms
     }
 
-    override _patch(data: APIMember) {
+    override patch(data: APIMember) {
         Object.defineProperty(this, "roleIDs", {
             writable: true,
             configurable: true,

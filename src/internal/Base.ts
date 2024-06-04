@@ -28,6 +28,6 @@ export abstract class Base {
 
         return dict;
     }
-    
-    _patch(data: any) { };
+
+    patch(data: any) { };
 }

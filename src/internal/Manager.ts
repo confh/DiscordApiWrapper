@@ -36,7 +36,7 @@ export class Manager<K extends Base> {
     update(id: string, data: any) {
         const index = this.#cache.findIndex(a => a.id === id)
         if (index > -1) {
-            this.#cache[index]._patch(data)
+            this.#cache[index].patch(data)
         }
     }
 }

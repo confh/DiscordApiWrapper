@@ -54,7 +54,7 @@ export class User extends Base {
         return await channel.send(content)
     }
 
-    _patch(data: APIUser): void {
+    patch(data: APIUser): void {
         this.username = data.username
         this.displayName = data.global_name || this.username
         this.avatar = data.avatar

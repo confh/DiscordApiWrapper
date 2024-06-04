@@ -16,7 +16,6 @@
   },
   "scripts": {
     "start": "npx tsx watch test.ts",
-    "prepare": "npx bun generateConfig.ts",
     "build": "rollup -c"
   },
   "devDependencies": {
