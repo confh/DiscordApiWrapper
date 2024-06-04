@@ -47,7 +47,13 @@ export class Interaction extends Base {
         return this.client.guilds.get(this.guildId).members.get(this.#userID) ?? null
     }
 
-    async getOriginalMessage() {
+    /**
+     * Retrieves the original message sent through the webhook.
+     *
+     * @return {Promise<Message>} The original message as a `Message` object.
+     * @throws {Error} If the request fails with a 400 status code.
+     */
+    async getOriginalMessage(): Promise<Message> {
         const data = await axios.get(`${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`, {
             headers: this.client.getHeaders()
         })
@@ -57,6 +63,13 @@ export class Interaction extends Base {
         return new Message(data.data, this.client)
     }
 
+    /**
+     * Sends a reply message to the interaction.
+     *
+     * @param {string | ContentOptions} content - The content of the message. It can be a string or an object with optional properties like embeds, components, and file.
+     * @return {Promise<Message>} A promise that resolves to the sent message as a `Message` object.
+     * @throws {Error} If the request fails with a 400 status code.
+     */
     async reply(content: string | ContentOptions): Promise<Message> {
         this.acknowledged = true
         const embeds: any = []
@@ -120,9 +133,16 @@ export class Interaction extends Base {
         return new Message(originalMsg.data, this.client)
     }
 
+    /**
+     * Defer the reply to an interaction.
+     *
+     * @param {Object} options - Optional parameters for the deferral.
+     * @param {boolean} options.ephemeral - Whether the reply should be ephemeral.
+     * @return {Promise<void>} - A promise that resolves when the deferral is complete.
+     */
     async defer(options?: {
         ephemeral?: boolean
-    }) {
+    }): Promise<void> {
         this.acknowledged = true
         await axios.post(this.callbackURL, {
             type: 5, data: {
@@ -138,6 +158,13 @@ export class Interaction extends Base {
 
     }
 
+    /**
+     * Edits the message with the given content.
+     *
+     * @param {string | ContentOptions} content - The content to edit the message with. It can be a string or an object with properties like content, embeds, components, ephemeral, and file.
+     * @return {Promise<Message>} A promise that resolves to the edited message.
+     * @throws {Error} If there is an error editing the message.
+     */
     async edit(content: string | ContentOptions): Promise<Message> {
         const embeds: JSONCache[] = []
         const files = typeof content !== "string" && content.file ? Array.isArray(content.file) ? content.file : [content.file] : null
@@ -317,7 +344,13 @@ export class ButtonInteraction extends Interaction {
         this.custom_id = data.data.custom_id
     }
 
-    override async defer() {
+    /**
+     * Defer the interaction by sending a response with a type of 6.
+     *
+     * @return {Promise<void>} A promise that resolves when the defer request is successful.
+     * @throws {Error} If the defer request returns a status of 400.
+     */
+    override async defer(): Promise<void> {
         this.acknowledged = true
         await axios.post(this.callbackURL, { type: 6 }, {
             headers: this.client.getHeaders()
@@ -328,7 +361,13 @@ export class ButtonInteraction extends Interaction {
         })
     }
 
-    async update(content: string | ContentOptions) {
+    /**
+     * Updates the content of a message with embeds, components, and files.
+     *
+     * @param {string | ContentOptions} content - The new content of the message or options for the message.
+     * @return {Promise<Message>} A promise that resolves to the updated message.
+     */
+    async update(content: string | ContentOptions): Promise<Message> {
         this.acknowledged = true
         const embeds: any = []
         const components: any[] = []

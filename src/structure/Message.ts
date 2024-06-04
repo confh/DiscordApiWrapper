@@ -83,6 +83,12 @@ export class Message extends Base {
         return this.client.collectors.filter(collector => collector.messageId == this.id)
     }
 
+    /**
+     * Sends a reply message.
+     *
+     * @param {string | ContentOptions} content - The content of the message or options for the message.
+     * @return {Promise<Message>} A promise that resolves to the sent message.
+     */
     async reply(content: string | ContentOptions): Promise<Message> {
         const embeds: any = []
         const components: any[] = []
@@ -139,6 +145,18 @@ export class Message extends Base {
         return new Message(data.data, this.client)
     }
 
+    /**
+     * Edits the content of a message.
+     *
+     * @param {string | ContentOptions} content - The new content of the message. It can be a string or an object with
+     * the following properties:
+     *   - content: The new content of the message.
+     *   - file: An optional file to attach to the message. It can be a single file or an array of files.
+     *   - embeds: An optional array of embeds to include in the message.
+     *   - components: An optional array of components to include in the message.
+     * @return {Promise<Message>} A promise that resolves to the edited message.
+     * @throws {Error} If the message is not owned by the bot.
+     */
     async edit(content: string | ContentOptions): Promise<Message> {
         if (this.author.id !== this.client.user.id) throw new Error("This message cannot be editted as it's not owned by the bot.");
         const embeds: any[] = []
@@ -188,6 +206,12 @@ export class Message extends Base {
         return data.data
     }
 
+    /**
+     * Deletes a message from the specified channel.
+     *
+     * @return {Promise<void>} - A Promise that resolves when the message is successfully deleted.
+     * @throws {Error} - If the request to delete the message fails, an Error is thrown with the error message.
+     */
     async delete() {
         const data = await axios.delete(`${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`, {
             headers: this.client.getHeaders()
