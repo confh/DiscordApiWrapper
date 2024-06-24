@@ -874,6 +874,10 @@ export class Client {
                 case "INTERACTION_CREATE":
                     if (d.type === InteractionTypes.APPLICATION_COMMAND) {
                         // Emit interactionCreate event with the argument according to the interaction type
+                        if (d.channel.type === ChannelTypes.DM) {
+                            const user = _this.users.get(d.user.id)
+                            await user.getDmChannel()
+                        }
                         switch (d.data.type) {
                             case ApplicationCommandTypes.CHAT_INPUT:
                                 _this.emit("interactionCreate", new SlashCommandInteraction(d, _this))

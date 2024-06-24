@@ -40,7 +40,7 @@ export class Role extends Base {
         return this.client.guilds.get(this.guild_id) as Guild
     }
 
-    patch(data: Role): void {
+    _patch(data: Role): void {
         Object.assign(this, data)
     }
 

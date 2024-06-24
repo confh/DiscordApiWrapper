@@ -11,7 +11,7 @@ export class Manager<K extends Base> {
         return this.#cache
     }
 
-    getByIndex(index: number) {
+    getByIndex(index: number): K | null {
         return this.#cache[index]
     }
 
@@ -29,14 +29,14 @@ export class Manager<K extends Base> {
         if (index > -1) this.#cache.splice(index, 1)
     }
 
-    get(id: string) {
+    get(id: string): K | undefined {
         return this.#cache.find(a => a.id === id)
     }
 
     update(id: string, data: any) {
         const index = this.#cache.findIndex(a => a.id === id)
         if (index > -1) {
-            this.#cache[index].patch(data)
+            this.#cache[index]._patch(data)
         }
     }
 }

@@ -29,5 +29,5 @@ export abstract class Base {
         return dict;
     }
 
-    patch(data: any) { };
+    _patch(data: any) { };
 }

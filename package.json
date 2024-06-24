@@ -1,7 +1,7 @@
 {
   "name": "@confis/discordapiwrapper",
-  "version": "1.8.9",
-  "description": "",
+  "version": "1.9.0",
+  "description": "A fast and lightweight discord api wrapper.",
   "keywords": [],
   "license": "ISC",
   "main": "dist/index.js",

@@ -64,7 +64,7 @@ export class Member extends Base {
         return perms
     }
 
-    override patch(data: APIMember) {
+    override _patch(data: APIMember) {
         Object.defineProperty(this, "roleIDs", {
             writable: true,
             configurable: true,
