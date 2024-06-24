@@ -19,6 +19,7 @@ generateConfig.ts
 commit.sh
 
 /dist
+*.env
 
 bun.lockb
 
