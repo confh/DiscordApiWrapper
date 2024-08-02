@@ -11,7 +11,6 @@ import { Message, WebhookMessage } from './structure/Message';
 import { Role } from './structure/Role';
 import { Manager } from './internal/Manager';
 import { Member } from './structure/Member';
-let interval: number | Timer = 0;
 
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle"
@@ -348,12 +347,13 @@ export class Client {
     #lastHeartbeat: number
     #lastHeartbeatAck: number
     #ws: WebSocket;
-    readyTimestamp: number
+    #readyTimestamp: number
     #listeners: {
         event: keyof ClientEvents,
         once: boolean,
         callback: (...args: any) => any
     }[] = []
+    #cachedSocketMessages: string[] = []
     #session_id: string
     #seq: number | null = null
     readonly #initialUrl = 'wss://gateway.discord.gg'
@@ -373,6 +373,7 @@ export class Client {
     } = console
     public readonly baseURL = "https://discord.com/api/v10/"
 
+
     get user() {
         return this.users.getByIndex(0)
     }
@@ -389,6 +390,14 @@ export class Client {
         }
     }
 
+    private sendToSocket(json: JSONCache) {
+        if (this.#ws.readyState != 1) {
+            this.#cachedSocketMessages.push(JSON.stringify(json))
+        } else {
+            this.#ws.send(JSON.stringify(json))
+        }
+    }
+
     /**
      * Pings discord every "ms" milliseconds
      * @param ms Milliseconds
@@ -397,7 +406,7 @@ export class Client {
     private _heartbeat(ms: number) {
         return setInterval(() => {
             this.#lastHeartbeat = Date.now()
-            this.#ws.send(JSON.stringify({ op: 1, d: this.#seq }))
+            this.sendToSocket({ op: 1, d: this.#seq })
         }, ms)
     }
 
@@ -464,7 +473,7 @@ export class Client {
      * How many milliseconds the bot has been up for since Epoch
      */
     get uptime() {
-        return Date.now() - this.readyTimestamp
+        return Date.now() - this.#readyTimestamp
     }
 
     async registerChannelFromAPI(channelId: string) {
@@ -638,7 +647,7 @@ export class Client {
                 "afk": false,
             }
         }
-        this.#ws.send(JSON.stringify(presencePayload))
+        this.sendToSocket(presencePayload)
     }
 
     /**
@@ -679,7 +688,7 @@ export class Client {
      * Connect to discord websocket
      */
     async connect() {
-        // If websocket is opened close it
+        // If websocket isn't closed close it.
         if (this.#ws && this.#ws.readyState !== 3) this.#ws.close(4000);
 
         const _this = this
@@ -700,7 +709,14 @@ export class Client {
                     }
                 }
 
-                _this.#ws.send(JSON.stringify(resumePayload))
+                _this.sendToSocket(resumePayload)
+
+                setTimeout(() => {
+                    for (let i = 0; i < _this.#cachedSocketMessages.length; i++) {
+                        const message = _this.#cachedSocketMessages[i];
+                        _this.sendToSocket(JSON.parse(message))
+                    }
+                }, 1000);
             }
         })
 
@@ -743,7 +759,7 @@ export class Client {
             switch (op) {
                 case 10:
                     const { heartbeat_interval } = d;
-                    interval = _this._heartbeat(heartbeat_interval)
+                    _this._heartbeat(heartbeat_interval)
 
                     if (_this.#url === _this.#initialUrl) this.send(JSON.stringify(_this.#payload))
                     break;
@@ -772,7 +788,7 @@ export class Client {
             }
             switch (t) {
                 case "READY":
-                    _this.readyTimestamp = Date.now()
+                    _this.#readyTimestamp = Date.now()
                     _this.#url = d.resume_gateway_url
                     _this.#session_id = d.session_id
                     _this.users.cache(new User(d.user, _this))
