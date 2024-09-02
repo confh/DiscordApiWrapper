@@ -1,7 +1,6 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 # Logs
-
 logs
 _.log
 npm-debug.log_
@@ -16,7 +15,7 @@ test.ts
 
 generateConfig.ts
 
-commit.sh
+commit
 
 /dist
 *.env

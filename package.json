@@ -16,7 +16,8 @@
   },
   "scripts": {
     "start": "npx tsx watch test.ts",
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "regenerate": "bun rollupconfig.ts"
   },
   "devDependencies": {
     "rollup-plugin-typescript2": "^0.35.0",
