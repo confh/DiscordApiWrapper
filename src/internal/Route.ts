@@ -13,19 +13,35 @@ export abstract class Routes {
     return `${this.#baseURL}/channels/${channelID}/messages`;
   }
 
+  static EditChannelMessage(channelID: string, messageID: string): string {
+    return `${this.#baseURL}/channels/${channelID}/messages/${messageID}`;
+  }
+
   static InteractionCallback(id: string, token: string): string {
     return `${this.#baseURL}/interactions/${id}/${token}/callback`;
   }
 
-  static OriginalMessage(userID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${userID}/${token}/messages/@original`;
+  static OriginalMessage(botID: string, token: string): string {
+    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
   }
 
-  static EditInteractionMessage(userID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${userID}/${token}/messages/@original`;
+  static EditInteractionMessage(botID: string, token: string): string {
+    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
   }
 
-  static DeleteInteractionMessage(userID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${userID}/${token}/messages/@original`;
+  static DeleteInteractionMessage(botID: string, token: string): string {
+    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
+  }
+
+  static InteractionFollowUp(botID: string, token: string): string {
+    return `${this.#baseURL}/webhooks/${botID}/${token}`;
+  }
+
+  static InteractionUpdate(botID: string, token: string): string {
+    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
+  }
+
+  static DMChannel(): string {
+    return `${this.#baseURL}users/@me/channels`;
   }
 }

@@ -1,6 +1,14 @@
 import axios from "axios";
-import { APIUser, Channel, Client, ContentOptions, Message } from "..";
+import {
+  APIUser,
+  BaseData,
+  Channel,
+  Client,
+  ContentOptions,
+  Message,
+} from "..";
 import { Base } from "../internal/Base";
+import { Routes } from "../internal/Route";
 
 export class User extends Base {
   public username: string;
@@ -30,23 +38,19 @@ export class User extends Base {
     if (this.#dmChannelId) {
       return this.client.channels.get(this.#dmChannelId);
     } else {
-      const data = await axios.post(
-        `${this.client.baseURL}users/@me/channels`,
+      const request = await this.client.rest.post<BaseData>(
+        Routes.DMChannel(),
         {
           recipient_id: this.id,
         },
-        {
-          headers: this.client.getHeaders(),
-        },
+        false,
       );
 
-      if (data.status === 400) throw new Error(data.data.message);
+      this.client.channels.cache(new Channel(request, this.client));
 
-      this.client.channels.cache(new Channel(data.data, this.client));
+      this.#dmChannelId = request.id;
 
-      this.#dmChannelId = data.data.id;
-
-      return this.client.channels.get(data.data.id);
+      return this.client.channels.get(request.id);
     }
   }
 

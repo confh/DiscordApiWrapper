@@ -444,7 +444,6 @@ export class Client {
       shards?: "auto" | number;
     },
   ) {
-    this.rest = new Rest(this);
     const shards = options.shards || "auto";
     this.#token = token;
     this.#cacheAllUsers = options?.cacheAllUsers || false;
@@ -457,6 +456,7 @@ export class Client {
       this.shards = shards;
       this._definePayload();
     }
+    this.rest = new Rest(this);
   }
 
   private _definePayload() {

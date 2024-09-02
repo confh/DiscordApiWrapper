@@ -65,16 +65,9 @@ export class Interaction extends Base {
    * @throws {Error} If the request fails with a 400 status code.
    */
   async getOriginalMessage(): Promise<Message> {
-    const data = await axios.get(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      {
-        headers: this.client.getHeaders(),
-      },
+    return await this.client.rest.get(
+      Routes.OriginalMessage(this.client.user.id, this.token),
     );
-
-    if (data.status === 400) throw new Error(data.data.message);
-
-    return new Message(data.data, this.client);
   }
 
   /**
@@ -89,7 +82,6 @@ export class Interaction extends Base {
     return await this.client.rest.respondToInteraction(
       4,
       content,
-      this.#userID,
       this.token,
       this.interaction_id,
     );
@@ -119,74 +111,11 @@ export class Interaction extends Base {
    * @throws {Error} If there is an error editing the message.
    */
   async edit(content: string | ContentOptions): Promise<Message> {
-    return await this.client.rest.editInteractionMessage(
-      this.#userID,
-      this.token,
-      content,
-    );
+    return await this.client.rest.editInteractionMessage(this.token, content);
   }
 
   async followUp(content: string | ContentOptions) {
-    const embeds: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-    const components: any[] = [];
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      embeds,
-      components,
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-      flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
-    };
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
-    );
-
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.followUp(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    return new Message(data.data, this.client);
+    return this.client.rest.followUpInteraction(this.token, content);
   }
 
   async delete() {
@@ -301,75 +230,7 @@ export class ButtonInteraction extends Interaction {
    */
   async update(content: string | ContentOptions): Promise<Message> {
     this.acknowledged = true;
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      type: 7,
-      data: {
-        content: typeof content === "string" ? content : content.content,
-        embeds,
-        components,
-        allowed_mentions: {
-          parse: [],
-          replied_user: true,
-        },
-        flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
-      },
-    };
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(this.callbackURL, payload, {
-      headers: this.client.getHeaders(
-        files ? "multipart/form-data" : "application/json",
-      ),
-      validateStatus: () => true,
-    });
-
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.reply(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    const originalMsg = await axios.get(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      {
-        headers: this.client.getHeaders(),
-        validateStatus: () => true,
-      },
-    );
-
-    if (originalMsg.status === 400) throw new Error(originalMsg.data.message);
-
-    return new Message(originalMsg.data, this.client);
+    return this.client.rest.updateInteraction(this.token, content);
   }
 }
 

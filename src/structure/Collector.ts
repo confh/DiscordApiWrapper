@@ -8,7 +8,7 @@ export class Collector {
   private client: Client;
   private listeners: {
     event: COLLECTOR_EVENTS;
-    callback: (...args) => any;
+    callback: (...args: any[]) => any;
   }[] = [];
   public type: ComponentTypes;
   public messageId: string;

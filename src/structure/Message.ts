@@ -115,70 +115,12 @@ export class Message extends Base {
    * @return {Promise<Message>} A promise that resolves to the sent message.
    */
   async reply(content: string | ContentOptions): Promise<Message> {
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      embeds,
-      components,
-      message_reference: {
-        message_id: this.id,
-        channel_id: this.channelId,
-        guild_Id: this.guildId,
-      },
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-    };
-
-    if (files && files.length) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(
-      `${this.client.baseURL}channels/${this.channelId}/messages`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files && files.length ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
+    return await this.client.rest.sendReplyChannelMessage(
+      content,
+      this.channelId,
+      this.id,
+      this.guildId,
     );
-
-    if (data.status === 400 || data.status === 404) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.reply(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-    return new Message(data.data, this.client);
   }
 
   /**
@@ -198,63 +140,7 @@ export class Message extends Base {
       throw new Error(
         "This message cannot be editted as it's not owned by the bot.",
       );
-    const embeds: any[] = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-    };
-
-    if (typeof content !== "string" && content.embeds) payload.embeds = embeds;
-    if (typeof content !== "string" && content.components)
-      payload.components = components;
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.patch(
-      `${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-      },
-    );
-
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.edit(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    return data.data;
+    return await this.client.rest.editMessage(this.id, this.channelId, content);
   }
 
   /**
@@ -267,14 +153,6 @@ export class Message extends Base {
     await this.client.rest.delete(
       Routes.MessageDelete(this.channelId, this.id),
     );
-    const data = await axios.delete(
-      `${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`,
-      {
-        headers: this.client.getHeaders(),
-      },
-    );
-
-    if (data.status === 400) throw new Error(data.data.message);
   }
 }
 

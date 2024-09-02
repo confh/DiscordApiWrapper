@@ -1,5 +1,12 @@
 import axios from "axios";
-import { Client, ContentOptions, FileContent, JSONCache, Message } from "..";
+import {
+  Client,
+  ContentOptions,
+  FileContent,
+  JSONCache,
+  Message,
+  APIMessage,
+} from "..";
 import { Routes } from "./Route";
 
 function JSONToBlob(json: JSONCache) {
@@ -107,7 +114,7 @@ export class Rest {
     payload: JSONCache | FormData,
     formData?: boolean,
   ): Promise<T> {
-    const request = await axios.patch(route, {
+    const request = await axios.patch(route, payload, {
       headers: this.#client.getHeaders(
         formData ? "multipart/form-data" : "application/json",
       ),
@@ -128,7 +135,7 @@ export class Rest {
 
   private contentToFilesEmbedsComponents(
     content: string | ContentOptions,
-  ): [any[], any[], FileContent[]?] {
+  ): [any[], any[], FileContent[] | null] {
     const embeds: any = [];
     const components: any[] = [];
     const files =
@@ -178,13 +185,53 @@ export class Rest {
       payload = JSONToFormDataWithFile(payload, ...files);
     }
 
-    return await this.post(Routes.SendChannelMessage(channelID), payload);
+    const data = await this.post<APIMessage>(
+      Routes.SendChannelMessage(channelID),
+      payload,
+    );
+
+    return new Message(data, this.#client);
+  }
+
+  async sendReplyChannelMessage(
+    content: string | ContentOptions,
+    channelID: string,
+    referenced_message_id: string,
+    referenced_message_guildID: string,
+  ): Promise<Message> {
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
+
+    let payload: JSONCache | FormData = {
+      content: typeof content === "string" ? content : content.content,
+      embeds,
+      components,
+      message_reference: {
+        message_id: referenced_message_id,
+        channel_id: channelID,
+        guild_Id: referenced_message_guildID,
+      },
+      allowed_mentions: {
+        parse: [],
+        replied_user: true,
+      },
+    };
+
+    if (files) {
+      payload = JSONToFormDataWithFile(payload, ...files);
+    }
+
+    const data = await this.post<APIMessage>(
+      Routes.SendChannelMessage(channelID),
+      payload,
+    );
+
+    return new Message(data, this.#client);
   }
 
   async respondToInteraction(
     type: number,
     content: string | ContentOptions,
-    userID: string,
     token: string,
     id: string,
   ): Promise<Message> {
@@ -215,7 +262,11 @@ export class Rest {
       Boolean(files),
     );
 
-    return await this.get(Routes.OriginalMessage(userID, token));
+    const data = await this.get<APIMessage>(
+      Routes.OriginalMessage(this.#client.user.id, token),
+    );
+
+    return new Message(data, this.#client);
   }
 
   async deferInteraction(
@@ -232,7 +283,6 @@ export class Rest {
   }
 
   async editInteractionMessage(
-    userID: string,
     token: string,
     content: string | ContentOptions,
   ): Promise<Message> {
@@ -256,10 +306,125 @@ export class Rest {
       payload = JSONToFormDataWithFile(payload, ...files);
     }
 
-    return await this.patch<Message>(
-      Routes.EditInteractionMessage(userID, token),
+    const data = await this.patch<APIMessage>(
+      Routes.EditInteractionMessage(this.#client.user.id, token),
       payload,
       Boolean(files),
     );
+
+    return new Message(data, this.#client);
+  }
+
+  async followUpInteraction(
+    token: string,
+    content: string | ContentOptions,
+  ): Promise<Message> {
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
+
+    let payload: JSONCache | FormData = {
+      content: typeof content === "string" ? content : content.content,
+      embeds,
+      components,
+      allowed_mentions: {
+        parse: [],
+        replied_user: true,
+      },
+      flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
+    };
+
+    if (files) {
+      payload = JSONToFormDataWithFile(payload, ...files);
+    }
+
+    const data = await this.post<APIMessage>(
+      Routes.InteractionFollowUp(this.#client.user.id, token),
+      payload,
+      Boolean(files),
+    );
+
+    return new Message(data, this.#client);
+  }
+
+  async updateInteraction(
+    token: string,
+    content: string | ContentOptions,
+  ): Promise<Message> {
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
+
+    let payload: JSONCache | FormData = {
+      type: 7,
+      data: {
+        content: typeof content === "string" ? content : content.content,
+        embeds,
+        components,
+        allowed_mentions: {
+          parse: [],
+          replied_user: true,
+        },
+        flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
+      },
+    };
+
+    if (files) {
+      payload = JSONToFormDataWithFile(payload, ...files);
+    }
+
+    await this.patch(
+      Routes.EditInteractionMessage(this.#client.user.id, token),
+      payload,
+      Boolean(files),
+    );
+
+    const data = await this.get<APIMessage>(
+      Routes.OriginalMessage(this.#client.user.id, token),
+    );
+
+    return new Message(data, this.#client);
+  }
+
+  async editMessage(
+    messageID: string,
+    channelID: string,
+    content: string | ContentOptions,
+  ): Promise<Message> {
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
+
+    if (typeof content !== "string") {
+      if (content.embeds && content.embeds?.length) {
+        for (let i = 0; i < content.embeds.length; i++) {
+          const embed = content.embeds[i];
+          embeds.push(embed.toJson());
+        }
+      }
+
+      if (content.components && content.components?.length) {
+        for (let i = 0; i < content.components.length; i++) {
+          const component = content.components[i];
+          components.push(component.toJson());
+        }
+      }
+    }
+
+    let payload: JSONCache | FormData = {
+      content: typeof content === "string" ? content : content.content,
+    };
+
+    if (typeof content !== "string" && content.embeds) payload.embeds = embeds;
+    if (typeof content !== "string" && content.components)
+      payload.components = components;
+
+    if (files) {
+      payload = JSONToFormDataWithFile(payload, ...files);
+    }
+
+    const data = await this.patch<APIMessage>(
+      Routes.EditChannelMessage(channelID, messageID),
+      payload,
+    );
+
+    return new Message(data, this.#client);
   }
 }
