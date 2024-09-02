@@ -2,6 +2,7 @@ import { Client, BaseData } from "../client";
 import { Member, Channel, Role } from "..";
 import { Base } from "../internal/Base";
 import { Manager } from "../internal/Manager";
+import { Routes } from "../internal/Route";
 
 export class Guild extends Base {
   readonly #channelIDs: string[] = [];
@@ -30,22 +31,26 @@ export class Guild extends Base {
     }
   }
 
-  get me() {
+  get me(): Member {
     return this.members.get(this.client.user.id);
   }
 
-  get roles() {
+  get roles(): Role[] {
     return this.client.roles.array.filter(
       (a) => a.guild_id === this.id,
     ) as Role[];
   }
 
-  get channels() {
+  get channels(): Channel[] {
     const channels: Channel[] = [];
     for (let i = 0; i < this.#channelIDs.length; i++) {
       const channelID = this.#channelIDs[i];
       channels.push(this.client.channels.get(channelID));
     }
     return channels;
+  }
+
+  async leave() {
+    await this.client.rest.delete(Routes.GuildRoute(this.id));
   }
 }

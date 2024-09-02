@@ -42,6 +42,10 @@ export abstract class Routes {
   }
 
   static DMChannel(): string {
-    return `${this.#baseURL}users/@me/channels`;
+    return `${this.#baseURL}/users/@me/channels`;
+  }
+
+  static GuildRoute(guildID: string): string {
+    return `${this.#baseURL}/users/@me/guilds/${guildID}`;
   }
 }
