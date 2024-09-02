@@ -24,8 +24,9 @@ fs.writeFileSync(
       exclude: ["structure", "src"]
   })
 
-  module.exports = ${paths.map((path) => {
-    return `
+  module.exports = [${paths
+    .map((path) => {
+      return `
       {
           input: "${path}",
           output:
@@ -42,5 +43,6 @@ fs.writeFileSync(
           ],
       }
     `;
-  })}`,
+    })
+    .join(",")}]`,
 );

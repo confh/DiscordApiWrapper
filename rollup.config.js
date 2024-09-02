@@ -3,17 +3,18 @@ const plugin = typescript({
   exclude: ["structure", "src"],
 });
 
-(module.exports = {
-  input: "src/internal/WebhookClient.ts",
-  output: {
-    file: "dist/WebhookClient.js",
-    format: "cjs",
-    exports: "named",
-    sourcemap: false,
-    strict: false,
+module.exports = [
+  {
+    input: "src/internal/WebhookClient.ts",
+    output: {
+      file: "dist/WebhookClient.js",
+      format: "cjs",
+      exports: "named",
+      sourcemap: false,
+      strict: false,
+    },
+    plugins: [plugin],
   },
-  plugins: [plugin],
-}),
   {
     input: "src/internal/Manager.ts",
     output: {
@@ -200,4 +201,5 @@ const plugin = typescript({
       strict: false,
     },
     plugins: [plugin],
-  };
+  },
+];
