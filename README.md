@@ -67,7 +67,12 @@ client.connect();
 **Final code:**
 
 ````typescript
-import { Client, Intents, SlashCommandBuilder, SlashCommandInteraction } from "@confis/discordapiwrapper"
+import {
+  Client,
+  Intents,
+  SlashCommandBuilder,
+  SlashCommandInteraction,
+} from "@confis/discordapiwrapper";
 
 const client = new Client('YOUR_BOT_TOKEN', {
     cacheAllUsers: true,
