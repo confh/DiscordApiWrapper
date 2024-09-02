@@ -138,7 +138,7 @@ export class Rest {
     payload: JSONCache | FormData,
     formData?: boolean,
   ): Promise<T> {
-    const request = await axios.T(route, payload, {
+    const request = await axios.put(route, payload, {
       headers: this.#client.getHeaders(
         formData ? "multipart/form-data" : "application/json",
       ),
@@ -148,7 +148,7 @@ export class Rest {
     if (request.status === 400) {
       if (request.data.retry_after !== null) {
         await wait(request.data.retry_after * 1000);
-        return await this.T(route, payload, formData);
+        return await this.put(route, payload, formData);
       } else {
         throw new Error(request.data.message);
       }
