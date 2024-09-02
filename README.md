@@ -31,7 +31,8 @@ import { Client, Intents, SlashCommandBuilder, SlashCommandInteraction } from "@
 ```typescript
 const client = new Client('YOUR_BOT_TOKEN', {
     cacheAllUsers: true,
-    intents: [Intents.GUILDS, Intents.GUILD_MEMBERS, Intents.GUILD_MESSAGES]
+    intents: [Intents.GUILDS, Intents.GUILD_MEMBERS, Intents.GUILD_MESSAGES],
+    shards: "auto"
 }); // Replace with your actual token
 ```
 
@@ -40,11 +41,11 @@ const client = new Client('YOUR_BOT_TOKEN', {
 ```typescript
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.displayName}`);
-    client.setGlobalCommands([
+    client.setGlobalCommands(
         new SlashCommandBuilder()
             .setName("ping")
             .setDescription("Ping the bot!")
-    ]);
+    );
 });
 
 client.on("interactionCreate", async (i) => {

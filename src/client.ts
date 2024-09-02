@@ -647,7 +647,7 @@ export class Client {
    * Bulk overwrite glboal commands
    * @param commands Array of {@link SlashCommandBuilder}
    */
-  async setGlobalCommands(commands: SlashCommandBuilder[]) {
+  async setGlobalCommands(...commands: SlashCommandBuilder[]) {
     const allCommands = await this.getCommands();
     const JSONCommands: {
       name: string;
