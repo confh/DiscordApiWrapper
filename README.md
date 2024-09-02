@@ -47,7 +47,9 @@ const client = new Client("YOUR_BOT_TOKEN", {
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.displayName}`);
   client.setGlobalCommands(
-    new SlashCommandBuilder().setName("ping").setDescription("Ping the bot!"),
+    new SlashCommandBuilder()
+      .setName("ping")
+      .setDescription("Ping the bot!"),
   );
 });
 
