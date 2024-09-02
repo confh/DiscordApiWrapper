@@ -13,6 +13,7 @@ import {
 } from "../client";
 import { Message } from "./Message";
 import { Base } from "../internal/Base";
+import { Routes } from "../internal/Route";
 
 export class Channel extends Base {
   readonly #guild_id: string;
@@ -46,78 +47,11 @@ export class Channel extends Base {
   }
 
   async sendTyping() {
-    const data = await axios.post(
-      `${this.client.baseURL}channels/${this.id}/typing`,
-      {},
-      {
-        headers: this.client.getHeaders(),
-        validateStatus: () => true,
-      },
-    );
-
-    if (data.status === 400) return new Error(data.data.message);
+    await this.client.rest.post(Routes.ChannelTyping(this.id), {});
   }
 
   async send(content: string | ContentOptions): Promise<Message> {
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      embeds,
-      components,
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-    };
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(
-      `${this.client.baseURL}/channels/${this.id}/messages`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
-    );
-
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.send(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    return new Message(data.data, this.client);
+    return await this.client.rest.sendChannelMessage(content, this.id);
   }
 
   async getWebhooks(): Promise<APIWebhookObject[]> {

@@ -10,6 +10,7 @@ import {
 } from "../client";
 import { Guild, Channel, Member, Message, User, wait } from "..";
 import { Base } from "../internal/Base";
+import { Routes } from "../internal/Route";
 
 export class Interaction extends Base {
   #channelId: string;
@@ -85,75 +86,13 @@ export class Interaction extends Base {
    */
   async reply(content: string | ContentOptions): Promise<Message> {
     this.acknowledged = true;
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      type: 4,
-      data: {
-        content: typeof content === "string" ? content : content.content,
-        embeds,
-        components,
-        allowed_mentions: {
-          parse: [],
-          replied_user: true,
-        },
-        flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
-      },
-    };
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(this.callbackURL, payload, {
-      headers: this.client.getHeaders(
-        files ? "multipart/form-data" : "application/json",
-      ),
-      validateStatus: () => true,
-    });
-
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.reply(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    const originalMsg = await axios.get(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      {
-        headers: this.client.getHeaders(),
-        validateStatus: () => true,
-      },
+    return await this.client.rest.respondToInteraction(
+      4,
+      content,
+      this.#userID,
+      this.token,
+      this.interaction_id,
     );
-
-    if (originalMsg.status === 400) throw new Error(originalMsg.data.message);
-
-    return new Message(originalMsg.data, this.client);
   }
 
   /**
@@ -165,25 +104,11 @@ export class Interaction extends Base {
    */
   async defer(options?: { ephemeral?: boolean }): Promise<void> {
     this.acknowledged = true;
-    await axios
-      .post(
-        this.callbackURL,
-        {
-          type: 5,
-          data: {
-            flags: options?.ephemeral ? 64 : 0,
-          },
-        },
-        {
-          headers: this.client.getHeaders(),
-        },
-      )
-      .then(async (a) => {
-        if (a.status === 400)
-          throw new Error(a.data.message, {
-            cause: "Defering reply to interaction",
-          });
-      });
+    await this.client.rest.deferInteraction(
+      this.interaction_id,
+      this.token,
+      options,
+    );
   }
 
   /**
@@ -194,67 +119,11 @@ export class Interaction extends Base {
    * @throws {Error} If there is an error editing the message.
    */
   async edit(content: string | ContentOptions): Promise<Message> {
-    const embeds: JSONCache[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-    const components: JSONCache[] = [];
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-      flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
-    };
-
-    if (typeof content !== "string" && content.embeds) payload.embeds = embeds;
-    if (typeof content !== "string" && content.components)
-      payload.components = components;
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.patch(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
+    return await this.client.rest.editInteractionMessage(
+      this.#userID,
+      this.token,
+      content,
     );
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.edit(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    return new Message(data.data, this.client);
   }
 
   async followUp(content: string | ContentOptions) {
@@ -321,18 +190,9 @@ export class Interaction extends Base {
   }
 
   async delete() {
-    const data = await axios.delete(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      {
-        headers: this.client.getHeaders(),
-        validateStatus: () => true,
-      },
+    await this.client.rest.delete(
+      Routes.DeleteInteractionMessage(this.#userID, this.token),
     );
-
-    if (data.status === 400)
-      throw new Error(data.data.message, {
-        cause: "Replying to interaction",
-      });
   }
 }
 

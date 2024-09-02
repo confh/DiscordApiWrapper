@@ -1,23 +1,24 @@
 import axios from "axios";
 import WebSocket from "ws";
-import { User } from "./structure/User";
-import { SlashCommandBuilder } from "./structure/SlashCommandBuilder";
-import { EmbedBuilder, ActionRowBuilder } from "./structure/Builders";
+import { Manager } from "./internal/Manager";
+import { ActionRowBuilder, EmbedBuilder } from "./structure/Builders";
 import { Channel } from "./structure/Channel";
 import { Collector } from "./structure/Collector";
 import { Guild } from "./structure/Guild";
 import {
-  Interaction,
-  SlashCommandInteraction,
-  UserContextInteraction,
-  MessageContextInteraction,
   ButtonInteraction,
+  Interaction,
+  MessageContextInteraction,
+  SlashCommandInteraction,
   StringSelectMenuInteraction,
+  UserContextInteraction,
 } from "./structure/Interactions";
+import { Member } from "./structure/Member";
 import { Message, WebhookMessage } from "./structure/Message";
 import { Role } from "./structure/Role";
-import { Manager } from "./internal/Manager";
-import { Member } from "./structure/Member";
+import { SlashCommandBuilder } from "./structure/SlashCommandBuilder";
+import { User } from "./structure/User";
+import { Rest } from "./internal/Rest";
 
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
@@ -380,6 +381,7 @@ export class Client {
   public readonly guilds = new Manager<Guild>();
   public readonly channels = new Manager<Channel>();
   public readonly roles = new Manager<Role>();
+  public readonly rest: Rest;
   public collectors: Collector[] = [];
   public logger: {
     info: (...args: any[]) => any;
@@ -442,6 +444,7 @@ export class Client {
       shards?: "auto" | number;
     },
   ) {
+    this.rest = new Rest(this);
     const shards = options.shards || "auto";
     this.#token = token;
     this.#cacheAllUsers = options?.cacheAllUsers || false;
@@ -777,10 +780,8 @@ export class Client {
       switch (code) {
         case 4004:
           throw new Error("Invalid token");
-          break;
         case 4012:
           throw new Error("Invalid API version");
-          break;
         default:
           this.removeAllListeners();
           this.close(4000, "Reconnecting");
@@ -822,7 +823,6 @@ export class Client {
           _this.#ws = null;
           _this.connect();
           return;
-          break;
         case 9:
           _this.#url = _this.#initialUrl;
           _this.#session_id = null;
@@ -831,7 +831,6 @@ export class Client {
           this.close(4000, "Reconnecting");
           _this.connect();
           return;
-          break;
         case 11:
           _this.#lastHeartbeatAck = Date.now();
           break;

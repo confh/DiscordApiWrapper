@@ -18,6 +18,7 @@ import {
   APIWebhookMessage,
 } from "..";
 import { Base } from "../internal/Base";
+import { Routes } from "../internal/Route";
 
 export class Message extends Base {
   readonly #authorID?: string;
@@ -263,6 +264,9 @@ export class Message extends Base {
    * @throws {Error} - If the request to delete the message fails, an Error is thrown with the error message.
    */
   async delete() {
+    await this.client.rest.delete(
+      Routes.MessageDelete(this.channelId, this.id),
+    );
     const data = await axios.delete(
       `${this.client.baseURL}/channels/${this.channelId}/messages/${this.id}`,
       {
