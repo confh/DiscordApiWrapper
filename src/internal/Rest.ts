@@ -126,10 +126,9 @@ export class Rest {
     return request.data;
   }
 
-  async sendChannelMessage(
+  private contentToFilesEmbedsComponents(
     content: string | ContentOptions,
-    channelID: string,
-  ): Promise<Message> {
+  ): [any[], any[], FileContent[]?] {
     const embeds: any = [];
     const components: any[] = [];
     const files =
@@ -154,6 +153,17 @@ export class Rest {
         }
       }
     }
+
+    return [embeds, components, files];
+  }
+
+  async sendChannelMessage(
+    content: string | ContentOptions,
+    channelID: string,
+  ): Promise<Message> {
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
+
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       embeds,
@@ -178,30 +188,9 @@ export class Rest {
     token: string,
     id: string,
   ): Promise<Message> {
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
 
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
     let payload: JSONCache | FormData = {
       type: 4,
       data: {
@@ -247,30 +236,9 @@ export class Rest {
     token: string,
     content: string | ContentOptions,
   ): Promise<Message> {
-    const embeds: JSONCache[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-    const components: JSONCache[] = [];
+    const [embeds, components, files] =
+      this.contentToFilesEmbedsComponents(content);
 
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       allowed_mentions: {
