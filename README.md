@@ -6,9 +6,9 @@ DiscordApiWrapper is a streamlined Discord bot library designed for maximum spee
 
 **Features**
 
-* **Blazing-Fast Performance:** Optimized for low-latency communication with the Discord API.
-* **Lightweight Footprint:** Keeps your bot's memory usage minimal.
-* **Essential Functionality:** Offers a core set of Discord bot functionalities for common bot tasks.
+- **Blazing-Fast Performance:** Optimized for low-latency communication with the Discord API.
+- **Lightweight Footprint:** Keeps your bot's memory usage minimal.
+- **Essential Functionality:** Offers a core set of Discord bot functionalities for common bot tasks.
 
 **Installation**
 
@@ -23,22 +23,56 @@ npm install @confis/discordapiwrapper
 1. **Import the library:**
 
 ```typescript
-import { Client, Intents, SlashCommandBuilder, SlashCommandInteraction } from "@confis/discordapiwrapper"
+import {
+  Client,
+  Intents,
+  SlashCommandBuilder,
+  SlashCommandInteraction,
+} from "@confis/discordapiwrapper";
 ```
 
 2. **Create a client instance:**
 
 ```typescript
-const client = new Client('YOUR_BOT_TOKEN', {
-    cacheAllUsers: true,
-    intents: [Intents.GUILDS, Intents.GUILD_MEMBERS, Intents.GUILD_MESSAGES],
-    shards: "auto"
+const client = new Client("YOUR_BOT_TOKEN", {
+  cacheAllUsers: true,
+  intents: [Intents.GUILDS, Intents.GUILD_MEMBERS, Intents.GUILD_MESSAGES],
+  shards: "auto",
 }); // Replace with your actual token
 ```
 
 3. **Start listening for events:**
 
 ```typescript
+client.on("ready", () => {
+  console.log(`Logged in as ${client.user.displayName}`);
+  client.setGlobalCommands(
+    new SlashCommandBuilder().setName("ping").setDescription("Ping the bot!"),
+  );
+});
+
+client.on("interactionCreate", async (i) => {
+  if (i instanceof SlashCommandInteraction) {
+    if (i.name === "ping") {
+      i.reply("Pong!");
+    }
+  }
+});
+
+client.connect();
+```
+
+**Final code:**
+
+````typescript
+import { Client, Intents, SlashCommandBuilder, SlashCommandInteraction } from "@confis/discordapiwrapper"
+
+const client = new Client('YOUR_BOT_TOKEN', {
+    cacheAllUsers: true,
+    intents: [Intents.GUILDS, Intents.GUILD_MEMBERS, Intents.GUILD_MESSAGES],
+    shards: "auto"
+}); // Replace with your actual token
+
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.displayName}`);
     client.setGlobalCommands(
@@ -56,5 +90,5 @@ client.on("interactionCreate", async (i) => {
     }
 });
 
-client.connect();
-```
+client.connect();```
+````
