@@ -2,6 +2,7 @@ import { Client, BaseData } from "../client";
 import { PermissionsBitField } from "../PermissionCalculator";
 import { User, Role, APIMember } from "..";
 import { Base } from "../internal/Base";
+import { Routes } from "../internal/Route";
 
 export class Member extends Base {
   readonly #guildId: string;
@@ -74,5 +75,16 @@ export class Member extends Base {
       const role = data.roles[i];
       this.#rolesIDs.push(role.id);
     }
+  }
+
+  /**
+   * Bans a member from the guild.
+   *
+   * @param [delete_message_seconds=0] Number of seconds to delete messages for.
+   */
+  async ban(delete_message_seconds = 0) {
+    await this.client.rest.put(Routes.GuildBan(this.#guildId, this.id), {
+      delete_message_seconds,
+    });
   }
 }

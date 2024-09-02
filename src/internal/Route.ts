@@ -48,4 +48,8 @@ export abstract class Routes {
   static GuildRoute(guildID: string): string {
     return `${this.#baseURL}/users/@me/guilds/${guildID}`;
   }
+
+  static GuildBan(guildID: string, memberID: string): string {
+    return `${this.#baseURL}/guilds/${guildID}/bans/${memberID}`;
+  }
 }
