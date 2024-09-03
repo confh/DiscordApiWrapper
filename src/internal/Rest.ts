@@ -83,7 +83,7 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status !== 204) {
+    if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.delete(route);
@@ -115,7 +115,9 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status !== 204) {
+    console.log(request.status);
+
+    if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.post(route, data, formData);
@@ -139,7 +141,7 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status !== 204) {
+    if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.get(route);
@@ -171,7 +173,7 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status !== 204) {
+    if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.patch(route, payload, formData);
@@ -203,7 +205,7 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status !== 204) {
+    if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== null) {
         await wait(request.data.retry_after * 1000);
         return await this.put(route, payload, formData);
@@ -321,7 +323,7 @@ export class Rest {
       this.contentToFilesEmbedsComponents(content);
 
     let payload: JSONCache | FormData = {
-      type: 4,
+      type,
       data: {
         content: typeof content === "string" ? content : content.content,
         embeds,
