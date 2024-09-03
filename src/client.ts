@@ -354,8 +354,8 @@ function calculateIntents(intents: Intents[]) {
   return totalIntentsValue;
 }
 
-/*
- * Client class
+/**
+ * The discord client class
  */
 export class Client {
   // Important variables
