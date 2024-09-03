@@ -83,8 +83,8 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status === 400) {
-      if (request.data.retry_after !== null) {
+    if (request.status !== 204) {
+      if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.delete(route);
       } else {
@@ -115,8 +115,8 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status === 400) {
-      if (request.data.retry_after !== null) {
+    if (request.status !== 204) {
+      if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.post(route, data, formData);
       } else {
@@ -139,8 +139,8 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status === 400) {
-      if (request.data.retry_after !== null) {
+    if (request.status !== 204) {
+      if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.get(route);
       } else {
@@ -171,8 +171,8 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status === 400) {
-      if (request.data.retry_after !== null) {
+    if (request.status !== 204) {
+      if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.patch(route, payload, formData);
       } else {
@@ -203,7 +203,7 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    if (request.status === 400) {
+    if (request.status !== 204) {
       if (request.data.retry_after !== null) {
         await wait(request.data.retry_after * 1000);
         return await this.put(route, payload, formData);

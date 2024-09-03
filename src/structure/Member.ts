@@ -143,4 +143,21 @@ export class Member extends Base {
       },
     );
   }
+
+  /**
+   * Timeout the member.
+   *
+   * @param communicationDisabledUntil The date until which the member's communication is re-enabled.
+   */
+  async setCommunicationDisabled(communicationDisabledUntil: Date) {
+    await this.client.rest.patch(
+      Routes.GuildMember(
+        this.#guildId,
+        this.id === this.client.user.id ? "@me" : this.id,
+      ),
+      {
+        communication_disabled_until: communicationDisabledUntil.toISOString(),
+      },
+    );
+  }
 }
