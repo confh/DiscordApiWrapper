@@ -3,6 +3,7 @@ import { User, Role, APIMember, Client, BaseData, Guild } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
+/** Member object */
 export class Member extends Base {
   readonly #guildId: string;
   #rolesIDs: string[] = [];
@@ -19,14 +20,29 @@ export class Member extends Base {
     this.#rolesIDs = data.roles;
   }
 
+  /**
+   * Get the guild of the member
+   * 
+   * @returns A guild object
+   */
   get guild(): Guild {
     return this.client.guilds.get(this.#guildId);
   }
 
+  /**
+   * Get the display name of the member
+   * 
+   * @returns The display name of the member
+   */
   get displayName(): string {
     return this.nick || this.user.displayName;
   }
 
+  /**
+   * Get the roles of the member
+   * 
+   * @returns An array of roles
+   */
   get roles(): Role[] {
     const roles: Role[] = [];
     for (let i = 0; i < this.#rolesIDs.length; i++) {
@@ -39,10 +55,20 @@ export class Member extends Base {
     return roles;
   }
 
+  /**
+   * Get the user object for the member
+   * 
+   * @returns A user object
+   */
   get user(): User {
     return this.client.users.get(this.id) as User;
   }
 
+  /**
+   * Get the permissions of the member
+   * 
+   * @returns An array of permissions
+   */
   get permissions(): (keyof typeof PermissionsBitField)[] {
     let perms: (keyof typeof PermissionsBitField)[] = [];
     if (this.id === this.guild.ownerId) {
@@ -64,6 +90,11 @@ export class Member extends Base {
     return perms;
   }
 
+  /**
+   * Update the member
+   * 
+   * @param data New member data
+   */
   override _patch(data: APIMember): void {
     Object.defineProperty(this, "roleIDs", {
       writable: true,
@@ -77,7 +108,7 @@ export class Member extends Base {
   }
 
   /**
-   * Bans a member from the guild.
+   * Bans the member from the guild.
    *
    * @param [delete_message_seconds=0] Number of seconds to delete messages for.
    */
@@ -85,5 +116,14 @@ export class Member extends Base {
     await this.client.rest.put(Routes.GuildBan(this.#guildId, this.id), {
       delete_message_seconds,
     });
+  }
+
+  /**
+   * Kicks the member from the guild.
+   *
+   * @param [delete_message_seconds=0] Number of seconds to delete messages for.
+   */
+  async kick(): Promise<void> {
+    await this.client.rest.delete(Routes.GuildBan(this.#guildId, this.id));
   }
 }

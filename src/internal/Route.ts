@@ -52,4 +52,8 @@ export abstract class Routes {
   static GuildBan(guildID: string, memberID: string): string {
     return `${this.#baseURL}/guilds/${guildID}/bans/${memberID}`;
   }
+
+  static GuildKick(guildID: string, memberID: string): string {
+    return `${this.#baseURL}/guilds/${guildID}/members/${memberID}`;
+  }
 }

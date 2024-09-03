@@ -13,6 +13,7 @@ import { Message } from "./Message";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
+/** Channel object */
 export class Channel extends Base {
   readonly #guild_id: string;
   readonly id: string;
@@ -40,18 +41,33 @@ export class Channel extends Base {
     this.#guild_id = data.guild_id;
   }
 
+  /**
+   * Get the guild of this channel
+   * @returns A guild object
+   */
   get guild(): Guild {
     return this.client.guilds.get(this.#guild_id);
   }
 
+  /**
+   * Send a typing indicator in the channel
+   */
   async sendTyping(): Promise<void> {
     await this.client.rest.post(Routes.ChannelTyping(this.id), {});
   }
 
+  /**
+   * Send a message in the channel
+   * @param content A string or {@link ContentOptions}
+   */
   async send(content: string | ContentOptions): Promise<Message> {
     return await this.client.rest.sendChannelMessage(content, this.id);
   }
 
+  /**
+   * Get the webhooks of the channel
+   * @returns An array of webhooks object
+   */
   async getWebhooks(): Promise<APIWebhookObject[]> {
     if (!this.guild.me.permissions.includes("MANAGE_WEBHOOKS"))
       throw new Error("Missing access");

@@ -27,6 +27,7 @@ export interface AuthorOptions {
   proxy_icon_url?: string;
 }
 
+/** Embed builder */
 export class EmbedBuilder {
   private author?: AuthorOptions;
   private color?: number;
@@ -49,16 +50,31 @@ export class EmbedBuilder {
     return this;
   }
 
+  /**
+   * Set the timestamp of the embed
+   * @param date The timestamp date
+   * @returns EmbedBuilder Object
+   */
   setTimestamp(date?: Date): this {
     this.timestamp = date || new Date();
     return this;
   }
 
+  /**
+   * Set the title of the embed
+   * @param title The title of the embed
+   * @returns EmbedBuilder Object
+   */
   setTitle(title: string): this {
     this.title = title;
     return this;
   }
 
+  /**
+   * Set the Color of the embed
+   * @param color The color of the embed in decial or hex
+   * @returns EmbedBuilder Object
+   */
   setColor(color: string | number): this {
     if (typeof color === "number") {
       this.color = color;
@@ -68,31 +84,61 @@ export class EmbedBuilder {
     return this;
   }
 
-  setDescription(desc: string): this {
-    this.description = desc;
+  /**
+   * Set the Description of the embed
+   * @param description The description of the embed
+   * @returns EmbedBuilder Object
+   */
+  setDescription(description: string): this {
+    this.description = description;
     return this;
   }
 
+  /**
+   * Set the Thumbnail of the embed
+   * @param options {@link ImageOptions}
+   * @returns EmbedBuilder Object
+   */
   setThumbnail(options: ImageOptions): this {
     this.thumbnail = options;
     return this;
   }
 
+  /**
+   * Set the Image of the embed
+   * @param options {@link ImageOptions}
+   * @returns EmbedBuilder Object
+   */
   setImage(options: ImageOptions): this {
     this.image = options;
     return this;
   }
 
+  /**
+   * Set the Footer of the embed
+   * @param options {@link FooterOptions}
+   * @returns EmbedBuilder Object
+   */
   setFooter(options: FooterOptions): this {
     this.footer = options;
     return this;
   }
 
+  /**
+   * Set the Fields of the embed
+   * @param fields {@link FieldOptions}
+   * @returns EmbedBuilder Object
+   */
   setFields(fields: FieldOptions[]): this {
     this.fields = fields;
     return this;
   }
 
+  /**
+   * Set the URL of the embed
+   * @param url The URL
+   * @returns EmbedBuilder Object
+   */
   setURL(url: string): this {
     this.url = url;
     return this;
@@ -124,6 +170,8 @@ export class EmbedBuilder {
     };
   }
 }
+
+/** Button builder */
 export class ButtonBuilder {
   #label!: string;
   #style: number = ButtonStyles.PRIMARY;
@@ -132,31 +180,61 @@ export class ButtonBuilder {
   #emoji?: Partial<PartialEmoji>;
   #url!: string;
 
+  /**
+   * Set the URL of the button
+   * @param url the URL
+   * @returns ButtonBuilder Object
+   */
   setUrl(url: string): this {
     this.#url = url;
     return this;
   }
 
+  /**
+   * Set the Label of the button
+   * @param label the Label
+   * @returns ButtonBuilder Object
+   */
   setLabel(label: string): this {
     this.#label = label;
     return this;
   }
 
-  setStyle(style: number): this {
+  /**
+   * Set the Style of the button
+   * @param style {@link ButtonStyles}
+   * @returns ButtonBuilder Object
+   */
+  setStyle(style: ButtonStyles): this {
     this.#style = style;
     return this;
   }
 
+  /**
+   * Set the Custom ID of the button
+   * @param id The custom ID
+   * @returns ButtonBuilder Object
+   */
   setCustomid(id: string): this {
     this.#custom_id = id;
     return this;
   }
 
+  /**
+   * Set if the button is disabled
+   * @param disabled Disabled field
+   * @returns ButtonBuilder Object
+   */
   setDisabled(disabled: boolean): this {
     this.#disabled = disabled;
     return this;
   }
 
+  /**
+   * Set the emoji of the button
+   * @param emoji The emoji
+   * @returns ButtonBuilder Object
+   */
   setEmoji(emoji: string): this {
     if (emoji.includes("<")) {
       const name = emoji.split(":")[1];
@@ -195,27 +273,48 @@ export class ButtonBuilder {
   }
 }
 
+/** String select menu builder */
 export class StringSelectMenuBuilder {
   #placeHolder!: string;
   #custom_id!: string;
   #disabled = false;
   options!: StringSelect[];
 
+  /**
+   * Set the Placeholder of the StringSelectMenu
+   * @param placeholder The placeholder
+   * @returns StringSelectMenuBuilder Object
+   */
   setPlaceholder(placeholder: string): this {
     this.#placeHolder = placeholder;
     return this;
   }
 
+  /**
+   * Set the Custom ID of the StringSelectMenu
+   * @param id The custom ID
+   * @returns StringSelectMenuBuilder Object
+   */
   setCustomid(id: string): this {
     this.#custom_id = id;
     return this;
   }
 
+  /**
+   * Set if the menu is disabled
+   * @param disabled Disabled field
+   * @returns StringSelectMenuBuilder Object
+   */
   setDisabled(disabled: boolean): this {
     this.#disabled = disabled;
     return this;
   }
 
+  /**
+   * Set the options of the StringSelectMenu
+   * @param ...args An array of {@link StringSelect}
+   * @returns StringSelectMenuBuilder Object
+   */
   setOptions(...args: StringSelect[]): this {
     this.options = args;
     return this;
@@ -243,6 +342,7 @@ export class StringSelectMenuBuilder {
   }
 }
 
+/** String select object */
 export class StringSelect {
   #label!: string;
   #value!: string;
@@ -250,21 +350,41 @@ export class StringSelect {
   #emoji?: Partial<PartialEmoji>;
   #default?: boolean;
 
+  /**
+   * Set the Label of the StringSelect
+   * @param label The label
+   * @returns StringSelect Object
+   */
   setLabel(label: string): this {
     this.#label = label;
     return this;
   }
 
+  /**
+   * Set the Value of the StringSelect
+   * @param value The value
+   * @returns StringSelect Object
+   */
   setValue(value: string): this {
     this.#value = value;
     return this;
   }
 
-  setDescription(desc: string): this {
-    this.#description = desc;
+  /**
+   * Set the Description of the StringSelect
+   * @param description The description
+   * @returns StringSelect Object
+   */
+  setDescription(description: string): this {
+    this.#description = description;
     return this;
   }
 
+  /**
+   * Set the Emoji of the StringSelect
+   * @param emoji The emoji
+   * @returns StringSelect Object
+   */
   setEmoji(emoji: string): this {
     if (emoji.includes("<")) {
       const name = emoji.split(":")[1];
@@ -282,6 +402,11 @@ export class StringSelect {
     return this;
   }
 
+  /**
+   * Set if the string select is default
+   * @param value Default value
+   * @returns StringSelect Object
+   */
   setDefault(value: boolean): this {
     this.#default = value;
     return this;
@@ -304,15 +429,26 @@ export class StringSelect {
   }
 }
 
+/** Action Row builder */
 export class ActionRowBuilder {
   public components!: Array<SUPPORTED_ELEMENTS>;
 
-  setComponents(...args: Array<SUPPORTED_ELEMENTS>): this {
+  /**
+   * Set the Components of the ActionRow
+   * @param ...args An array of {@link SUPPORTED_ELEMENTS}
+   * @returns ActionRowBuilder Object
+   */
+  setComponents(...args: SUPPORTED_ELEMENTS[]): this {
     this.components = args;
     return this;
   }
 
-  setComponentsArray(components: Array<SUPPORTED_ELEMENTS>): this {
+  /**
+   * Set the Components of the ActionRow
+   * @param components An array of {@link SUPPORTED_ELEMENTS}
+   * @returns ActionRowBuilder Object
+   */
+  setComponentsArray(components: SUPPORTED_ELEMENTS[]): this {
     this.components = components;
     return this;
   }

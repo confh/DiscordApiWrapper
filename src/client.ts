@@ -70,19 +70,19 @@ export function JSONToFormDataWithFile(
   return formData;
 }
 
-// TYPES OF API OBJECTS start
 export interface APIGuildMemberEvent extends APIMember {
   guild_id: string;
 }
 
+/** Enum for types of webhook */
 export enum WebhookTypes {
   INCOMING = 1,
   CHANNEL_FOLLOWER,
   APPLICATION,
 }
 
-export interface APIWebhookObject {
-  id: string;
+/** Webhook Object */
+export interface APIWebhookObject extends BaseData {
   type: WebhookTypes;
   guild_id?: string | null;
   channel_id: string | null;
@@ -94,8 +94,8 @@ export interface APIWebhookObject {
   url?: string;
 }
 
-export interface APIUser {
-  id: string;
+/** User Object */
+export interface APIUser extends BaseData {
   username: string;
   discriminator: string;
   global_name: string | null;
@@ -104,6 +104,7 @@ export interface APIUser {
   system?: boolean;
 }
 
+/** Member Object */
 export interface APIMember {
   user: APIUser;
   nick?: string | null;
@@ -116,6 +117,7 @@ export interface APIMember {
   permissions: string;
 }
 
+/** Message Attachment Object */
 export interface APIMessageAttachment {
   id: string;
   filename: string;
@@ -125,8 +127,8 @@ export interface APIMessageAttachment {
   content_type?: string;
 }
 
-export interface APIMessage {
-  id: string;
+/** Message Object */
+export interface APIMessage extends BaseData {
   channel_id: string;
   author: APIUser;
   content: string;
@@ -143,13 +145,14 @@ export interface APIMessage {
   attachments: APIMessageAttachment[];
 }
 
+/** Webhook Message Object */
 export interface APIWebhookMessage extends Omit<APIMessage, "author"> {
   webhook_id?: string;
   author: JSONCache;
 }
 
-export interface APIRole {
-  id: string;
+/** Role Object */
+export interface APIRole extends BaseData {
   name: string;
   color: number;
   hoist: boolean;
@@ -161,8 +164,8 @@ export interface APIRole {
   mentionable: boolean;
   flags: number;
 }
-// TYPES OF API OBJECTS end
 
+/** Client Events */
 export interface ClientEvents {
   ready: [];
   messageCreate: [message: Message];
@@ -187,6 +190,7 @@ export interface ClientEvents {
   webhookMessageCreate: [message: WebhookMessage];
 }
 
+/** Emoji Object */
 export interface Emoji {
   id: string;
   name: string;
@@ -307,13 +311,14 @@ export interface JSONCache {
   [x: string]: unknown;
 }
 
+/** Enum of types of messages */
 export enum MessageTypes {
   DEFAULT,
   USER_JOIN = 7,
   REPLY = 19,
 }
 
-// Bot intents
+/** Bot Intents */
 export enum Intents {
   GUILDS = 1 << 0,
   GUILD_MEMBERS = 1 << 1,
@@ -391,13 +396,23 @@ export class Client {
   } = console;
   public readonly baseURL = "https://discord.com/api/v10/";
 
+  /**
+   * The user object for the bot.
+   * @returns {User} The bot user object.
+   */
   get user(): User {
     return this.users.getByIndex(0);
   }
 
+  /**
+   * The bot token used to authenticate with the API.
+   * @returns {string} The bot token.
+   */
   get token(): string {
     return this.#token;
   }
+
+
 
   get ping(): number {
     if (this.#lastHeartbeatAck) {
@@ -407,6 +422,10 @@ export class Client {
     }
   }
 
+  /**
+   * Sends a JSON payload to the discord gateway, if the socket is not connected it will cache the payload and send it when the socket is connected.
+   * @param json The JSON payload to send.
+   */
   private sendToSocket(json: JSONCache) {
     if (this.#ws.readyState != 1) {
       this.#cachedSocketMessages.push(JSON.stringify(json));
@@ -427,6 +446,10 @@ export class Client {
     }, ms);
   }
 
+  /**
+   * Sets the default logger for the client, this will be used for all logging done by the client.
+   * @param logger The logger object to use, this must have an "info" and "error" method.
+   */
   setDefaultLogger(logger: {
     info: (...args: any[]) => any;
     error: (...args: any[]) => any;
@@ -492,7 +515,7 @@ export class Client {
   }
 
   /**
-   * How many milliseconds the bot has been up for since Epoch
+   * The number of milliseconds the bot has been up for since Epoch
    */
   get uptime(): number {
     return Date.now() - this.#readyTimestamp;
@@ -555,6 +578,13 @@ export class Client {
     });
   }
 
+
+
+  /**
+   * Get the headers for a request
+   * @param contentType The content type of the request. Defaults to `application/json`
+   * @returns The headers for the request
+   */
   getHeaders(contentType?: string): {
     Authorization: string;
     "Content-Type": string;
@@ -687,12 +717,12 @@ export class Client {
     data:
       | PRESENCES
       | {
-          activity?: {
-            name: string;
-            type: ActivityTypes;
-          };
-          status: PRESENCES;
-        },
+        activity?: {
+          name: string;
+          type: ActivityTypes;
+        };
+        status: PRESENCES;
+      },
   ) {
     const presencePayload = {
       op: 3,

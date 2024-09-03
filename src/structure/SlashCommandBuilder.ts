@@ -8,6 +8,7 @@ interface choice<T> {
   value: T;
 }
 
+/** Slash command builder */
 export class SlashCommandBuilder {
   private name: string;
   private description: string;
@@ -26,7 +27,7 @@ export class SlashCommandBuilder {
     desc: string,
     required: boolean,
     choices?: choice<any>[],
-  ): this {
+  ) {
     this.options.push({
       type: type,
       name,

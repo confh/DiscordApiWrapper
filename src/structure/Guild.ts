@@ -3,6 +3,7 @@ import { Base } from "../internal/Base";
 import { Manager } from "../internal/Manager";
 import { Routes } from "../internal/Route";
 
+/** Guild object */
 export class Guild extends Base {
   readonly #channelIDs: string[] = [];
   readonly id: string;
@@ -30,16 +31,28 @@ export class Guild extends Base {
     }
   }
 
+  /**
+   * Get the member object of the bot in the guild
+   * @returns A member object
+   */
   get me(): Member {
     return this.members.get(this.client.user.id);
   }
 
+  /**
+   * Get the roles in the guild
+   * @returns An array of roles
+   */
   get roles(): Role[] {
     return this.client.roles.array.filter(
       (a) => a.guild_id === this.id,
     ) as Role[];
   }
 
+  /**
+   * Get the channels in the guild
+   * @returns An array of channels
+   */
   get channels(): Channel[] {
     const channels: Channel[] = [];
     for (let i = 0; i < this.#channelIDs.length; i++) {
@@ -49,7 +62,10 @@ export class Guild extends Base {
     return channels;
   }
 
-  async leave(): Promise<void> {
+  /**
+   * Leave the guild
+   */
+  async leave(){
     await this.client.rest.delete(Routes.GuildRoute(this.id));
   }
 }

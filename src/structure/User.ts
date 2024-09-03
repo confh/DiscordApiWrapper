@@ -9,6 +9,7 @@ import {
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
+/** User object */
 export class User extends Base {
   public username: string;
   public readonly id: string;
@@ -28,11 +29,22 @@ export class User extends Base {
     this.avatar = data.avatar;
   }
 
+  /**
+   * Get the avatar URL of the user
+   * 
+   * @param options Avatar URL options
+   * @returns The url of the user's avatar
+   */
   getAvatarURL(options?: { size?: number; animated?: boolean }): string {
     let animated = options?.animated || false;
     return `https://cdn.discordapp.com/avatars/${this.id}/${this.avatar}.${animated ? "webp" : "png"}?size=${options?.size || 512}`;
   }
 
+  /**
+   * Get the DM channel of the user
+   * 
+   * @returns A channel object
+   */
   async getDmChannel(): Promise<Channel> {
     if (this.#dmChannelId) {
       return this.client.channels.get(this.#dmChannelId);
@@ -53,11 +65,22 @@ export class User extends Base {
     }
   }
 
+  /**
+   * Send the user a message
+   * 
+   * @param content The content of the message
+   * @returns A message object
+   */
   async send(content: string | ContentOptions): Promise<Message> {
     const channel = await this.getDmChannel();
     return await channel.send(content);
   }
 
+  /**
+   * Update the user
+   * 
+   * @param data The new data of the user
+   */
   _patch(data: APIUser): void {
     this.username = data.username;
     this.displayName = data.global_name || this.username;

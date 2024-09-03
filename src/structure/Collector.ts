@@ -3,6 +3,7 @@ import { Message } from "./Message";
 
 type COLLECTOR_EVENTS = "collect" | "end";
 
+/** Collector object */
 export class Collector {
   private timer: Timer;
   private client: Client;
@@ -33,6 +34,11 @@ export class Collector {
     }
   }
 
+  /**
+   * Listen for events
+   * @param event Event name
+   * @param callback The event callback
+   */
   on(event: COLLECTOR_EVENTS, callback: (...args: any[]) => any) {
     this.listeners.push({
       event,
@@ -40,6 +46,9 @@ export class Collector {
     });
   }
 
+  /**
+   * End the collector and execute the end event
+   */
   end(): void {
     const endListener = this.listeners.find((a) => a.event === "end");
     if (endListener) endListener.callback();
@@ -52,6 +61,9 @@ export class Collector {
     }
   }
 
+  /**
+   * Reset the timer of the collector
+   */
   resetTimer(): void {
     if (this.timeout) {
       clearTimeout(this.timer);

@@ -17,6 +17,7 @@ import {
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
+/** Interaction object */
 export class Interaction extends Base {
   #channelId: string;
   #userID: string;
@@ -45,18 +46,34 @@ export class Interaction extends Base {
     this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`;
   }
 
+  /**
+   * Get the guild of the interaction
+   * @returns A guild object
+   */
   get guild(): Guild {
     return this.client.guilds.get(this.guildId);
   }
 
+  /**
+   * Get the channel of the interaction
+   * @returns A channel object
+   */
   get channel(): Channel {
     return this.client.channels.get(this.#channelId);
   }
 
+  /**
+   * Get the user of the interaction
+   * @returns A user object
+   */
   get user(): User {
     return this.client.users.get(this.#userID);
   }
 
+  /**
+   * Get the member of the interaction
+   * @returns A member object
+   */
   get member(): Member | null {
     return (
       this.client.guilds.get(this.guildId).members.get(this.#userID) ?? null
@@ -119,10 +136,20 @@ export class Interaction extends Base {
     return await this.client.rest.editInteractionMessage(this.token, content);
   }
 
+  /**
+   * Sends a follow up with the given content
+   * 
+   * @param content - The content to send a follow up with
+   * @return {Promise<Message>} A promise that resolves to the sent message.
+   * @throws {Error} If there is an error sending a follow up.
+   */
   async followUp(content: string | ContentOptions): Promise<Message> {
     return this.client.rest.followUpInteraction(this.token, content);
   }
 
+  /**
+   * Delete the interaction message
+   */
   async delete(): Promise<void> {
     await this.client.rest.delete(
       Routes.DeleteInteractionMessage(this.#userID, this.token),
@@ -130,6 +157,7 @@ export class Interaction extends Base {
   }
 }
 
+/** Slash command interaction object */
 export class SlashCommandInteraction extends Interaction {
   options?: {
     value: string;
@@ -144,6 +172,11 @@ export class SlashCommandInteraction extends Interaction {
     this.resolved = data.data.resolved;
   }
 
+  /**
+   * Get the string option
+   * @param name Name of the option
+   * @returns Option data
+   */
   getString(name: string): {
     value: string;
     type: ApplicationCommandOptionTypes;
@@ -157,6 +190,11 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
+  /**
+   * Get the boolean option
+   * @param name Name of the option
+   * @returns Option data
+   */
   getBoolean(name: string): {
     value: string;
     type: ApplicationCommandOptionTypes;
@@ -170,6 +208,11 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
+  /**
+   * Get the integer option
+   * @param name Name of the option
+   * @returns Option data
+   */
   getNumber(name: string): {
     value: string;
     type: ApplicationCommandOptionTypes;
@@ -183,6 +226,11 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
+  /**
+   * Get the attachment option
+   * @param name Name of the option
+   * @returns Option data
+   */
   getAttachment(name: string): {
     width: number;
     url: string;
@@ -217,6 +265,7 @@ export class SlashCommandInteraction extends Interaction {
   }
 }
 
+/** Button interaction object */
 export class ButtonInteraction extends Interaction {
   readonly message: Message;
   readonly custom_id: string;
@@ -263,6 +312,7 @@ export class ButtonInteraction extends Interaction {
   }
 }
 
+/** String select menu interaction */
 export class StringSelectMenuInteraction extends Interaction {
   readonly data: {
     component_type: number;
@@ -275,6 +325,12 @@ export class StringSelectMenuInteraction extends Interaction {
     this.data = data.data;
   }
 
+  /**
+   * Defer the interaction by sending a response with a type of 6.
+   *
+   * @return {Promise<void>} A promise that resolves when the defer request is successful.
+   * @throws {Error} If the defer request returns a status of 400.
+   */
   override async defer(): Promise<void> {
     this.acknowledged = true;
     await axios
@@ -293,6 +349,12 @@ export class StringSelectMenuInteraction extends Interaction {
       });
   }
 
+  /**
+   * Updates the content of a message with embeds, components, and files.
+   *
+   * @param {string | ContentOptions} content - The new content of the message or options for the message.
+   * @return {Promise<Message>} A promise that resolves to the updated message.
+   */
   async update(content: string | ContentOptions): Promise<Message> {
     this.acknowledged = true;
     const embeds: JSONCache[] = [];
@@ -359,6 +421,7 @@ export class StringSelectMenuInteraction extends Interaction {
   }
 }
 
+/** Message context interaction */
 export class MessageContextInteraction extends Interaction {
   readonly target_id: string;
   readonly message: Message;
@@ -374,15 +437,16 @@ export class MessageContextInteraction extends Interaction {
   }
 }
 
+/** User context interaction */
 export class UserContextInteraction extends Interaction {
   readonly target_id: string;
   readonly target: {
     user?: User;
     member?: Member;
   } = {
-    user: undefined,
-    member: undefined,
-  };
+      user: undefined,
+      member: undefined,
+    };
 
   constructor(data: BaseData, client: Client) {
     super(data, client);

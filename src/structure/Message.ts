@@ -16,6 +16,7 @@ import {
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
+/** Message object */
 export class Message extends Base {
   readonly #authorID?: string;
   readonly #mentionsIDs: string[] = [];
@@ -56,10 +57,18 @@ export class Message extends Base {
     }
   }
 
+  /**
+   * Get the link of the message
+   */
   get jumpLink(): string {
     return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`;
   }
 
+  /**
+   * Get all the mentioned users in the message
+   * 
+   * @returns An array of users
+   */
   get mentions(): User[] {
     const users: User[] = [];
     for (let i = 0; i < this.#mentionsIDs.length; i++) {
@@ -70,24 +79,50 @@ export class Message extends Base {
     return users;
   }
 
+  /**
+   * Get the channel of the message
+   * 
+   * @returns A channel object
+   */
   get channel(): Channel | null {
     return this.client.channels.get(this.channelId) ?? null;
   }
 
+  /**
+   * Get the author of the message
+   * 
+   * @returns A user object
+   */
   get author(): User | null {
     return this.client.users.get(this.#authorID) ?? null;
   }
 
+  /**
+   * Get the member object of the author of the message
+   * 
+   * @returns A member object
+   */
   get member(): Member | null {
     return (
       this.client.guilds.get(this.guildId).members.get(this.#authorID) ?? null
     );
   }
 
+  /**
+   * Get the guild the message was sent in
+   * 
+   * @returns A guild object
+   */
   get guild(): Guild {
     return this.client.guilds.get(this.guildId) as Guild;
   }
 
+  /**
+   * Create a collector for this message
+   * 
+   * @param options Collector options
+   * @returns A collector object
+   */
   createComponentCollector(options?: {
     timeout?: number;
     component_type?: ComponentTypes;
@@ -98,6 +133,11 @@ export class Message extends Base {
     return this.client.collectors[index];
   }
 
+  /**
+   * Get all the collectors associated with this message
+   * 
+   * @returns An array of collectors
+   */
   get componentCollectors(): Collector[] {
     return this.client.collectors.filter(
       (collector) => collector.messageId == this.id,
@@ -152,6 +192,7 @@ export class Message extends Base {
   }
 }
 
+/** Webhook message object */
 export class WebhookMessage extends Message {
   readonly webhook_id: string;
   readonly authorData: JSONCache;

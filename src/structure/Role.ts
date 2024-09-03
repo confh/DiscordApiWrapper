@@ -5,6 +5,7 @@ import PermissionCalculator, {
 } from "../PermissionCalculator";
 import { Guild } from "./Guild";
 
+/** Role object */
 export class Role extends Base {
   readonly id: string;
   name: string;
@@ -28,20 +29,41 @@ export class Role extends Base {
     Object.assign(this, options);
   }
 
+  /**
+   * Get the guild of the role
+   * 
+   * @returns A guild object
+   */
+  get guild(): Guild {
+    return this.client.guilds.get(this.guild_id) as Guild;
+  }
+
+  /**
+   * Get the permissions of the role
+   * 
+   * @returns An array of permissions
+   */
   getPermissions(): (keyof typeof PermissionsBitField)[] {
     return PermissionCalculator(Number(this.permissions));
   }
 
+  /**
+   * Check if the role has a specific permission
+   * 
+   * @param permission The permission name
+   * @returns Whether the role has this permission or not
+   */
   hasPermission(permission: keyof typeof PermissionsBitField): boolean {
     const permissionArray = this.getPermissions();
     if (permissionArray.find((a) => a === permission)) return true;
     else return false;
   }
 
-  get guild(): Guild {
-    return this.client.guilds.get(this.guild_id) as Guild;
-  }
-
+  /**
+   * Update the role
+   * 
+   * @param data The new data of the role
+   */
   _patch(data: Role): void {
     Object.assign(this, data);
   }
