@@ -1,5 +1,7 @@
 # DiscordApiWrapper: A High-Performance Discord Bot Library for Node.js
 
+**Docs: https://jsr.io/@confis/discordapiwrapper/doc**
+
 **Introduction**
 
 DiscordApiWrapper is a streamlined Discord bot library designed for maximum speed and minimal overhead. It provides essential features for interacting with the Discord API, making it ideal for building efficient and responsive Discord bots.
