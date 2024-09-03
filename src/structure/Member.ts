@@ -22,7 +22,7 @@ export class Member extends Base {
 
   /**
    * Get the guild of the member
-   * 
+   *
    * @returns A guild object
    */
   get guild(): Guild {
@@ -31,7 +31,7 @@ export class Member extends Base {
 
   /**
    * Get the display name of the member
-   * 
+   *
    * @returns The display name of the member
    */
   get displayName(): string {
@@ -40,7 +40,7 @@ export class Member extends Base {
 
   /**
    * Get the roles of the member
-   * 
+   *
    * @returns An array of roles
    */
   get roles(): Role[] {
@@ -57,7 +57,7 @@ export class Member extends Base {
 
   /**
    * Get the user object for the member
-   * 
+   *
    * @returns A user object
    */
   get user(): User {
@@ -66,7 +66,7 @@ export class Member extends Base {
 
   /**
    * Get the permissions of the member
-   * 
+   *
    * @returns An array of permissions
    */
   get permissions(): (keyof typeof PermissionsBitField)[] {
@@ -92,7 +92,7 @@ export class Member extends Base {
 
   /**
    * Update the member
-   * 
+   *
    * @param data New member data
    */
   override _patch(data: APIMember): void {
@@ -125,5 +125,22 @@ export class Member extends Base {
    */
   async kick(): Promise<void> {
     await this.client.rest.delete(Routes.GuildBan(this.#guildId, this.id));
+  }
+
+  /**
+   * Sets the nickname of the member.
+   *
+   * @param nickname The new nickname for the member.
+   */
+  async setNick(nickname: string) {
+    await this.client.rest.patch(
+      Routes.GuildMember(
+        this.#guildId,
+        this.id === this.client.user.id ? "@me" : this.id,
+      ),
+      {
+        nick: nickname,
+      },
+    );
   }
 }

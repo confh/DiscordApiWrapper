@@ -45,6 +45,10 @@ export abstract class Routes {
     return `${this.#baseURL}/guilds/${guildID}/members/${memberID}`;
   }
 
+  static GuildMember(guildID: string, memberID: string): string {
+    return `${this.#baseURL}/guilds/${guildID}/members/${memberID}`;
+  }
+
   static ChannelWebhooks(channelID: string) {
     return `${this.#baseURL}/channels/${channelID}/webhooks`;
   }
