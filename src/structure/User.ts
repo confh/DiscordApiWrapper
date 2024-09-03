@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   APIUser,
   BaseData,
@@ -6,7 +5,7 @@ import {
   Client,
   ContentOptions,
   Message,
-} from "..";
+} from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 

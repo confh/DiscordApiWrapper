@@ -1,4 +1,4 @@
-import { Client, JSONCache } from "..";
+import { Client, JSONCache } from "../index";
 
 export abstract class Base {
   public readonly id: string;
@@ -12,7 +12,7 @@ export abstract class Base {
     });
   }
 
-  get client() {
+  get client(): Client {
     return this._client;
   }
 
@@ -20,8 +20,8 @@ export abstract class Base {
     return Object.assign(Object.create(this), this);
   }
 
-  toJson() {
-    const dict: JSONCache = {};
+  toJson(): JSONCache {
+    const dict = {};
     for (const [k, v] of Object.entries(this)) {
       if (k !== "client") Reflect.set(dict, k, v?.id ?? v?.toJSON?.() ?? v);
     }
@@ -29,5 +29,5 @@ export abstract class Base {
     return dict;
   }
 
-  _patch(data: any) {}
+  _patch(data: any): void {}
 }

@@ -26,7 +26,7 @@ export class SlashCommandBuilder {
     desc: string,
     required: boolean,
     choices?: choice<any>[],
-  ) {
+  ): this {
     this.options.push({
       type: type,
       name,
@@ -50,7 +50,7 @@ export class SlashCommandBuilder {
    * Set to context Interaction
    * @param type Type of context
    */
-  setContextInteraction(type: "USER" | "MESSAGE") {
+  setContextInteraction(type: "USER" | "MESSAGE"): this {
     if (type === "USER") {
       this.type = ApplicationCommandTypes.USER;
     } else {
@@ -82,7 +82,7 @@ export class SlashCommandBuilder {
     description: string,
     required = false,
     choices?: choice<number>[],
-  ) {
+  ): this {
     this.addSlashCommandOption(
       ApplicationCommandOptionTypes.INTEGER,
       name,
@@ -105,7 +105,7 @@ export class SlashCommandBuilder {
     description: string,
     required = false,
     choices?: choice<string>[],
-  ) {
+  ): this {
     this.addSlashCommandOption(
       ApplicationCommandOptionTypes.STRING,
       name,
@@ -123,7 +123,7 @@ export class SlashCommandBuilder {
    * @param required If the option is required or not
    * @returns SlashCommandBuilder Object
    */
-  addBooleanOption(name: string, description: string, required = false) {
+  addBooleanOption(name: string, description: string, required = false): this {
     this.addSlashCommandOption(
       ApplicationCommandOptionTypes.BOOLEAN,
       name,
@@ -140,7 +140,7 @@ export class SlashCommandBuilder {
    * @param required If the option is required or not
    * @returns SlashCommandBuilder Object
    */
-  addUserOption(name: string, description: string, required = false) {
+  addUserOption(name: string, description: string, required = false): this {
     this.addSlashCommandOption(
       ApplicationCommandOptionTypes.USER,
       name,
@@ -157,7 +157,11 @@ export class SlashCommandBuilder {
    * @param required If the option is required or not
    * @returns SlashCommandBuilder Object
    */
-  addAttachmentOption(name: string, description: string, required = false) {
+  addAttachmentOption(
+    name: string,
+    description: string,
+    required = false,
+  ): this {
     this.addSlashCommandOption(
       ApplicationCommandOptionTypes.ATTACHMENT,
       name,
@@ -171,7 +175,7 @@ export class SlashCommandBuilder {
    * Turn slash command into json
    * @returns JSON Data
    */
-  toJson() {
+  toJson(): any {
     const data: any = {
       name: this.name,
       type: this.type,

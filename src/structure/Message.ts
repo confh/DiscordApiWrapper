@@ -1,11 +1,3 @@
-import axios from "axios";
-import {
-  Client,
-  ComponentTypes,
-  ContentOptions,
-  JSONCache,
-  JSONToFormDataWithFile,
-} from "../client";
 import {
   Channel,
   Guild,
@@ -16,7 +8,11 @@ import {
   APIMessage,
   APIMessageAttachment,
   APIWebhookMessage,
-} from "..";
+  Client,
+  ComponentTypes,
+  ContentOptions,
+  JSONCache,
+} from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
@@ -60,11 +56,11 @@ export class Message extends Base {
     }
   }
 
-  get jumpLink() {
+  get jumpLink(): string {
     return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`;
   }
 
-  get mentions() {
+  get mentions(): User[] {
     const users: User[] = [];
     for (let i = 0; i < this.#mentionsIDs.length; i++) {
       const userID = this.#mentionsIDs[i];
@@ -88,21 +84,21 @@ export class Message extends Base {
     );
   }
 
-  get guild() {
+  get guild(): Guild {
     return this.client.guilds.get(this.guildId) as Guild;
   }
 
   createComponentCollector(options?: {
     timeout?: number;
     component_type?: ComponentTypes;
-  }) {
+  }): Collector {
     const index =
       this.client.collectors.push(new Collector(this, this.client, options)) -
       1;
     return this.client.collectors[index];
   }
 
-  get componentCollectors() {
+  get componentCollectors(): Collector[] {
     return this.client.collectors.filter(
       (collector) => collector.messageId == this.id,
     );
@@ -149,7 +145,7 @@ export class Message extends Base {
    * @return {Promise<void>} - A Promise that resolves when the message is successfully deleted.
    * @throws {Error} - If the request to delete the message fails, an Error is thrown with the error message.
    */
-  async delete() {
+  async delete(): Promise<void> {
     await this.client.rest.delete(
       Routes.MessageDelete(this.channelId, this.id),
     );

@@ -28,17 +28,17 @@ export class Role extends Base {
     Object.assign(this, options);
   }
 
-  getPermissions() {
+  getPermissions(): (keyof typeof PermissionsBitField)[] {
     return PermissionCalculator(Number(this.permissions));
   }
 
-  hasPermission(permission: keyof typeof PermissionsBitField) {
+  hasPermission(permission: keyof typeof PermissionsBitField): boolean {
     const permissionArray = this.getPermissions();
     if (permissionArray.find((a) => a === permission)) return true;
     else return false;
   }
 
-  get guild() {
+  get guild(): Guild {
     return this.client.guilds.get(this.guild_id) as Guild;
   }
 
@@ -46,7 +46,24 @@ export class Role extends Base {
     Object.assign(this, data);
   }
 
-  override toJson() {
+  override toJson(): {
+    id: string;
+    name: string;
+    color: number;
+    hoist: boolean;
+    icon: string;
+    unicode_emoji: string;
+    position: number;
+    permissions: string;
+    managed: boolean;
+    mentionable: boolean;
+    tags: {
+      bot_id: string;
+      integration_id: string;
+    };
+    flags: number;
+    guild_id: string;
+  } {
     return {
       id: this.id,
       name: this.name,

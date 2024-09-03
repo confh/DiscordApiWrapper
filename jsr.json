@@ -1,0 +1,10 @@
+{
+  "name": "@confis/discordapiwrapper",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publish": {
+    "include": ["README.md", "src/**/*.ts"]
+  }
+}

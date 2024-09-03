@@ -6,7 +6,7 @@ import {
   JSONCache,
   Message,
   APIMessage,
-} from "..";
+} from "../index";
 import { Routes } from "./Route";
 
 function JSONToBlob(json: JSONCache) {

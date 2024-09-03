@@ -1,5 +1,11 @@
 import axios from "axios";
 import {
+  Guild,
+  Channel,
+  Member,
+  Message,
+  User,
+  wait,
   Client,
   ApplicationCommandTypes,
   BaseData,
@@ -7,8 +13,7 @@ import {
   JSONCache,
   JSONToFormDataWithFile,
   ApplicationCommandOptionTypes,
-} from "../client";
-import { Guild, Channel, Member, Message, User, wait } from "..";
+} from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
@@ -40,16 +45,16 @@ export class Interaction extends Base {
     this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`;
   }
 
-  get guild(): Guild | null {
-    return this.client.guilds.get(this.guildId) ?? null;
+  get guild(): Guild {
+    return this.client.guilds.get(this.guildId);
   }
 
-  get channel() {
-    return this.client.channels.get(this.#channelId) as Channel;
+  get channel(): Channel {
+    return this.client.channels.get(this.#channelId);
   }
 
-  get user() {
-    return this.client.users.get(this.#userID) as User;
+  get user(): User {
+    return this.client.users.get(this.#userID);
   }
 
   get member(): Member | null {
@@ -114,11 +119,11 @@ export class Interaction extends Base {
     return await this.client.rest.editInteractionMessage(this.token, content);
   }
 
-  async followUp(content: string | ContentOptions) {
+  async followUp(content: string | ContentOptions): Promise<Message> {
     return this.client.rest.followUpInteraction(this.token, content);
   }
 
-  async delete() {
+  async delete(): Promise<void> {
     await this.client.rest.delete(
       Routes.DeleteInteractionMessage(this.#userID, this.token),
     );
@@ -139,7 +144,11 @@ export class SlashCommandInteraction extends Interaction {
     this.resolved = data.data.resolved;
   }
 
-  getString(name: string) {
+  getString(name: string): {
+    value: string;
+    type: ApplicationCommandOptionTypes;
+    name: string;
+  } {
     if (this.options) {
       return this.options.find(
         (a) =>
@@ -148,7 +157,11 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
-  getBoolean(name: string) {
+  getBoolean(name: string): {
+    value: string;
+    type: ApplicationCommandOptionTypes;
+    name: string;
+  } {
     if (this.options) {
       return this.options.find(
         (a) =>
@@ -157,7 +170,11 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
-  getNumber(name: string) {
+  getNumber(name: string): {
+    value: string;
+    type: ApplicationCommandOptionTypes;
+    name: string;
+  } {
     if (this.options) {
       return this.options.find(
         (a) =>
@@ -166,7 +183,19 @@ export class SlashCommandInteraction extends Interaction {
     } else return null;
   }
 
-  getAttachment(name: string) {
+  getAttachment(name: string): {
+    width: number;
+    url: string;
+    size: number;
+    proxy_url: string;
+    placeholder_version: number;
+    placeholder: string;
+    id: string;
+    height: number;
+    filename: string;
+    ephemeral: boolean;
+    content_type: string;
+  } {
     const attachmentId = this.options.find(
       (a) =>
         a.type === ApplicationCommandOptionTypes.ATTACHMENT && a.name === name,
@@ -246,7 +275,7 @@ export class StringSelectMenuInteraction extends Interaction {
     this.data = data.data;
   }
 
-  override async defer() {
+  override async defer(): Promise<void> {
     this.acknowledged = true;
     await axios
       .post(
@@ -264,7 +293,7 @@ export class StringSelectMenuInteraction extends Interaction {
       });
   }
 
-  async update(content: string | ContentOptions) {
+  async update(content: string | ContentOptions): Promise<Message> {
     this.acknowledged = true;
     const embeds: JSONCache[] = [];
     const files =

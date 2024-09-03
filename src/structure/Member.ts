@@ -1,6 +1,5 @@
-import { Client, BaseData } from "../client";
 import { PermissionsBitField } from "../PermissionCalculator";
-import { User, Role, APIMember } from "..";
+import { User, Role, APIMember, Client, BaseData, Guild } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
 
@@ -20,15 +19,15 @@ export class Member extends Base {
     this.#rolesIDs = data.roles;
   }
 
-  get guild() {
+  get guild(): Guild {
     return this.client.guilds.get(this.#guildId);
   }
 
-  get displayName() {
+  get displayName(): string {
     return this.nick || this.user.displayName;
   }
 
-  get roles() {
+  get roles(): Role[] {
     const roles: Role[] = [];
     for (let i = 0; i < this.#rolesIDs.length; i++) {
       const role = this.#rolesIDs[i];
@@ -40,11 +39,11 @@ export class Member extends Base {
     return roles;
   }
 
-  get user() {
+  get user(): User {
     return this.client.users.get(this.id) as User;
   }
 
-  get permissions() {
+  get permissions(): (keyof typeof PermissionsBitField)[] {
     let perms: (keyof typeof PermissionsBitField)[] = [];
     if (this.id === this.guild.ownerId) {
       for (const key in PermissionsBitField) {
@@ -65,7 +64,7 @@ export class Member extends Base {
     return perms;
   }
 
-  override _patch(data: APIMember) {
+  override _patch(data: APIMember): void {
     Object.defineProperty(this, "roleIDs", {
       writable: true,
       configurable: true,
@@ -82,7 +81,7 @@ export class Member extends Base {
    *
    * @param [delete_message_seconds=0] Number of seconds to delete messages for.
    */
-  async ban(delete_message_seconds = 0) {
+  async ban(delete_message_seconds = 0): Promise<void> {
     await this.client.rest.put(Routes.GuildBan(this.#guildId, this.id), {
       delete_message_seconds,
     });

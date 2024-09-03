@@ -33,14 +33,14 @@ export class Collector {
     }
   }
 
-  on(event: COLLECTOR_EVENTS, callback: (...args) => any) {
+  on(event: COLLECTOR_EVENTS, callback: (...args: any[]) => any) {
     this.listeners.push({
       event,
       callback,
     });
   }
 
-  end() {
+  end(): void {
     const endListener = this.listeners.find((a) => a.event === "end");
     if (endListener) endListener.callback();
     for (let i = 0; i < this.client.collectors.length; i++) {
@@ -52,7 +52,7 @@ export class Collector {
     }
   }
 
-  resetTimer() {
+  resetTimer(): void {
     if (this.timeout) {
       clearTimeout(this.timer);
       this.timer = setTimeout(() => {
@@ -63,7 +63,7 @@ export class Collector {
     }
   }
 
-  off(event: COLLECTOR_EVENTS) {
+  off(event: COLLECTOR_EVENTS): void {
     for (let i = 0; i < this.listeners.length; i++) {
       const listener = this.listeners[i];
       if (listener.event === event) {
@@ -73,7 +73,7 @@ export class Collector {
     }
   }
 
-  emit(event: COLLECTOR_EVENTS, type: ComponentTypes, ...args) {
+  emit(event: COLLECTOR_EVENTS, type: ComponentTypes, ...args: any[]): void {
     if (type !== this.type) return;
     for (let i = 0; i < this.listeners.length; i++) {
       const listener = this.listeners[i];

@@ -44,22 +44,22 @@ export class EmbedBuilder {
    * @param options Author Options
    * @returns EmbedBuilder Object
    */
-  setAuthor(options: AuthorOptions) {
+  setAuthor(options: AuthorOptions): this {
     this.author = options;
     return this;
   }
 
-  setTimestamp(date?: Date) {
+  setTimestamp(date?: Date): this {
     this.timestamp = date || new Date();
     return this;
   }
 
-  setTitle(title: string) {
+  setTitle(title: string): this {
     this.title = title;
     return this;
   }
 
-  setColor(color: string | number) {
+  setColor(color: string | number): this {
     if (typeof color === "number") {
       this.color = color;
     } else {
@@ -68,37 +68,48 @@ export class EmbedBuilder {
     return this;
   }
 
-  setDescription(desc: string) {
+  setDescription(desc: string): this {
     this.description = desc;
     return this;
   }
 
-  setThumbnail(options: ImageOptions) {
+  setThumbnail(options: ImageOptions): this {
     this.thumbnail = options;
     return this;
   }
 
-  setImage(options: ImageOptions) {
+  setImage(options: ImageOptions): this {
     this.image = options;
     return this;
   }
 
-  setFooter(options: FooterOptions) {
+  setFooter(options: FooterOptions): this {
     this.footer = options;
     return this;
   }
 
-  setFields(fields: FieldOptions[]) {
+  setFields(fields: FieldOptions[]): this {
     this.fields = fields;
     return this;
   }
 
-  setURL(url: string) {
+  setURL(url: string): this {
     this.url = url;
     return this;
   }
 
-  toJson() {
+  toJson(): {
+    author: AuthorOptions;
+    color: number;
+    description: string;
+    fields: FieldOptions[];
+    footer: FooterOptions;
+    image: ImageOptions;
+    thumbnail: ImageOptions;
+    timestamp: string | Date;
+    title: string;
+    url: string;
+  } {
     return {
       author: this.author,
       color: this.color,
@@ -121,32 +132,32 @@ export class ButtonBuilder {
   #emoji?: Partial<PartialEmoji>;
   #url!: string;
 
-  setUrl(url: string) {
+  setUrl(url: string): this {
     this.#url = url;
     return this;
   }
 
-  setLabel(label: string) {
+  setLabel(label: string): this {
     this.#label = label;
     return this;
   }
 
-  setStyle(style: number) {
+  setStyle(style: number): this {
     this.#style = style;
     return this;
   }
 
-  setCustomid(id: string) {
+  setCustomid(id: string): this {
     this.#custom_id = id;
     return this;
   }
 
-  setDisabled(disabled: boolean) {
+  setDisabled(disabled: boolean): this {
     this.#disabled = disabled;
     return this;
   }
 
-  setEmoji(emoji: string) {
+  setEmoji(emoji: string): this {
     if (emoji.includes("<")) {
       const name = emoji.split(":")[1];
       const id = emoji.split(":")[2].replace(">", "");
@@ -163,7 +174,15 @@ export class ButtonBuilder {
     return this;
   }
 
-  toJson() {
+  toJson(): {
+    type: number;
+    label: string;
+    style: number;
+    custom_id: string;
+    disabled: boolean;
+    emoji: Partial<PartialEmoji>;
+    url: string;
+  } {
     return {
       type: 2,
       label: this.#label,
@@ -182,27 +201,33 @@ export class StringSelectMenuBuilder {
   #disabled = false;
   options!: StringSelect[];
 
-  setPlaceholder(placeholder: string) {
+  setPlaceholder(placeholder: string): this {
     this.#placeHolder = placeholder;
     return this;
   }
 
-  setCustomid(id: string) {
+  setCustomid(id: string): this {
     this.#custom_id = id;
     return this;
   }
 
-  setDisabled(disabled: boolean) {
+  setDisabled(disabled: boolean): this {
     this.#disabled = disabled;
     return this;
   }
 
-  setOptions(...args: StringSelect[]) {
+  setOptions(...args: StringSelect[]): this {
     this.options = args;
     return this;
   }
 
-  toJson() {
+  toJson(): {
+    type: number;
+    custom_id: string;
+    options: JSONCache[];
+    placeholder: string;
+    disabled: boolean;
+  } {
     const optionsJSON: JSONCache[] = [];
     for (let i = 0; i < this.options.length; i++) {
       optionsJSON.push(this.options[i].toJson());
@@ -225,22 +250,22 @@ export class StringSelect {
   #emoji?: Partial<PartialEmoji>;
   #default?: boolean;
 
-  setLabel(label: string) {
+  setLabel(label: string): this {
     this.#label = label;
     return this;
   }
 
-  setValue(value: string) {
+  setValue(value: string): this {
     this.#value = value;
     return this;
   }
 
-  setDescription(desc: string) {
+  setDescription(desc: string): this {
     this.#description = desc;
     return this;
   }
 
-  setEmoji(emoji: string) {
+  setEmoji(emoji: string): this {
     if (emoji.includes("<")) {
       const name = emoji.split(":")[1];
       const id = emoji.split(":")[2].replace(">", "");
@@ -257,12 +282,18 @@ export class StringSelect {
     return this;
   }
 
-  setDefault(value: boolean) {
+  setDefault(value: boolean): this {
     this.#default = value;
     return this;
   }
 
-  toJson() {
+  toJson(): {
+    label: string;
+    value: string;
+    description: string;
+    emoji: Partial<PartialEmoji>;
+    default: boolean;
+  } {
     return {
       label: this.#label,
       value: this.#value,
@@ -276,17 +307,20 @@ export class StringSelect {
 export class ActionRowBuilder {
   public components!: Array<SUPPORTED_ELEMENTS>;
 
-  setComponents(...args: Array<SUPPORTED_ELEMENTS>) {
+  setComponents(...args: Array<SUPPORTED_ELEMENTS>): this {
     this.components = args;
     return this;
   }
 
-  setComponentsArray(components: Array<SUPPORTED_ELEMENTS>) {
+  setComponentsArray(components: Array<SUPPORTED_ELEMENTS>): this {
     this.components = components;
     return this;
   }
 
-  toJson() {
+  toJson(): {
+    type: number;
+    components: any[];
+  } {
     const JSONArray: any[] = [];
     for (let i = 0; i < this.components.length; i++) {
       const component = this.components[i];

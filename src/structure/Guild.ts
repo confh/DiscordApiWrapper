@@ -1,5 +1,4 @@
-import { Client, BaseData } from "../client";
-import { Member, Channel, Role } from "..";
+import { Member, Channel, Role, Client, BaseData } from "../index";
 import { Base } from "../internal/Base";
 import { Manager } from "../internal/Manager";
 import { Routes } from "../internal/Route";
@@ -11,7 +10,7 @@ export class Guild extends Base {
   readonly ownerId: string;
   readonly memberCount: number;
   readonly joined_at: number;
-  readonly members = new Manager<Member>();
+  readonly members: Manager<Member> = new Manager<Member>();
 
   constructor(data: BaseData, client: Client) {
     super(client);
@@ -50,7 +49,7 @@ export class Guild extends Base {
     return channels;
   }
 
-  async leave() {
+  async leave(): Promise<void> {
     await this.client.rest.delete(Routes.GuildRoute(this.id));
   }
 }

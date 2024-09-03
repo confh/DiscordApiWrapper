@@ -23,7 +23,7 @@ import { Rest } from "./internal/Rest";
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
 
-export async function wait(ms: number) {
+export async function wait(ms: number): Promise<unknown> {
   return new Promise((res) => {
     setTimeout(() => {
       res(null);
@@ -36,7 +36,7 @@ export async function wait(ms: number) {
  * @param json Type of {@link JSONCache}
  * @returns Blob from JSON
  */
-export function JSONToBlob(json: JSONCache) {
+export function JSONToBlob(json: JSONCache): Blob {
   return new Blob([JSON.stringify(json)], {
     type: "application/json",
   });
@@ -51,7 +51,7 @@ export function JSONToBlob(json: JSONCache) {
 export function JSONToFormDataWithFile(
   json: JSONCache,
   ...files: FileContent[]
-) {
+): JSONCache | FormData {
   if (!files.length) return json;
   const formData = new FormData();
   json.attachments = [];
@@ -377,10 +377,10 @@ export class Client {
   #intents = 0;
   readonly #token: string;
   public shards: number;
-  public readonly users = new Manager<User>();
-  public readonly guilds = new Manager<Guild>();
-  public readonly channels = new Manager<Channel>();
-  public readonly roles = new Manager<Role>();
+  public readonly users: Manager<User> = new Manager<User>();
+  public readonly guilds: Manager<Guild> = new Manager<Guild>();
+  public readonly channels: Manager<Channel> = new Manager<Channel>();
+  public readonly roles: Manager<Role> = new Manager<Role>();
   public readonly rest: Rest;
   public collectors: Collector[] = [];
   public logger: {
@@ -389,15 +389,15 @@ export class Client {
   } = console;
   public readonly baseURL = "https://discord.com/api/v10/";
 
-  get user() {
+  get user(): User {
     return this.users.getByIndex(0);
   }
 
-  get token() {
+  get token(): string {
     return this.#token;
   }
 
-  get ping() {
+  get ping(): number {
     if (this.#lastHeartbeatAck) {
       return this.#lastHeartbeatAck - this.#lastHeartbeat;
     } else {
@@ -492,7 +492,7 @@ export class Client {
   /**
    * How many milliseconds the bot has been up for since Epoch
    */
-  get uptime() {
+  get uptime(): number {
     return Date.now() - this.#readyTimestamp;
   }
 
@@ -553,7 +553,10 @@ export class Client {
     });
   }
 
-  getHeaders(contentType?: string) {
+  getHeaders(contentType?: string): {
+    Authorization: string;
+    "Content-Type": string;
+  } {
     return {
       Authorization: `Bot ${this.#token}`,
       "Content-Type": contentType || "application/json",
@@ -573,7 +576,7 @@ export class Client {
    * @param guild The ID of the guild or a {@link Guild} object
    * @returns Guild commands
    */
-  async getGuildCommands(guild: string | Guild) {
+  async getGuildCommands(guild: string | Guild): Promise<any> {
     let id = typeof guild === "string" ? guild : guild.id;
     const data = await axios.get(
       `${this.baseURL}applications/${this.user.id}/guilds/${id}/commands`,
@@ -629,7 +632,7 @@ export class Client {
    * Get the global commands for the application from the discord API
    * @returns Global commands
    */
-  async getCommands() {
+  async getCommands(): Promise<any> {
     const data = await axios.get(
       `${this.baseURL}applications/${this.user.id}/commands`,
       {
@@ -708,7 +711,7 @@ export class Client {
    * @param messageId The id of the message
    * @returns A {@link Message} object
    */
-  async getMessage(channelId: string, messageId: string) {
+  async getMessage(channelId: string, messageId: string): Promise<Message> {
     const data = await axios.get(
       `${this.baseURL}/channels/${channelId}/messages/${messageId}`,
       {
@@ -727,7 +730,7 @@ export class Client {
    * @param channelId The id of the channel
    * @returns A {@link Channel} object
    */
-  getChannel(channelId: string) {
+  getChannel(channelId: string): Channel {
     return this.channels.get(channelId);
   }
 
@@ -742,7 +745,7 @@ export class Client {
   /**
    * Connect to discord websocket
    */
-  async connect() {
+  async connect(): Promise<void> {
     // If websocket isn't closed close it.
     if (this.#ws && this.#ws.readyState !== 3) this.#ws.close(4000);
 

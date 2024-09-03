@@ -5,7 +5,7 @@ import {
   JSONToFormDataWithFile,
   Message,
   WebhookContentOptions,
-} from "..";
+} from "../index";
 import { Base } from "./Base";
 
 export class WebhookClient extends Base {
@@ -23,7 +23,7 @@ export class WebhookClient extends Base {
     Object.assign(this, options);
   }
 
-  async send(content: string | WebhookContentOptions) {
+  async send(content: string | WebhookContentOptions): Promise<Message> {
     const embeds: any = [];
     const components: any[] = [];
     const files =

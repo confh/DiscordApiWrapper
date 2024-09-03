@@ -3,11 +3,11 @@ import { Base } from "./Base";
 export class Manager<K extends Base> {
   readonly #cache: K[] = [];
 
-  get length() {
+  get length(): number {
     return this.#cache.length;
   }
 
-  get array() {
+  get array(): K[] {
     return this.#cache;
   }
 
@@ -15,7 +15,7 @@ export class Manager<K extends Base> {
     return this.#cache[index];
   }
 
-  cache(data: K | K[]) {
+  cache(data: K | K[]): K {
     if (!Array.isArray(data)) {
       this.#cache.push(data);
       return this.#cache.find((a) => a.id === data.id);
@@ -24,7 +24,7 @@ export class Manager<K extends Base> {
     }
   }
 
-  delete(id: string) {
+  delete(id: string): void {
     const index = this.#cache.findIndex((a) => a.id === id);
     if (index > -1) this.#cache.splice(index, 1);
   }
@@ -33,7 +33,7 @@ export class Manager<K extends Base> {
     return this.#cache.find((a) => a.id === id);
   }
 
-  update(id: string, data: any) {
+  update(id: string, data: any): void {
     const index = this.#cache.findIndex((a) => a.id === id);
     if (index > -1) {
       this.#cache[index]._patch(data);

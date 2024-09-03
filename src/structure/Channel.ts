@@ -5,12 +5,10 @@ import {
   Client,
   BaseData,
   ContentOptions,
-  JSONCache,
-  JSONToFormDataWithFile,
-  PollRequestObject,
+  Guild,
   APIWebhookObject,
   wait,
-} from "../client";
+} from "../index";
 import { Message } from "./Message";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -42,11 +40,11 @@ export class Channel extends Base {
     this.#guild_id = data.guild_id;
   }
 
-  get guild() {
+  get guild(): Guild {
     return this.client.guilds.get(this.#guild_id);
   }
 
-  async sendTyping() {
+  async sendTyping(): Promise<void> {
     await this.client.rest.post(Routes.ChannelTyping(this.id), {});
   }
 
