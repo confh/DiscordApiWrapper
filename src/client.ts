@@ -354,11 +354,13 @@ function calculateIntents(intents: Intents[]) {
   return totalIntentsValue;
 }
 
-// Client class
+/*
+ * Client class
+ */
 export class Client {
   // Important variables
   #isReady = false;
-  #payload;
+  #payload: JSONCache;
   #lastHeartbeat: number;
   #lastHeartbeatAck: number;
   #ws: WebSocket;
