@@ -1,13 +1,9 @@
-import axios from "axios";
-import {
-  Client,
-  JSONCache,
-  JSONToFormDataWithFile,
-  Message,
-  WebhookContentOptions,
-} from "../index";
+import { Client, Message, WebhookContentOptions } from "../index";
 import { Base } from "./Base";
 
+/**
+ * Represents a webhook client.
+ */
 export class WebhookClient extends Base {
   readonly id: string;
   readonly token: string;
@@ -23,63 +19,16 @@ export class WebhookClient extends Base {
     Object.assign(this, options);
   }
 
+  /**
+   * Sends a message to the webhook.
+   * @param content The content of the message. Can be a string or a WebhookContentOptions object.
+   * @returns A Promise that resolves with the sent message.
+   */
   async send(content: string | WebhookContentOptions): Promise<Message> {
-    const embeds: any = [];
-    const components: any[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      embeds,
-      components,
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-    };
-
-    if (typeof content !== "string" && content.username)
-      payload.username = content.username;
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.post(
-      `${this.client.baseURL}webhooks/${this.id}/${this.token}?wait=true`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
+    return await this.client.rest.sendWebhookMessage(
+      content,
+      this.id,
+      this.token,
     );
-
-    if (data.status === 400) {
-      throw new Error(data.data.message);
-    }
-
-    return new Message(data.data, this.client);
   }
 }

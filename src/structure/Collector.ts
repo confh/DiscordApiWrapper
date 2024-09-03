@@ -62,7 +62,7 @@ export class Collector {
   }
 
   /**
-   * Reset the timer of the collector
+   * Reset the collector's timer
    */
   resetTimer(): void {
     if (this.timeout) {
@@ -85,6 +85,12 @@ export class Collector {
     }
   }
 
+  /**
+   * Emit an event
+   * @param event Event name
+   * @param type Component type
+   * @param args Event arguments
+   */
   emit(event: COLLECTOR_EVENTS, type: ComponentTypes, ...args: any[]): void {
     if (type !== this.type) return;
     for (let i = 0; i < this.listeners.length; i++) {

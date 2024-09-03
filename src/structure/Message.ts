@@ -4,7 +4,6 @@ import {
   Collector,
   Member,
   User,
-  wait,
   APIMessage,
   APIMessageAttachment,
   APIWebhookMessage,
@@ -66,7 +65,7 @@ export class Message extends Base {
 
   /**
    * Get all the mentioned users in the message
-   * 
+   *
    * @returns An array of users
    */
   get mentions(): User[] {
@@ -81,7 +80,7 @@ export class Message extends Base {
 
   /**
    * Get the channel of the message
-   * 
+   *
    * @returns A channel object
    */
   get channel(): Channel | null {
@@ -90,7 +89,7 @@ export class Message extends Base {
 
   /**
    * Get the author of the message
-   * 
+   *
    * @returns A user object
    */
   get author(): User | null {
@@ -99,7 +98,7 @@ export class Message extends Base {
 
   /**
    * Get the member object of the author of the message
-   * 
+   *
    * @returns A member object
    */
   get member(): Member | null {
@@ -110,7 +109,7 @@ export class Message extends Base {
 
   /**
    * Get the guild the message was sent in
-   * 
+   *
    * @returns A guild object
    */
   get guild(): Guild {
@@ -119,7 +118,7 @@ export class Message extends Base {
 
   /**
    * Create a collector for this message
-   * 
+   *
    * @param options Collector options
    * @returns A collector object
    */
@@ -135,7 +134,7 @@ export class Message extends Base {
 
   /**
    * Get all the collectors associated with this message
-   * 
+   *
    * @returns An array of collectors
    */
   get componentCollectors(): Collector[] {

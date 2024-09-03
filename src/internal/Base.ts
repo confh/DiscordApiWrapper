@@ -1,5 +1,8 @@
 import { Client, JSONCache } from "../index";
 
+/**
+ * Base class for all API objects.
+ */
 export abstract class Base {
   public readonly id: string;
   private readonly _client: Client;
@@ -12,6 +15,9 @@ export abstract class Base {
     });
   }
 
+  /**
+   * Returns the client
+   */
   get client(): Client {
     return this._client;
   }
@@ -20,6 +26,9 @@ export abstract class Base {
     return Object.assign(Object.create(this), this);
   }
 
+  /**
+   * Returns a JSON representation of the object.
+   */
   toJson(): JSONCache {
     const dict = {};
     for (const [k, v] of Object.entries(this)) {

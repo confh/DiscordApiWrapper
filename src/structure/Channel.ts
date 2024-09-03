@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   ChannelTypes,
   OverwriteObjectTypes,
@@ -7,7 +6,6 @@ import {
   ContentOptions,
   Guild,
   APIWebhookObject,
-  wait,
 } from "../index";
 import { Message } from "./Message";
 import { Base } from "../internal/Base";
@@ -50,47 +48,35 @@ export class Channel extends Base {
   }
 
   /**
-   * Send a typing indicator in the channel
+   * Send a typing indicator to the channel
    */
   async sendTyping(): Promise<void> {
     await this.client.rest.post(Routes.ChannelTyping(this.id), {});
   }
 
   /**
-   * Send a message in the channel
-   * @param content A string or {@link ContentOptions}
+   * Send a message to the channel
+   * @param content The content of the message
+   * @returns A message object
    */
   async send(content: string | ContentOptions): Promise<Message> {
     return await this.client.rest.sendChannelMessage(content, this.id);
   }
 
   /**
-   * Get the webhooks of the channel
-   * @returns An array of webhooks object
+   * Get all webhooks in the channel
+   * @returns An array of webhook objects
    */
   async getWebhooks(): Promise<APIWebhookObject[]> {
     if (!this.guild.me.permissions.includes("MANAGE_WEBHOOKS"))
       throw new Error("Missing access");
     const webhooks: APIWebhookObject[] = [];
-    const data = await axios.get(
-      `${this.client.baseURL}channels/${this.id}/webhooks`,
-      {
-        headers: this.client.getHeaders(),
-        validateStatus: () => true,
-      },
+    const data = await this.client.rest.get<APIWebhookObject[]>(
+      Routes.ChannelWebhooks(this.id),
     );
 
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.getWebhooks();
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    for (let i = 0; i < data.data.length; i++) {
-      webhooks.push(data.data[i]);
+    for (let i = 0; i < data.length; i++) {
+      webhooks.push(data[i]);
     }
 
     return webhooks;

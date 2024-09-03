@@ -25,20 +25,8 @@ export abstract class Routes {
     return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
   }
 
-  static EditInteractionMessage(botID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
-  }
-
-  static DeleteInteractionMessage(botID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
-  }
-
   static InteractionFollowUp(botID: string, token: string): string {
     return `${this.#baseURL}/webhooks/${botID}/${token}`;
-  }
-
-  static InteractionUpdate(botID: string, token: string): string {
-    return `${this.#baseURL}/webhooks/${botID}/${token}/messages/@original`;
   }
 
   static DMChannel(): string {
@@ -55,5 +43,16 @@ export abstract class Routes {
 
   static GuildKick(guildID: string, memberID: string): string {
     return `${this.#baseURL}/guilds/${guildID}/members/${memberID}`;
+  }
+
+  static ChannelWebhooks(channelID: string) {
+    return `${this.#baseURL}/channels/${channelID}/webhooks`;
+  }
+
+  static ChannelWebhookSendMessage(
+    webhookID: string,
+    webhookToken: string,
+  ): string {
+    return `${this.#baseURL}webhooks/${webhookID}/${webhookToken}?wait=true`;
   }
 }

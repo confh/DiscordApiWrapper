@@ -23,53 +23,9 @@ import { Rest } from "./internal/Rest";
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
 
-export async function wait(ms: number): Promise<unknown> {
-  return new Promise((res) => {
-    setTimeout(() => {
-      res(null);
-    }, ms);
-  });
-}
-
 /**
- * Convert JSON to a Blob
- * @param json Type of {@link JSONCache}
- * @returns Blob from JSON
+ * Guild Member Event Object
  */
-export function JSONToBlob(json: JSONCache): Blob {
-  return new Blob([JSON.stringify(json)], {
-    type: "application/json",
-  });
-}
-
-/**
- * Convert JSON to {@link FormData}
- * @param json Type of {@link JSONCache}
- * @param files Array of {@link FileContent}
- * @returns FormData containing file content
- */
-export function JSONToFormDataWithFile(
-  json: JSONCache,
-  ...files: FileContent[]
-): JSONCache | FormData {
-  if (!files.length) return json;
-  const formData = new FormData();
-  json.attachments = [];
-
-  formData.set("payload_json", JSONToBlob(json), "");
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    (json.attachments as any[]).push({
-      id: i,
-      filename: file.name,
-    });
-    formData.set(`files[${i}]`, new Blob([file.buffer]), file.name);
-  }
-
-  return formData;
-}
-
 export interface APIGuildMemberEvent extends APIMember {
   guild_id: string;
 }
@@ -202,28 +158,43 @@ export interface Emoji {
   available?: boolean;
 }
 
+/**
+ * Partial Emoji object, this object is used for when only the ID, name, and animated status are needed.
+ */
 export type PartialEmoji = Omit<
   Emoji,
   "available" | "animated" | "managed" | "require_colons" | "user" | "roles"
 >;
 
+/**
+ * Base data object for all objects.
+ */
 export interface BaseData {
   id: string;
   [key: string]: any;
 }
 
+/**
+ * Enum for types of application commands
+ */
 export enum ApplicationCommandTypes {
   CHAT_INPUT = 1,
   USER,
   MESSAGE,
 }
 
+/**
+ * Enum for types of interactions
+ */
 export enum InteractionTypes {
   PING = 1,
   APPLICATION_COMMAND,
   MESSAGE_COMPONENT,
 }
 
+/**
+ * Enum for types of components
+ */
 export enum ComponentTypes {
   ACTION_ROW = 1,
   BUTTON,
@@ -231,6 +202,9 @@ export enum ComponentTypes {
   TEXT_INPUT,
 }
 
+/**
+ * Enum for types of button styles
+ */
 export enum ButtonStyles {
   PRIMARY = 1,
   SECONDARY,
@@ -239,6 +213,9 @@ export enum ButtonStyles {
   LINK,
 }
 
+/**
+ * Enum for types of activity
+ */
 export enum ActivityTypes {
   GAME,
   STREAMING,
@@ -248,6 +225,9 @@ export enum ActivityTypes {
   COMPETING,
 }
 
+/**
+ * Enum for types of application command options
+ */
 export enum ApplicationCommandOptionTypes {
   SUB_COMMAND = 1,
   SUB_COMMAND_GROUP,
@@ -262,6 +242,9 @@ export enum ApplicationCommandOptionTypes {
   ATTACHMENT,
 }
 
+/**
+ * Enum for types of channels
+ */
 export enum ChannelTypes {
   TEXT,
   DM,
@@ -273,11 +256,17 @@ export enum OverwriteObjectTypes {
   MEMBER,
 }
 
+/**
+ * File content object
+ */
 export interface FileContent {
   name: string;
   buffer: Buffer;
 }
 
+/**
+ * Options for sending a message
+ */
 export interface ContentOptions {
   content?: string;
   embeds?: EmbedBuilder[];
@@ -287,16 +276,25 @@ export interface ContentOptions {
   poll?: PollRequestObject;
 }
 
+/**
+ * Options for sending a message to a webhook
+ */
 export interface WebhookContentOptions extends ContentOptions {
   username?: string;
   avatar_url?: string;
 }
 
+/**
+ * Poll media object, this object is used for the question and answers of a poll.
+ */
 export interface PollMediaObject {
   text: string;
   emoji?: PartialEmoji;
 }
 
+/**
+ * Poll request object, this object is used for creating a poll.
+ */
 export interface PollRequestObject {
   question: PollMediaObject;
   answers: {
@@ -307,6 +305,9 @@ export interface PollRequestObject {
   allow_multiselect: boolean;
 }
 
+/**
+ * JSON Cache object, this object is used for caching data from the discord API.
+ */
 export interface JSONCache {
   [x: string]: unknown;
 }
@@ -360,7 +361,7 @@ function calculateIntents(intents: Intents[]) {
 }
 
 /**
- * The discord client class
+ * Discord Client
  */
 export class Client {
   // Important variables
@@ -412,8 +413,10 @@ export class Client {
     return this.#token;
   }
 
-
-
+  /**
+   * The ping of the bot, this is the time it takes for the bot to receive a heartbeat ack from discord.
+   * @returns {number} The ping of the bot in milliseconds.
+   */
   get ping(): number {
     if (this.#lastHeartbeatAck) {
       return this.#lastHeartbeatAck - this.#lastHeartbeat;
@@ -458,8 +461,9 @@ export class Client {
   }
 
   /**
-   * @param token Bot token
-   * @param options Extra options
+   * Create a new Discord client
+   * @param token The bot token to use
+   * @param options Options for the client
    */
   constructor(
     token: string,
@@ -484,6 +488,9 @@ export class Client {
     this.rest = new Rest(this);
   }
 
+  /**
+   * Define the payload for the websocket connection, this will be used to connect to the discord gateway.
+   */
   private _definePayload() {
     this.#payload = {
       op: 2,
@@ -500,6 +507,9 @@ export class Client {
     };
   }
 
+  /**
+   * Register shards for the bot
+   */
   private async _registerShards() {
     const data = await axios.get(`${this.baseURL}gateway/bot`, {
       headers: this.getHeaders(),
@@ -521,6 +531,10 @@ export class Client {
     return Date.now() - this.#readyTimestamp;
   }
 
+  /**
+   * Register a channel from the Discord API.
+   * @param channelId The ID of the channel to register.
+   */
   async registerChannelFromAPI(channelId: string) {
     const data = await axios.get(`${this.baseURL}channels/${channelId}`, {
       headers: this.getHeaders(),
@@ -532,6 +546,11 @@ export class Client {
     this.channels.cache(new Channel(data.data, this));
   }
 
+  /**
+   * Emit an event, this will call all listeners for the event.
+   * @param event Event to emit
+   * @param args Arguments to pass to the event listeners
+   */
   private emit<K extends keyof ClientEvents>(
     event: K,
     ...args: ClientEvents[K]
@@ -577,8 +596,6 @@ export class Client {
       callback,
     });
   }
-
-
 
   /**
    * Get the headers for a request
@@ -717,12 +734,12 @@ export class Client {
     data:
       | PRESENCES
       | {
-        activity?: {
-          name: string;
-          type: ActivityTypes;
-        };
-        status: PRESENCES;
-      },
+          activity?: {
+            name: string;
+            type: ActivityTypes;
+          };
+          status: PRESENCES;
+        },
   ) {
     const presencePayload = {
       op: 3,
@@ -766,6 +783,10 @@ export class Client {
     return this.channels.get(channelId);
   }
 
+  /**
+   * Delete channels from the cache
+   * @param id The ID of the channel or an array of channel IDs to delete
+   */
   private _deleteChannels(id: string | string[]) {
     const IDs = typeof id === "string" ? [id] : id;
     for (let i = 0; i < IDs.length; i++) {
@@ -898,6 +919,7 @@ export class Client {
             _this.emit("webhookMessageCreate", new WebhookMessage(d, _this));
           }
           break;
+
         case "MESSAGE_UPDATE":
           {
             if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type))
@@ -907,6 +929,7 @@ export class Client {
             }
           }
           break;
+
         case "MESSAGE_DELETE":
           {
             _this.emit("messageDelete", {
@@ -915,6 +938,7 @@ export class Client {
             });
           }
           break;
+
         case "GUILD_CREATE":
           {
             // Cache all guild roles
@@ -948,6 +972,7 @@ export class Client {
             _this.emit("guildCreate", _this.guilds.get(d.id) as Guild);
           }
           break;
+
         case "GUILD_MEMBER_ADD":
           {
             const guild = _this.guilds.get(d.guild_id);
@@ -967,6 +992,7 @@ export class Client {
               _this.guilds.get(data.guild_id).members.delete(data.user.id);
           }
           break;
+
         case "GUILD_MEMBER_UPDATE":
           {
             // Update cached member
@@ -987,6 +1013,7 @@ export class Client {
             }
           }
           break;
+
         case "INTERACTION_CREATE":
           if (d.type === InteractionTypes.APPLICATION_COMMAND) {
             // Emit interactionCreate event with the argument according to the interaction type
@@ -1001,12 +1028,14 @@ export class Client {
                   new SlashCommandInteraction(d, _this),
                 );
                 break;
+
               case ApplicationCommandTypes.USER:
                 _this.emit(
                   "interactionCreate",
                   new UserContextInteraction(d, _this),
                 );
                 break;
+
               case ApplicationCommandTypes.MESSAGE:
                 _this.emit(
                   "interactionCreate",
@@ -1045,6 +1074,7 @@ export class Client {
             }
           }
           break;
+
         case "GUILD_ROLE_UPDATE":
           {
             // Update the cached role
@@ -1058,6 +1088,7 @@ export class Client {
             );
           }
           break;
+
         case "CHANNEL_CREATE":
           {
             // Cache the channel
@@ -1065,6 +1096,7 @@ export class Client {
             _this.emit("channelCreate", channel);
           }
           break;
+
         case "CHANNEL_DELETE":
           {
             // Remove channel from cache
@@ -1075,6 +1107,7 @@ export class Client {
             }
           }
           break;
+
         case "GUILD_DELETE":
           {
             // Remove all cached channels that are related to the guild
@@ -1094,6 +1127,7 @@ export class Client {
             _this.emit("guildDelete", oldGuild);
           }
           break;
+
         case "GUILD_ROLE_CREATE":
           {
             // Update cached role
@@ -1106,6 +1140,7 @@ export class Client {
             _this.emit("roleCreate", _this.roles.get(data.role.id));
           }
           break;
+
         case "GUILD_ROLE_DELETE":
           {
             // Remove role from cache
@@ -1118,6 +1153,7 @@ export class Client {
             _this.emit("roleDelete", oldRole);
           }
           break;
+
         case "USER_UPDATE":
           {
             // Update cached user

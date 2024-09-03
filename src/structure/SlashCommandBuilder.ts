@@ -172,10 +172,6 @@ export class SlashCommandBuilder {
     return this;
   }
 
-  /**
-   * Turn slash command into json
-   * @returns JSON Data
-   */
   toJson(): any {
     const data: any = {
       name: this.name,

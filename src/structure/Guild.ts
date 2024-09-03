@@ -32,8 +32,8 @@ export class Guild extends Base {
   }
 
   /**
-   * Get the member object of the bot in the guild
-   * @returns A member object
+   * Get the current user's member object in this guild
+   * @returns The member object
    */
   get me(): Member {
     return this.members.get(this.client.user.id);
@@ -65,7 +65,7 @@ export class Guild extends Base {
   /**
    * Leave the guild
    */
-  async leave(){
+  async leave() {
     await this.client.rest.delete(Routes.GuildRoute(this.id));
   }
 }

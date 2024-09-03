@@ -1,17 +1,13 @@
-import axios from "axios";
 import {
   Guild,
   Channel,
   Member,
   Message,
   User,
-  wait,
   Client,
   ApplicationCommandTypes,
   BaseData,
   ContentOptions,
-  JSONCache,
-  JSONToFormDataWithFile,
   ApplicationCommandOptionTypes,
 } from "../index";
 import { Base } from "../internal/Base";
@@ -138,7 +134,7 @@ export class Interaction extends Base {
 
   /**
    * Sends a follow up with the given content
-   * 
+   *
    * @param content - The content to send a follow up with
    * @return {Promise<Message>} A promise that resolves to the sent message.
    * @throws {Error} If there is an error sending a follow up.
@@ -152,7 +148,7 @@ export class Interaction extends Base {
    */
   async delete(): Promise<void> {
     await this.client.rest.delete(
-      Routes.DeleteInteractionMessage(this.#userID, this.token),
+      Routes.OriginalMessage(this.#userID, this.token),
     );
   }
 }
@@ -284,20 +280,12 @@ export class ButtonInteraction extends Interaction {
    */
   override async defer(): Promise<void> {
     this.acknowledged = true;
-    await axios
-      .post(
-        this.callbackURL,
-        { type: 6 },
-        {
-          headers: this.client.getHeaders(),
-        },
-      )
-      .then(async (a) => {
-        if (a.status === 400)
-          throw new Error(a.data.message, {
-            cause: "Defering reply to interaction",
-          });
-      });
+    await this.client.rest.post(
+      Routes.InteractionCallback(this.interaction_id, this.token),
+      {
+        type: 6,
+      },
+    );
   }
 
   /**
@@ -333,20 +321,12 @@ export class StringSelectMenuInteraction extends Interaction {
    */
   override async defer(): Promise<void> {
     this.acknowledged = true;
-    await axios
-      .post(
-        this.callbackURL,
-        { type: 6 },
-        {
-          headers: this.client.getHeaders(),
-        },
-      )
-      .then(async (a) => {
-        if (a.status === 400)
-          throw new Error(a.data.message, {
-            cause: "Defering reply to interaction",
-          });
-      });
+    await this.client.rest.post(
+      Routes.InteractionCallback(this.interaction_id, this.token),
+      {
+        type: 6,
+      },
+    );
   }
 
   /**
@@ -357,67 +337,10 @@ export class StringSelectMenuInteraction extends Interaction {
    */
   async update(content: string | ContentOptions): Promise<Message> {
     this.acknowledged = true;
-    const embeds: JSONCache[] = [];
-    const files =
-      typeof content !== "string" && content.file
-        ? Array.isArray(content.file)
-          ? content.file
-          : [content.file]
-        : null;
-    const components: JSONCache[] = [];
-
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-    let payload: JSONCache | FormData = {
-      content: typeof content === "string" ? content : content.content,
-      allowed_mentions: {
-        parse: [],
-        replied_user: true,
-      },
-      flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
-    };
-
-    if (typeof content !== "string" && content.embeds) payload.embeds = embeds;
-    if (typeof content !== "string" && content.components)
-      payload.components = components;
-
-    if (files) {
-      payload = JSONToFormDataWithFile(payload, ...files);
-    }
-
-    const data = await axios.patch(
-      `${this.client.baseURL}webhooks/${this.client.user.id}/${this.token}/messages/@original`,
-      payload,
-      {
-        headers: this.client.getHeaders(
-          files ? "multipart/form-data" : "application/json",
-        ),
-        validateStatus: () => true,
-      },
+    return await this.client.rest.updateStringSelectMenuEmbed(
+      content,
+      this.token,
     );
-    if (data.status === 400) {
-      if (data.data.retry_after !== null) {
-        await wait(data.data.retry_after * 1000);
-        return await this.edit(content);
-      } else {
-        throw new Error(data.data.message);
-      }
-    }
-
-    return new Message(data.data, this.client);
   }
 }
 
@@ -444,9 +367,9 @@ export class UserContextInteraction extends Interaction {
     user?: User;
     member?: Member;
   } = {
-      user: undefined,
-      member: undefined,
-    };
+    user: undefined,
+    member: undefined,
+  };
 
   constructor(data: BaseData, client: Client) {
     super(data, client);
