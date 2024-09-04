@@ -68,7 +68,7 @@ client.connect();
 
 **Final code:**
 
-````typescript
+```typescript
 import {
   Client,
   Intents,
@@ -100,4 +100,3 @@ client.on("interactionCreate", async (i) => {
 });
 
 client.connect();```
-````
