@@ -115,8 +115,6 @@ export class Rest {
       validateStatus: () => true,
     });
 
-    console.log(request.status);
-
     if (![200, 204].includes(request.status)) {
       if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
