@@ -99,6 +99,15 @@ export interface APIMessage extends BaseData {
   referenced_message?: APIMessage;
   guild_id: string;
   attachments: APIMessageAttachment[];
+  message_snapshots?: APIMessageSnapshot[]
+}
+
+export interface APIMessageSnapshotPartial extends Pick<APIMessage, "type" | "content" | "embeds" | "attachments" | "timestamp" | "edited_timestamp" | "mentions" | "mention_roles"> {
+
+}
+
+export interface APIMessageSnapshot {
+  message: APIMessageSnapshotPartial
 }
 
 /** Webhook Message Object */
@@ -734,12 +743,12 @@ export class Client {
     data:
       | PRESENCES
       | {
-          activity?: {
-            name: string;
-            type: ActivityTypes;
-          };
-          status: PRESENCES;
-        },
+        activity?: {
+          name: string;
+          type: ActivityTypes;
+        };
+        status: PRESENCES;
+      },
   ) {
     const presencePayload = {
       op: 3,

@@ -11,14 +11,33 @@ import {
   ComponentTypes,
   ContentOptions,
   JSONCache,
+  APIMessageSnapshot,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
+
+/** Forwarded message object */
+export class MessageSnapshot {
+  readonly type: number
+  readonly content: string
+  readonly attachments: APIMessageAttachment[]
+  readonly timestamp: number
+  readonly edited_timestamp: number | null
+  
+  constructor(data: APIMessageSnapshot) {
+    this.type = data.message.type,
+    this.content = data.message.content,
+    this.attachments = data.message.attachments
+    this.timestamp = new Date(data.message.timestamp).getTime()
+    this.edited_timestamp = new Date(data.message.edited_timestamp).getTime()
+  }
+}
 
 /** Message object */
 export class Message extends Base {
   readonly #authorID?: string;
   readonly #mentionsIDs: string[] = [];
+  readonly #messageSnapshots?: APIMessageSnapshot[]
   readonly id: string;
   readonly channelId: string;
   readonly content: string;
@@ -36,7 +55,9 @@ export class Message extends Base {
     this.id = data.id;
     this.channelId = data.channel_id;
     this.guildId = data.guild_id;
-    if (data.author) this.#authorID = data.author.id;
+    this.#authorID = data.author ? data.author.id : null;
+    this.referenced_message = data.referenced_message ? new Message(data.referenced_message, client) : null
+    this.#messageSnapshots = data.message_snapshots ? data.message_snapshots : []
     this.content = data.content;
     this.timestamp = new Date(data.timestamp).getTime();
     this.edited_timestamp = data.edited_timestamp
@@ -51,9 +72,6 @@ export class Message extends Base {
     this.pinned = data.pinned;
     this.type = data.type;
     this.attachments = data.attachments;
-    if (data.referenced_message) {
-      this.referenced_message = new Message(data.referenced_message, client);
-    }
   }
 
   /**
@@ -61,6 +79,20 @@ export class Message extends Base {
    */
   get jumpLink(): string {
     return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`;
+  }
+
+  /**
+   * Returns if the message is forwarded
+   */
+  get forwarded(): boolean {
+    return Boolean(this.#messageSnapshots.length)
+  }
+
+  /**
+   * Returns the forwarded message if it exists
+   */
+  get forwardedMessage(): MessageSnapshot | null {
+    return Boolean(this.#messageSnapshots.length) ? new MessageSnapshot(this.#messageSnapshots[0]) : null
   }
 
   /**
