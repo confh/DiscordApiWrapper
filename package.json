@@ -29,8 +29,8 @@
     "jsr": "^0.13.1",
     "rollup": "^4.17.2",
     "rollup-plugin-typescript2": "^0.35.0",
-    "tslib": "^2.6.2",
     "tsc": "^2.0.4",
+    "tslib": "^2.6.2",
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
@@ -40,5 +40,9 @@
     "url": "https://github.com/confh/DiscordApiWrapper",
     "type": "git"
   },
-  "type": "commonjs"
+  "type": "commonjs",
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8",
+    "utf-8-validate": "^6.0.4"
+  }
 }
