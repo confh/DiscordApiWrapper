@@ -1,4 +1,12 @@
-# DiscordApiWrapper: A High-Performance Discord Bot Library for Node.js
+<div align="center">
+<p>
+<h1>DiscordApiWrapper: A High-Performance Discord Bot Library for Node.js</h1>
+
+<a href="https://www.npmjs.com/package/@confis/discordapiwrapper"><img src="https://img.shields.io/npm/d18m/@confis/discordapiwrapper.svg?maxAge=3600" alt="npm downloads" /></a>
+
+</p>
+
+</div>
 
 **Docs: https://jsr.io/@confis/discordapiwrapper/doc**
 
@@ -49,9 +57,7 @@ const client = new Client("YOUR_BOT_TOKEN", {
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.displayName}`);
   client.setGlobalCommands(
-    new SlashCommandBuilder()
-      .setName("ping")
-      .setDescription("Ping the bot!"),
+    new SlashCommandBuilder().setName("ping").setDescription("Ping the bot!"),
   );
 });
 
@@ -68,7 +74,7 @@ client.connect();
 
 **Final code:**
 
-```typescript
+````typescript
 import {
   Client,
   Intents,
@@ -100,3 +106,4 @@ client.on("interactionCreate", async (i) => {
 });
 
 client.connect();```
+````
