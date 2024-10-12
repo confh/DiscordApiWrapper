@@ -23,6 +23,8 @@ import { Rest } from "./internal/Rest";
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
 
+export type Snowflake = string;
+
 /**
  * Guild Member Event Object
  */
@@ -50,6 +52,11 @@ export interface APIWebhookObject extends BaseData {
   url?: string;
 }
 
+export interface AvatarDecoration {
+  asset: string;
+  sku_id: Snowflake;
+}
+
 /** User Object */
 export interface APIUser extends BaseData {
   username: string;
@@ -58,6 +65,7 @@ export interface APIUser extends BaseData {
   avatar: string | null;
   bot?: boolean;
   system?: boolean;
+  avatar_decoration_data?: AvatarDecoration | null;
 }
 
 /** Member Object */
@@ -99,15 +107,24 @@ export interface APIMessage extends BaseData {
   referenced_message?: APIMessage;
   guild_id: string;
   attachments: APIMessageAttachment[];
-  message_snapshots?: APIMessageSnapshot[]
+  message_snapshots?: APIMessageSnapshot[];
 }
 
-export interface APIMessageSnapshotPartial extends Pick<APIMessage, "type" | "content" | "embeds" | "attachments" | "timestamp" | "edited_timestamp" | "mentions" | "mention_roles"> {
-
-}
+export interface APIMessageSnapshotPartial
+  extends Pick<
+    APIMessage,
+    | "type"
+    | "content"
+    | "embeds"
+    | "attachments"
+    | "timestamp"
+    | "edited_timestamp"
+    | "mentions"
+    | "mention_roles"
+  > {}
 
 export interface APIMessageSnapshot {
-  message: APIMessageSnapshotPartial
+  message: APIMessageSnapshotPartial;
 }
 
 /** Webhook Message Object */
@@ -743,12 +760,12 @@ export class Client {
     data:
       | PRESENCES
       | {
-        activity?: {
-          name: string;
-          type: ActivityTypes;
-        };
-        status: PRESENCES;
-      },
+          activity?: {
+            name: string;
+            type: ActivityTypes;
+          };
+          status: PRESENCES;
+        },
   ) {
     const presencePayload = {
       op: 3,

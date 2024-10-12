@@ -1,5 +1,6 @@
 import {
   APIUser,
+  AvatarDecoration,
   BaseData,
   Channel,
   Client,
@@ -16,6 +17,7 @@ export class User extends Base {
   public discriminator: string | null;
   public readonly bot: boolean;
   public avatar: string;
+  public avatarDecoration: AvatarDecoration | null;
   #dmChannelId?: string;
   #globalName: string | null;
 
@@ -27,6 +29,7 @@ export class User extends Base {
     this.discriminator = data.discriminator;
     this.bot = data.bot;
     this.avatar = data.avatar;
+    this.avatarDecoration = data.avatar_decoration_data;
   }
 
   /**
@@ -102,5 +105,6 @@ export class User extends Base {
     this.username = data.username;
     this.#globalName = data.global_name;
     this.avatar = data.avatar;
+    this.avatarDecoration = data.avatar_decoration_data;
   }
 }
