@@ -28,6 +28,12 @@ Install DiscordApiWrapper from npm using the following command:
 npm install @confis/discordapiwrapper
 ```
 
+Or install it from JSR:
+
+```bash
+npx jsr add @confis/discordapiwrapper
+```
+
 **Usage**
 
 1. **Import the library:**
