@@ -13,25 +13,42 @@ import { Routes } from "../internal/Route";
 export class User extends Base {
   public username: string;
   public readonly id: string;
-  public displayName: string | null;
   public discriminator: string | null;
   public readonly bot: boolean;
   public avatar: string;
   #dmChannelId?: string;
+  #globalName: string | null;
 
   constructor(data: APIUser, client: Client) {
     super(client);
     this.username = data.username;
     this.id = data.id;
-    this.displayName = data.global_name || this.username;
+    this.#globalName = data.global_name;
     this.discriminator = data.discriminator;
     this.bot = data.bot;
     this.avatar = data.avatar;
   }
 
   /**
+   * Get the display name of the user
+   *
+   * @returns The display name of the user if it exists, otherwise returns the username and discriminator
+   */
+  get displayName(): string {
+    if (!this.#globalName) {
+      if (this.bot) {
+        return `${this.username}#${this.discriminator}`;
+      } else {
+        return this.username;
+      }
+    }
+
+    return this.#globalName;
+  }
+
+  /**
    * Get the avatar URL of the user
-   * 
+   *
    * @param options Avatar URL options
    * @returns The url of the user's avatar
    */
@@ -42,7 +59,7 @@ export class User extends Base {
 
   /**
    * Get the DM channel of the user
-   * 
+   *
    * @returns A channel object
    */
   async getDmChannel(): Promise<Channel> {
@@ -67,7 +84,7 @@ export class User extends Base {
 
   /**
    * Send the user a message
-   * 
+   *
    * @param content The content of the message
    * @returns A message object
    */
@@ -78,12 +95,12 @@ export class User extends Base {
 
   /**
    * Update the user
-   * 
+   *
    * @param data The new data of the user
    */
   _patch(data: APIUser): void {
     this.username = data.username;
-    this.displayName = data.global_name || this.username;
+    this.#globalName = data.global_name;
     this.avatar = data.avatar;
   }
 }
