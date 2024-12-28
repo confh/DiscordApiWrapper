@@ -112,4 +112,3 @@ client.on("interactionCreate", async (i) => {
 });
 
 client.connect();```
-````
