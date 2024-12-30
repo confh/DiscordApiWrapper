@@ -18,18 +18,18 @@ import { Routes } from "../internal/Route";
 
 /** Forwarded message object */
 export class MessageSnapshot {
-  readonly type: number
-  readonly content: string
-  readonly attachments: APIMessageAttachment[]
-  readonly timestamp: number
-  readonly edited_timestamp: number | null
-  
+  readonly type: number;
+  readonly content: string;
+  readonly attachments: APIMessageAttachment[];
+  readonly timestamp: number;
+  readonly edited_timestamp: number | null;
+
   constructor(data: APIMessageSnapshot) {
-    this.type = data.message.type,
-    this.content = data.message.content,
-    this.attachments = data.message.attachments
-    this.timestamp = new Date(data.message.timestamp).getTime()
-    this.edited_timestamp = new Date(data.message.edited_timestamp).getTime()
+    (this.type = data.message.type),
+      (this.content = data.message.content),
+      (this.attachments = data.message.attachments);
+    this.timestamp = new Date(data.message.timestamp).getTime();
+    this.edited_timestamp = new Date(data.message.edited_timestamp).getTime();
   }
 }
 
@@ -37,7 +37,7 @@ export class MessageSnapshot {
 export class Message extends Base {
   readonly #authorID?: string;
   readonly #mentionsIDs: string[] = [];
-  readonly #messageSnapshots?: APIMessageSnapshot[]
+  readonly #messageSnapshots?: APIMessageSnapshot[];
   readonly id: string;
   readonly channelId: string;
   readonly content: string;
@@ -56,8 +56,12 @@ export class Message extends Base {
     this.channelId = data.channel_id;
     this.guildId = data.guild_id;
     this.#authorID = data.author ? data.author.id : null;
-    this.referenced_message = data.referenced_message ? new Message(data.referenced_message, client) : null
-    this.#messageSnapshots = data.message_snapshots ? data.message_snapshots : []
+    this.referenced_message = data.referenced_message
+      ? new Message(data.referenced_message, client)
+      : null;
+    this.#messageSnapshots = data.message_snapshots
+      ? data.message_snapshots
+      : [];
     this.content = data.content;
     this.timestamp = new Date(data.timestamp).getTime();
     this.edited_timestamp = data.edited_timestamp
@@ -85,14 +89,16 @@ export class Message extends Base {
    * Returns if the message is forwarded
    */
   get forwarded(): boolean {
-    return Boolean(this.#messageSnapshots.length)
+    return Boolean(this.#messageSnapshots.length);
   }
 
   /**
    * Returns the forwarded message if it exists
    */
   get forwardedMessage(): MessageSnapshot | null {
-    return Boolean(this.#messageSnapshots.length) ? new MessageSnapshot(this.#messageSnapshots[0]) : null
+    return Boolean(this.#messageSnapshots.length)
+      ? new MessageSnapshot(this.#messageSnapshots[0])
+      : null;
   }
 
   /**
@@ -146,6 +152,13 @@ export class Message extends Base {
    */
   get guild(): Guild {
     return this.client.guilds.get(this.guildId) as Guild;
+  }
+
+  /**
+   * Get the content of the message
+   */
+  toString(): string {
+    return this.content;
   }
 
   /**
