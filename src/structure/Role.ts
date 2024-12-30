@@ -31,7 +31,7 @@ export class Role extends Base {
 
   /**
    * Get the guild of the role
-   * 
+   *
    * @returns A guild object
    */
   get guild(): Guild {
@@ -40,7 +40,7 @@ export class Role extends Base {
 
   /**
    * Get the permissions of the role
-   * 
+   *
    * @returns An array of permissions
    */
   getPermissions(): (keyof typeof PermissionsBitField)[] {
@@ -49,7 +49,7 @@ export class Role extends Base {
 
   /**
    * Check if the role has a specific permission
-   * 
+   *
    * @param permission The permission name
    * @returns Whether the role has this permission or not
    */
@@ -61,7 +61,7 @@ export class Role extends Base {
 
   /**
    * Update the role
-   * 
+   *
    * @param data The new data of the role
    */
   _patch(data: Role): void {
