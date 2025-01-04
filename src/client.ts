@@ -499,6 +499,11 @@ export class Client {
       shards?: "auto" | number;
     },
   ) {
+    process.on("SIGINT", () => {
+      console.log("Exitting");
+      this.disconnect();
+      process.exit();
+    });
     const shards = options.shards || "auto";
     this.#token = token;
     this.#cacheAllUsers = options?.cacheAllUsers || false;
