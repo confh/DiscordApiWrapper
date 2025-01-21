@@ -1,7 +1,9 @@
+import { JSONCache } from "..";
+
 export abstract class Routes {
   static readonly #baseURL = "https://discord.com/api/v10/";
 
-  static MessageDelete(channelID: string, messageID: string): string {
+  static Message(channelID: string, messageID: string): string {
     return `${this.#baseURL}/channels/${channelID}/messages/${messageID}`;
   }
 
@@ -58,5 +60,26 @@ export abstract class Routes {
     webhookToken: string,
   ): string {
     return `${this.#baseURL}webhooks/${webhookID}/${webhookToken}?wait=true`;
+  }
+
+  static Reaction(channelID: string, messageID: string, emoji: string): string {
+    return `${this.#baseURL}channels/${channelID}/messages/${messageID}/reactions/${encodeURIComponent(emoji)}/@me`;
+  }
+
+  static GetReaction(
+    channelID: string,
+    messageID: string,
+    emoji: string,
+  ): string {
+    return `${this.#baseURL}channels/${channelID}/messages/${messageID}/reactions/${encodeURIComponent(emoji)}`;
+  }
+
+  static UserReaction(
+    channelID: string,
+    messageID: string,
+    emoji: string,
+    userID: string,
+  ): string {
+    return `${this.#baseURL}channels/${channelID}/messages/${messageID}/reactions/${encodeURIComponent(emoji)}/${userID}`;
   }
 }

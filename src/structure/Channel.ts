@@ -6,6 +6,7 @@ import {
   ContentOptions,
   Guild,
   APIWebhookObject,
+  APIMessage,
 } from "../index";
 import { Message } from "./Message";
 import { Base } from "../internal/Base";
@@ -68,8 +69,6 @@ export class Channel extends Base {
    * @returns An array of webhook objects
    */
   async getWebhooks(): Promise<APIWebhookObject[]> {
-    if (!this.guild.me.permissions.includes("MANAGE_WEBHOOKS"))
-      throw new Error("Missing access");
     const webhooks: APIWebhookObject[] = [];
     const data = await this.client.rest.get<APIWebhookObject[]>(
       Routes.ChannelWebhooks(this.id),
@@ -80,5 +79,13 @@ export class Channel extends Base {
     }
 
     return webhooks;
+  }
+
+  async getMessage(id: string): Promise<Message> {
+    const data = await this.client.rest.get<APIMessage>(
+      Routes.Message(this.id, id),
+    );
+
+    return new Message(data, this.client);
   }
 }

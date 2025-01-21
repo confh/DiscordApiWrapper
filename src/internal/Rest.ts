@@ -204,7 +204,7 @@ export class Rest {
     });
 
     if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== null) {
+      if (request.data.retry_after !== undefined) {
         await wait(request.data.retry_after * 1000);
         return await this.put(route, payload, formData);
       } else {

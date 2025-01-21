@@ -12,6 +12,7 @@ import {
   ContentOptions,
   JSONCache,
   APIMessageSnapshot,
+  APIUser,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -230,9 +231,89 @@ export class Message extends Base {
    * @throws {Error} - If the request to delete the message fails, an Error is thrown with the error message.
    */
   async delete(): Promise<void> {
-    await this.client.rest.delete(
-      Routes.MessageDelete(this.channelId, this.id),
+    await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+  }
+
+  /**
+   * React to a message with an emoji.
+   *
+   * @return {Promise<void>} - A Promise that resolves when the reaction has been successfully added.
+   * @throws {Error} - If the request to react to the message fails, an Error is thrown with the error message.
+   * @param emoji The emoji to react with.
+   */
+  async react(emoji: string): Promise<void> {
+    if (emoji.startsWith("<:") && emoji.endsWith(">")) {
+      const splitted = emoji.split(":");
+      emoji = `${splitted[1]}:${splitted[2].replace(">", "")}`;
+    }
+
+    await this.client.rest.put<any>(
+      Routes.Reaction(this.channelId, this.id, emoji),
+      {},
     );
+  }
+
+  /**
+   * Remove the bot's reaction from the message.
+   *
+   * @return {Promise<void>} - A Promise that resolves when the reaction has been successfully removed.
+   * @throws {Error} - If the request to remove the reaction from the message fails, an Error is thrown with the error message.
+   * @param emoji The emoji to remove its reaction.
+   */
+  async removeReaction(emoji: string): Promise<void> {
+    if (emoji.startsWith("<:") && emoji.endsWith(">")) {
+      const splitted = emoji.split(":");
+      emoji = `${splitted[1]}:${splitted[2].replace(">", "")}`;
+    }
+
+    await this.client.rest.delete<any>(
+      Routes.Reaction(this.channelId, this.id, emoji),
+    );
+  }
+
+  /**
+   * Remove a user's reaction from the message.
+   *
+   * @return {Promise<void>} - A Promise that resolves when the reaction has been successfully removed.
+   * @throws {Error} - If the request to remove the reaction from the message fails, an Error is thrown with the error message.
+   * @param emoji The emoji to remove its reaction.
+   * @param userID The user ID
+   */
+  async deleteUserReaction(emoji: string, userID: string): Promise<void> {
+    if (emoji.startsWith("<:") && emoji.endsWith(">")) {
+      const splitted = emoji.split(":");
+      emoji = `${splitted[1]}:${splitted[2].replace(">", "")}`;
+    }
+
+    await this.client.rest.delete<any>(
+      Routes.UserReaction(this.channelId, this.id, emoji, userID),
+    );
+  }
+
+  /**
+   * Get all of the reactions of an emoji in the message.
+   *
+   * @param emoji The emoji to get the reactions of.
+   * @returns An array of users.
+   */
+  async getReactions(emoji: string): Promise<User[]> {
+    if (emoji.startsWith("<:") && emoji.endsWith(">")) {
+      const splitted = emoji.split(":");
+      emoji = `${splitted[1]}:${splitted[2].replace(">", "")}`;
+    }
+
+    const data = await this.client.rest.get<APIUser[]>(
+      Routes.GetReaction(this.channelId, this.id, emoji),
+    );
+
+    const users: User[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const user = data[i];
+      users.push(new User(user, this.client));
+    }
+
+    return users;
   }
 }
 
