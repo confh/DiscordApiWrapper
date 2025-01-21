@@ -1,5 +1,3 @@
-import { JSONCache } from "..";
-
 export abstract class Routes {
   static readonly #baseURL = "https://discord.com/api/v10/";
 
