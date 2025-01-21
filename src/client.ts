@@ -19,6 +19,7 @@ import { Role } from "./structure/Role";
 import { SlashCommandBuilder } from "./structure/SlashCommandBuilder";
 import { User } from "./structure/User";
 import { Rest } from "./internal/Rest";
+import { Emoji } from "./structure/Emoji";
 
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
@@ -173,7 +174,7 @@ export interface ClientEvents {
 }
 
 /** Emoji Object */
-export interface Emoji {
+export interface APIEmoji {
   id: string;
   name: string;
   roles?: string[];
@@ -188,7 +189,7 @@ export interface Emoji {
  * Partial Emoji object, this object is used for when only the ID, name, and animated status are needed.
  */
 export type PartialEmoji = Omit<
-  Emoji,
+  APIEmoji,
   "available" | "animated" | "managed" | "require_colons" | "user" | "roles"
 >;
 
@@ -411,10 +412,10 @@ export class Client {
   #intents = 0;
   readonly #token: string;
   public shards: number;
-  public readonly users: Manager<User> = new Manager<User>();
-  public readonly guilds: Manager<Guild> = new Manager<Guild>();
-  public readonly channels: Manager<Channel> = new Manager<Channel>();
-  public readonly roles: Manager<Role> = new Manager<Role>();
+  public readonly users: Manager<User> = new Manager();
+  public readonly guilds: Manager<Guild> = new Manager();
+  public readonly channels: Manager<Channel> = new Manager();
+  public readonly roles: Manager<Role> = new Manager();
   public readonly rest: Rest;
   public collectors: Collector[] = [];
   public logger: {

@@ -1,4 +1,4 @@
-import { ButtonStyles, Emoji, JSONCache, PartialEmoji } from "../client";
+import { ButtonStyles, APIEmoji, JSONCache, PartialEmoji } from "../client";
 
 type SUPPORTED_ELEMENTS = ButtonBuilder | StringSelectMenuBuilder;
 
