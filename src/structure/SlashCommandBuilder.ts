@@ -183,4 +183,209 @@ export class SlashCommandBuilder {
     }
     return data;
   }
+
+  /**
+   * Create a sub command group with sub commands
+   *
+   * @param name The name of the sub command group
+   * @param description The description of the sub command group
+   * @param subCommands An array of sub commands
+   * @returns
+   */
+  addSubcommandGroup(
+    name: string,
+    description: string,
+    ...subCommands: SubCommandBuilder[]
+  ): this {
+    if (!subCommands.length)
+      throw new Error("At least one subcommand is needed.");
+    const newOptions: {
+      name: string;
+      description: string;
+      type: number;
+      options: {
+        name: string;
+        description: string;
+        type: number;
+      }[];
+    } = {
+      name,
+      description,
+      type: 2,
+      options: [],
+    };
+
+    for (let i = 0; i < subCommands.length; i++) {
+      newOptions.options.push(subCommands[i].toJson());
+    }
+
+    this.options.push(newOptions);
+
+    return this;
+  }
+}
+
+/** Sub Command builder */
+export class SubCommandBuilder {
+  private name: string;
+  private description: string;
+  private type = 1;
+  private options: {
+    type: number;
+    name: string;
+    description: string;
+    required?: boolean;
+    choices?: choice<any>[];
+  }[] = [];
+
+  private addSlashCommandOption(
+    type: number,
+    name: string,
+    desc: string,
+    required: boolean,
+    choices?: choice<any>[],
+  ) {
+    this.options.push({
+      type: type,
+      name,
+      description: desc,
+      required,
+      choices,
+    });
+  }
+
+  /**
+   * Set the name of the sub command
+   *
+   * @param name Name of the sub command
+   * @returns SubCommandBuilder object
+   */
+  setName(name: string): this {
+    this.name = name;
+
+    return this;
+  }
+
+  /**
+   * Set the description of the sub command
+   *
+   * @param description Description of the sub command
+   * @returns SubCommandBuilder object
+   */
+  setDescription(description: string): this {
+    this.description = description;
+
+    return this;
+  }
+
+  /**
+   * Add an integer option to the slash command
+   * @param name Name of the option
+   * @param description Description of the option
+   * @param required
+   * @param choices If the option is required or not
+   * @returns SlashCommandBuilder Object
+   */
+  addNumberOption(
+    name: string,
+    description: string,
+    required = false,
+    choices?: choice<number>[],
+  ): this {
+    this.addSlashCommandOption(
+      ApplicationCommandOptionTypes.INTEGER,
+      name,
+      description,
+      required,
+      choices,
+    );
+    return this;
+  }
+
+  /**
+   * Add a string option to the slash command
+   * @param name Name of the option
+   * @param description Description of the option
+   * @param required If the option is required or not
+   * @returns SlashCommandBuilder Object
+   */
+  addStringOption(
+    name: string,
+    description: string,
+    required = false,
+    choices?: choice<string>[],
+  ): this {
+    this.addSlashCommandOption(
+      ApplicationCommandOptionTypes.STRING,
+      name,
+      description,
+      required,
+      choices,
+    );
+    return this;
+  }
+
+  /**
+   * Add a boolean option to the slash command
+   * @param name Name of the option
+   * @param description Description of the option
+   * @param required If the option is required or not
+   * @returns SlashCommandBuilder Object
+   */
+  addBooleanOption(name: string, description: string, required = false): this {
+    this.addSlashCommandOption(
+      ApplicationCommandOptionTypes.BOOLEAN,
+      name,
+      description,
+      required,
+    );
+    return this;
+  }
+
+  /**
+   * Add a user option to the slash command
+   * @param name Name of the option
+   * @param description Description of the option
+   * @param required If the option is required or not
+   * @returns SlashCommandBuilder Object
+   */
+  addUserOption(name: string, description: string, required = false): this {
+    this.addSlashCommandOption(
+      ApplicationCommandOptionTypes.USER,
+      name,
+      description,
+      required,
+    );
+    return this;
+  }
+
+  /**
+   * Add an attachment option to the slash command
+   * @param name Name of the option
+   * @param description Description of the option
+   * @param required If the option is required or not
+   * @returns SlashCommandBuilder Object
+   */
+  addAttachmentOption(
+    name: string,
+    description: string,
+    required = false,
+  ): this {
+    this.addSlashCommandOption(
+      ApplicationCommandOptionTypes.ATTACHMENT,
+      name,
+      description,
+      required,
+    );
+    return this;
+  }
+
+  toJson(): any {
+    return {
+      name: this.name,
+      description: this.description,
+      type: 1,
+      options: this.options,
+    };
+  }
 }

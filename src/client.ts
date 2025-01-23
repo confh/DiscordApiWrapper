@@ -148,6 +148,15 @@ export interface APIRole extends BaseData {
   flags: number;
 }
 
+/** Application Command Interaction Data Options */
+export interface APIApplicationCommandOptionsData {
+  name: string;
+  type: ApplicationCommandOptionTypes;
+  value?: string | number | boolean;
+  options?: APIApplicationCommandOptionsData[];
+  focused?: boolean;
+}
+
 /** Client Events */
 export interface ClientEvents {
   ready: [];
@@ -502,7 +511,6 @@ export class Client {
     },
   ) {
     process.on("SIGINT", () => {
-      console.log("Exitting");
       this.disconnect();
       process.exit();
     });

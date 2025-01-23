@@ -9,6 +9,7 @@ import {
   BaseData,
   ContentOptions,
   ApplicationCommandOptionTypes,
+  APIApplicationCommandOptionsData,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -155,11 +156,7 @@ export class Interaction extends Base {
 
 /** Slash command interaction object */
 export class SlashCommandInteraction extends Interaction {
-  options?: {
-    value: string;
-    type: ApplicationCommandOptionTypes;
-    name: string;
-  }[];
+  options?: APIApplicationCommandOptionsData[];
   resolved?: any;
 
   constructor(data: BaseData, client: Client) {
@@ -169,21 +166,38 @@ export class SlashCommandInteraction extends Interaction {
   }
 
   /**
+   * Returns whether the slash command has a subcommand or not.
+   */
+  get hasSubCommand(): boolean {
+    if (Array.isArray(this.options)) {
+      return (
+        this.options.length &&
+        this.options[0].type ==
+          ApplicationCommandOptionTypes.SUB_COMMAND_GROUP &&
+        this.options[0].options[0].type ==
+          ApplicationCommandOptionTypes.SUB_COMMAND
+      );
+    } else return false;
+  }
+
+  get subCommand(): SubCommand | undefined {
+    if (!this.hasSubCommand) return undefined;
+
+    return new SubCommand(this.options[0].options[0]);
+  }
+
+  /**
    * Get the string option
    * @param name Name of the option
    * @returns Option data
    */
-  getString(name: string): {
-    value: string;
-    type: ApplicationCommandOptionTypes;
-    name: string;
-  } {
+  getString(name: string): APIApplicationCommandOptionsData | undefined {
     if (this.options) {
       return this.options.find(
         (a) =>
           a.type === ApplicationCommandOptionTypes.STRING && a.name === name,
       );
-    } else return null;
+    } else return undefined;
   }
 
   /**
@@ -191,17 +205,13 @@ export class SlashCommandInteraction extends Interaction {
    * @param name Name of the option
    * @returns Option data
    */
-  getBoolean(name: string): {
-    value: string;
-    type: ApplicationCommandOptionTypes;
-    name: string;
-  } {
+  getBoolean(name: string): APIApplicationCommandOptionsData | undefined {
     if (this.options) {
       return this.options.find(
         (a) =>
           a.type === ApplicationCommandOptionTypes.BOOLEAN && a.name === name,
       );
-    } else return null;
+    } else return undefined;
   }
 
   /**
@@ -209,17 +219,13 @@ export class SlashCommandInteraction extends Interaction {
    * @param name Name of the option
    * @returns Option data
    */
-  getNumber(name: string): {
-    value: string;
-    type: ApplicationCommandOptionTypes;
-    name: string;
-  } {
+  getNumber(name: string): APIApplicationCommandOptionsData | undefined {
     if (this.options) {
       return this.options.find(
         (a) =>
           a.type === ApplicationCommandOptionTypes.INTEGER && a.name === name,
-      );
-    } else return null;
+      )[0];
+    } else return undefined;
   }
 
   /**
@@ -245,7 +251,7 @@ export class SlashCommandInteraction extends Interaction {
         a.type === ApplicationCommandOptionTypes.ATTACHMENT && a.name === name,
     );
     if (!attachmentId) return undefined;
-    return this.resolved.attachments[attachmentId.value] as {
+    return this.resolved.attachments[attachmentId.value as string] as {
       width: number;
       url: string;
       size: number;
@@ -380,5 +386,58 @@ export class UserContextInteraction extends Interaction {
     this.target.member =
       this.guild.members.get(this.target_id) ||
       new Member(data.data.resolved.members[this.target_id], client);
+  }
+}
+
+/** Sub Command object */
+class SubCommand {
+  readonly name: string;
+  readonly options: APIApplicationCommandOptionsData[];
+
+  constructor(data: APIApplicationCommandOptionsData) {
+    this.name = data.name;
+    this.options = data.options;
+  }
+
+  /**
+   * Get the string option
+   * @param name Name of the option
+   * @returns Option data
+   */
+  getString(name: string): APIApplicationCommandOptionsData | undefined {
+    if (this.options) {
+      return this.options.find(
+        (a) =>
+          a.type === ApplicationCommandOptionTypes.STRING && a.name === name,
+      );
+    } else return undefined;
+  }
+
+  /**
+   * Get the boolean option
+   * @param name Name of the option
+   * @returns Option data
+   */
+  getBoolean(name: string): APIApplicationCommandOptionsData | undefined {
+    if (this.options) {
+      return this.options.find(
+        (a) =>
+          a.type === ApplicationCommandOptionTypes.BOOLEAN && a.name === name,
+      );
+    } else return undefined;
+  }
+
+  /**
+   * Get the integer option
+   * @param name Name of the option
+   * @returns Option data
+   */
+  getNumber(name: string): APIApplicationCommandOptionsData | undefined {
+    if (this.options) {
+      return this.options.find(
+        (a) =>
+          a.type === ApplicationCommandOptionTypes.INTEGER && a.name === name,
+      )[0];
+    } else return undefined;
   }
 }
