@@ -169,6 +169,7 @@ export interface ClientEvents {
   roleDelete: [role: Role];
   channelCreate: [channel: Channel];
   channelDelete: [channel: Channel];
+  channelUpdate: [oldChannel: Channel, newChannel: Channel];
   userUpdate: [oldUser: User, newUser: User];
   webhookMessageCreate: [message: WebhookMessage];
 }
@@ -820,10 +821,18 @@ export class Client {
    * @param id The ID of the channel or an array of channel IDs to delete
    */
   private _deleteChannels(id: string | string[]) {
-    const IDs = typeof id === "string" ? [id] : id;
+    const IDs = Array.isArray(id) ? id : [id];
     for (let i = 0; i < IDs.length; i++) {
       const id = IDs[i];
       this.channels.delete(id);
+    }
+  }
+
+  private _deleteRoles(id: string | string[]) {
+    const IDs = Array.isArray(id) ? id : [id];
+    for (let i = 0; i < IDs.length; i++) {
+      const id = IDs[i];
+      this.roles.delete(id);
     }
   }
 
@@ -1110,7 +1119,7 @@ export class Client {
         case "GUILD_ROLE_UPDATE":
           {
             // Update the cached role
-            let oldRole = _this.roles.get(d.role.id)._clone();
+            const oldRole = _this.roles.get(d.role.id)._clone();
             _this.roles.update(d.role.id, d.role);
             _this.emit(
               "roleUpdate",
@@ -1140,17 +1149,33 @@ export class Client {
           }
           break;
 
+        case "CHANNEL_UPDATE":
+          const oldChannel = _this.channels.get(d.id)._clone();
+          _this.channels.update(d.id, d);
+          _this.emit("channelUpdate", oldChannel, _this.channels.get(d.id));
+          break;
+
         case "GUILD_DELETE":
           {
             // Remove all cached channels that are related to the guild
-            let channelIDs: string[] = [];
-            for (let i = 0; i < _this.channels.length; i++) {
-              const channel = _this.channels.getByIndex(i);
-              if (channel.guild.id && channel.guild.id === d.id) {
-                channelIDs.push(channel.id);
-              }
+            const channelIDs: string[] = [];
+            const guildChannels = _this.channels.filter(
+              (channel) => channel.guild.id == d.id,
+            );
+            for (let i = 0; i < guildChannels.length; i++) {
+              channelIDs.push(guildChannels[i].id);
             }
             _this._deleteChannels(channelIDs);
+
+            // Remove all cached roles that are related to the guild
+            const roleIDs: string[] = [];
+            const guildRoles = _this.roles.filter(
+              (role) => role.guild_id == d.id,
+            );
+            for (let i = 0; i < guildRoles.length; i++) {
+              roleIDs.push(guildRoles[i].id);
+            }
+            _this._deleteRoles(roleIDs);
 
             // Delete the cached guild
             const oldGuild = _this.guilds.get(d.id)._clone();

@@ -81,11 +81,26 @@ export class Channel extends Base {
     return webhooks;
   }
 
+  /**
+   * Get a message from the channel by its ID.
+   *
+   * @param id ID of the message to get.
+   * @returns A message object.
+   */
   async getMessage(id: string): Promise<Message> {
     const data = await this.client.rest.get<APIMessage>(
       Routes.Message(this.id, id),
     );
 
     return new Message(data, this.client);
+  }
+
+  /**
+   * Update the channel
+   *
+   * @param data The new data of the channel
+   */
+  _patch(data: Channel): void {
+    Object.assign(this, data);
   }
 }
