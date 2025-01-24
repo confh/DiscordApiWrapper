@@ -10,8 +10,8 @@ interface choice<T> {
 
 /** Slash command builder */
 export class SlashCommandBuilder {
-  private name: string;
-  private description: string;
+  name: string;
+  description: string;
   private options: {
     type: number;
     name: string;
