@@ -201,6 +201,19 @@ export class SlashCommandInteraction extends Interaction {
   }
 
   /**
+   * Get the user option
+   * @param name Name of the option
+   * @returns Option data
+   */
+  getUser(name: string): APIApplicationCommandOptionsData | undefined {
+    if (this.options) {
+      return this.options.find(
+        (a) => a.type === ApplicationCommandOptionTypes.USER && a.name === name,
+      );
+    } else return undefined;
+  }
+
+  /**
    * Get the boolean option
    * @param name Name of the option
    * @returns Option data
