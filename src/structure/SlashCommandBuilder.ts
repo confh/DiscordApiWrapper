@@ -184,6 +184,16 @@ export class SlashCommandBuilder {
     return data;
   }
 
+  addSubCommand(name: string, description: string): this {
+    this.options.push({
+      type: ApplicationCommandOptionTypes.SUB_COMMAND,
+      name,
+      description,
+    });
+
+    return this;
+  }
+
   /**
    * Create a sub command group with sub commands
    *
@@ -192,7 +202,7 @@ export class SlashCommandBuilder {
    * @param subCommands An array of sub commands
    * @returns
    */
-  addSubcommandGroup(
+  addSubCommandGroup(
     name: string,
     description: string,
     ...subCommands: SubCommandBuilder[]

@@ -166,9 +166,9 @@ export class SlashCommandInteraction extends Interaction {
   }
 
   /**
-   * Returns whether the slash command has a subcommand or not.
+   * Returns whether the slash command has a sub command group or not.
    */
-  get hasSubCommand(): boolean {
+  get hasSubCommandGroup(): boolean {
     if (Array.isArray(this.options)) {
       return (
         this.options.length &&
@@ -180,10 +180,34 @@ export class SlashCommandInteraction extends Interaction {
     } else return false;
   }
 
+  /**
+   * Returns sub command from the sub comand group
+   */
+  get subCommandFromGroup(): SubCommand | undefined {
+    if (!this.hasSubCommandGroup) return undefined;
+
+    return new SubCommand(this.options[0].options[0]);
+  }
+
+  /**
+   * Returns whether the slash command has a sub command or not.
+   */
+  get hasSubCommand(): boolean {
+    if (Array.isArray(this.options)) {
+      return (
+        this.options.length &&
+        this.options[0].type == ApplicationCommandOptionTypes.SUB_COMMAND
+      );
+    } else return false;
+  }
+
+  /**
+   * Returns sub command from the sub comand group
+   */
   get subCommand(): SubCommand | undefined {
     if (!this.hasSubCommand) return undefined;
 
-    return new SubCommand(this.options[0].options[0]);
+    return new SubCommand(this.options[0]);
   }
 
   /**
