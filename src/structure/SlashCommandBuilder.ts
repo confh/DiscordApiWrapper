@@ -184,12 +184,8 @@ export class SlashCommandBuilder {
     return data;
   }
 
-  addSubCommand(name: string, description: string): this {
-    this.options.push({
-      type: ApplicationCommandOptionTypes.SUB_COMMAND,
-      name,
-      description,
-    });
+  addSubCommand(data: SubCommandBuilder): this {
+    this.options.push(data.toJson());
 
     return this;
   }
