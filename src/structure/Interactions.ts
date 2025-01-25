@@ -474,7 +474,7 @@ class SubCommand {
       return this.options.find(
         (a) =>
           a.type === ApplicationCommandOptionTypes.INTEGER && a.name === name,
-      )[0];
+      );
     } else return undefined;
   }
 }
