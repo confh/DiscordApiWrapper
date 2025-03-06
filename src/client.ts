@@ -19,7 +19,6 @@ import { Role } from "./structure/Role";
 import { SlashCommandBuilder } from "./structure/SlashCommandBuilder";
 import { User } from "./structure/User";
 import { Rest } from "./internal/Rest";
-import { Emoji } from "./structure/Emoji";
 
 // Type of presence status
 type PRESENCES = "online" | "dnd" | "invisible" | "idle";
