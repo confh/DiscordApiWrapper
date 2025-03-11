@@ -1,6 +1,6 @@
 {
   "name": "@confis/discordapiwrapper",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A fast and lightweight discord api wrapper.",
   "keywords": [
     "discord",

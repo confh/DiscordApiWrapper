@@ -225,13 +225,21 @@ export class Message extends Base {
   }
 
   /**
-   * Deletes a message from the specified channel.
-   *
-   * @return {Promise<void>} - A Promise that resolves when the message is successfully deleted.
-   * @throws {Error} - If the request to delete the message fails, an Error is thrown with the error message.
+   * Deletes this message from the channel.
+   * 
+   * @param options - Optional configuration for deletion
+   * @param options.throwError - Whether to throw an error if deletion fails (default: true)
+   * @return {Promise<void>} A promise that resolves when the message is deleted
+   * @throws {Error} If throwError is true and the deletion request fails
    */
-  async delete(): Promise<void> {
-    await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+  async delete(options: { throwError?: boolean } = { throwError: true }): Promise<void> {
+    if (options.throwError) {
+      await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+    } else {
+      try {
+        await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+      } catch { }
+    }
   }
 
   /**

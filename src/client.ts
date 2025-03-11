@@ -39,6 +39,19 @@ export enum WebhookTypes {
   APPLICATION,
 }
 
+/** Enum for types of interaction contexts */
+export enum InteractionContextTypes {
+  GUILD,
+  BOT_DM,
+  PRIVATE_CHANNEL
+}
+
+/** Enum for types of interaction integration */
+export enum InteractionIntegrationTypes {
+  GUILD_INSTALL,
+  USER_INSTALL
+}
+
 /** Webhook Object */
 export interface APIWebhookObject extends BaseData {
   type: WebhookTypes;

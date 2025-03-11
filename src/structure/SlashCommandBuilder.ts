@@ -1,6 +1,9 @@
+import assert from "assert";
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  InteractionContextTypes,
+  InteractionIntegrationTypes,
 } from "../client";
 
 interface choice<T> {
@@ -20,6 +23,13 @@ export class SlashCommandBuilder {
     choices?: choice<any>[];
   }[] = [];
   public type: ApplicationCommandTypes = ApplicationCommandTypes.CHAT_INPUT;
+  public contexts: InteractionContextTypes[] = [
+    InteractionContextTypes.GUILD,
+    InteractionContextTypes.BOT_DM
+  ];
+  public interactionIntegrationTypes: InteractionIntegrationTypes[] = [
+    InteractionIntegrationTypes.GUILD_INSTALL,
+  ];
 
   private addSlashCommandOption(
     type: number,
@@ -52,11 +62,57 @@ export class SlashCommandBuilder {
    * @param type Type of context
    */
   setContextInteraction(type: "USER" | "MESSAGE"): this {
+    assert(type === "MESSAGE" || type === "USER", "Type must be USER or MESSAGE")
     if (type === "USER") {
       this.type = ApplicationCommandTypes.USER;
     } else {
       this.type = ApplicationCommandTypes.MESSAGE;
     }
+    return this;
+  }
+
+  /**
+ * Sets the contexts in which this slash command can be used.
+ * 
+ * @param contexts - Array of interaction context types (GUILD, DM, or GROUP_DM)
+ * @throws {AssertionError} If array is empty or has more than 3 contexts
+ * @returns The current SlashCommandBuilder instance for method chaining
+ * 
+ * @example
+ * ```typescript
+ * SlashCommandBuilder().setContexts([
+ *   InteractionContextTypes.GUILD,
+ *   InteractionContextTypes.DM
+ * ]);
+ * ```
+ */
+  setContexts(contexts: InteractionContextTypes[]): this {
+    assert(contexts.length > 0, "At least one context is needed.");
+    assert(contexts.length <= 3, "At most three contexts are needed.");
+
+    this.contexts = contexts;
+    return this;
+  }
+
+  /**
+   * Sets the integration types that can use this slash command.
+   * 
+   * @param types - Array of interaction integration types (GUILD_INSTALL or USER_INSTALL)
+   * @throws {AssertionError} If array is empty or has more than 2 types
+   * @returns The current SlashCommandBuilder instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * SlashCommandBuilder().setInteractionIntegrationTypes([
+   *   InteractionIntegrationTypes.GUILD_INSTALL
+   * ]);
+   * ```
+   */
+  setInteractionIntegrationTypes(types: InteractionIntegrationTypes[]): this {
+    assert(types.length > 0, "At least one type is needed.");
+    assert(types.length <= 2, "At most two types are needed.");
+
+    this.interactionIntegrationTypes = types;
     return this;
   }
 
@@ -176,6 +232,8 @@ export class SlashCommandBuilder {
     const data: any = {
       name: this.name,
       type: this.type,
+      contexts: this.contexts,
+      integration_types: this.interactionIntegrationTypes
     };
     if (this.type === ApplicationCommandTypes.CHAT_INPUT) {
       data.description = this.description;
