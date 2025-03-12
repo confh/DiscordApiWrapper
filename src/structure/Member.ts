@@ -20,6 +20,10 @@ export class Member extends Base {
     this.#rolesIDs = data.roles;
   }
 
+  toString(): string {
+    return this.user.toString()
+  }
+
   /**
    * Get the guild of the member
    *

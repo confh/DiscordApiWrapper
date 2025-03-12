@@ -32,6 +32,10 @@ export class User extends Base {
     this.avatarDecoration = data.avatar_decoration_data;
   }
 
+  toString(): string {
+    return `<@${this.id}>`
+  }
+
   /**
    * Get the display name of the user
    *
