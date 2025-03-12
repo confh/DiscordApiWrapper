@@ -442,7 +442,7 @@ export class Client {
   public readonly channels: Manager<Channel> = new Manager();
   public readonly roles: Manager<Role> = new Manager();
   public readonly rest: Rest;
-  public collectors: Collector<any>[] = [];
+  public collectors: Collector[] = [];
   public modalCollectors: ModalCollector[] = [];
   public logger: {
     info: (...args: any[]) => any;
