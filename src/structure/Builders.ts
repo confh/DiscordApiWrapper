@@ -444,6 +444,15 @@ export class ActionRowBuilder {
   }
 
   /**
+   * Disables all components in the action row
+   * @returns The ActionRowBuilder instance for method chaining
+   */
+  disableAllComponents(): this {
+    this.components.forEach(e => e.setDisabled(true))
+    return this
+  }
+
+  /**
    * Set the Components of the ActionRow
    * @param components An array of {@link SUPPORTED_ELEMENTS}
    * @returns ActionRowBuilder Object
@@ -466,6 +475,195 @@ export class ActionRowBuilder {
     return {
       type: 1,
       components: JSONArray,
+    };
+  }
+}
+
+/** Text input styles enum */
+export enum TextInputStyles {
+  SHORT = 1,
+  PARAGRAPH = 2,
+}
+
+/** Text input builder */
+export class TextInputBuilder {
+  #custom_id!: string;
+  #label!: string;
+  #style: TextInputStyles = TextInputStyles.SHORT;
+  #min_length?: number;
+  #max_length?: number;
+  #required: boolean = false;
+  #value?: string;
+  #placeholder?: string;
+
+  /**
+   * Set the Custom ID of the text input
+   * @param id The custom ID
+   * @returns TextInputBuilder Object
+   */
+  setCustomId(id: string): this {
+    this.#custom_id = id;
+    return this;
+  }
+
+  /**
+   * Set the Label of the text input
+   * @param label The label
+   * @returns TextInputBuilder Object
+   */
+  setLabel(label: string): this {
+    this.#label = label;
+    return this;
+  }
+
+  /**
+   * Set the Style of the text input
+   * @param style The style from TextInputStyles
+   * @returns TextInputBuilder Object
+   */
+  setStyle(style: TextInputStyles): this {
+    this.#style = style;
+    return this;
+  }
+
+  /**
+   * Set the Minimum Length of the text input
+   * @param length The minimum length
+   * @returns TextInputBuilder Object
+   */
+  setMinLength(length: number): this {
+    this.#min_length = length;
+    return this;
+  }
+
+  /**
+   * Set the Maximum Length of the text input
+   * @param length The maximum length
+   * @returns TextInputBuilder Object
+   */
+  setMaxLength(length: number): this {
+    this.#max_length = length;
+    return this;
+  }
+
+  /**
+   * Set if the text input is required
+   * @param required Whether the field is required
+   * @returns TextInputBuilder Object
+   */
+  setRequired(required: boolean): this {
+    this.#required = required;
+    return this;
+  }
+
+  /**
+   * Set the Value of the text input
+   * @param value The pre-filled value
+   * @returns TextInputBuilder Object
+   */
+  setValue(value: string): this {
+    this.#value = value;
+    return this;
+  }
+
+  /**
+   * Set the Placeholder of the text input
+   * @param placeholder The placeholder text
+   * @returns TextInputBuilder Object
+   */
+  setPlaceholder(placeholder: string): this {
+    this.#placeholder = placeholder;
+    return this;
+  }
+
+  toJson(): {
+    type: number;
+    custom_id: string;
+    label: string;
+    style: number;
+    min_length?: number;
+    max_length?: number;
+    required: boolean;
+    value?: string;
+    placeholder?: string;
+  } {
+    return {
+      type: 4,
+      custom_id: this.#custom_id,
+      label: this.#label,
+      style: this.#style,
+      min_length: this.#min_length,
+      max_length: this.#max_length,
+      required: this.#required,
+      value: this.#value,
+      placeholder: this.#placeholder,
+    };
+  }
+}
+
+/** Modal builder */
+export class ModalBuilder {
+  #title!: string;
+  #custom_id!: string;
+  #components: TextInputBuilder[] = [];
+
+  /**
+   * Set the Title of the modal
+   * @param title The title
+   * @returns ModalBuilder Object
+   */
+  setTitle(title: string): this {
+    this.#title = title;
+    return this;
+  }
+
+  /**
+   * Set the Custom ID of the modal
+   * @param id The custom ID
+   * @returns ModalBuilder Object
+   */
+  setCustomId(id: string): this {
+    this.#custom_id = id;
+    return this;
+  }
+
+  /**
+   * Add components to the modal
+   * @param components The components to add
+   * @returns ModalBuilder Object
+   */
+  addComponents(...components: TextInputBuilder[]): this {
+    this.#components.push(...components);
+    return this;
+  }
+
+  /**
+   * Set the components of the modal
+   * @param components The components to set
+   * @returns ModalBuilder Object
+   */
+  setComponents(...components: TextInputBuilder[]): this {
+    this.#components = components;
+    return this;
+  }
+
+  toJson(): {
+    title: string;
+    custom_id: string;
+    type: number;
+    components: {
+      type: number;
+      components: any[];
+    }[];
+  } {
+    return {
+      title: this.#title,
+      custom_id: this.#custom_id,
+      type: 1,
+      components: this.#components.map(component => ({
+        type: 1,
+        components: [component.toJson()]
+      }))
     };
   }
 }

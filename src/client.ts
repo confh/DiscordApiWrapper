@@ -3,12 +3,13 @@ import WebSocket from "ws";
 import { Manager } from "./internal/Manager";
 import { ActionRowBuilder, EmbedBuilder } from "./structure/Builders";
 import { Channel } from "./structure/Channel";
-import { Collector } from "./structure/Collector";
+import { Collector, ModalCollector } from "./structure/Collector";
 import { Guild } from "./structure/Guild";
 import {
   ButtonInteraction,
   Interaction,
   MessageContextInteraction,
+  ModalInteraction,
   SlashCommandInteraction,
   StringSelectMenuInteraction,
   UserContextInteraction,
@@ -239,6 +240,8 @@ export enum InteractionTypes {
   PING = 1,
   APPLICATION_COMMAND,
   MESSAGE_COMPONENT,
+  APPLICATION_COMMAND_AUTOCOMPLETE,
+  MODAL_SUBMIT
 }
 
 /**
@@ -440,6 +443,7 @@ export class Client {
   public readonly roles: Manager<Role> = new Manager();
   public readonly rest: Rest;
   public collectors: Collector[] = [];
+  public modalCollectors: ModalCollector[] = [];
   public logger: {
     info: (...args: any[]) => any;
     error: (...args: any[]) => any;
@@ -956,7 +960,8 @@ export class Client {
           break;
       }
       switch (t) {
-        case "READY":
+        // Connection Events
+        case "READY": {
           _this.#readyTimestamp = Date.now();
           _this.#url = d.resume_gateway_url;
           _this.#session_id = d.session_id;
@@ -966,281 +971,266 @@ export class Client {
             _this.emit("ready");
           }, 500);
           break;
-        case "RESUMED":
+        }
+
+        case "RESUMED": {
           _this.emit("resume");
           break;
-        case "MESSAGE_CREATE":
-          if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type))
-            return;
-          if (!_this.channels.get(d.channel_id))
+        }
+
+        // Message Events
+        case "MESSAGE_CREATE": {
+          if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
+          
+          if (!_this.channels.get(d.channel_id)) {
             await _this.registerChannelFromAPI(d.channel_id);
+          }
+
           if (d.author && !d.webhook_id) {
             _this.emit("messageCreate", new Message(d, _this));
           } else if (d.author && d.webhook_id) {
             _this.emit("webhookMessageCreate", new WebhookMessage(d, _this));
           }
           break;
+        }
 
-        case "MESSAGE_UPDATE":
-          {
-            if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type))
-              return;
-            if (d.author) {
-              _this.emit("messageUpdate", new Message(d, _this));
-            }
+        case "MESSAGE_UPDATE": {
+          if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
+          if (d.author) {
+            _this.emit("messageUpdate", new Message(d, _this));
           }
           break;
+        }
 
-        case "MESSAGE_DELETE":
-          {
-            _this.emit("messageDelete", {
-              id: d.id,
-              channel_id: d.channel_id,
-            });
+        case "MESSAGE_DELETE": {
+          _this.emit("messageDelete", {
+            id: d.id,
+            channel_id: d.channel_id,
+          });
+          break;
+        }
+
+        // Guild Events
+        case "GUILD_CREATE": {
+          // Cache roles
+          for (let i = 0; i < d.roles.length; i++) {
+            let role = d.roles[i];
+            role.guild_id = d.id;
+            _this.roles.cache(new Role(role, _this));
+          }
+
+          // Cache users if enabled
+          if (_this.#cacheAllUsers) {
+            const allUsers = d.members.map(member => 
+              new User(member.user, _this)
+            );
+            _this.users.cache(allUsers);
+          }
+
+          // Cache channels
+          for (const channel of d.channels) {
+            channel.guild_id = d.id;
+            _this.channels.cache(new Channel(channel, _this));
+          }
+
+          // Cache and emit guild
+          _this.guilds.cache(new Guild(d, _this));
+          _this.emit("guildCreate", _this.guilds.get(d.id) as Guild);
+          break;
+        }
+
+        case "GUILD_DELETE": {
+          const guild = _this.guilds.get(d.id);
+          if (!guild) break;
+
+          // Remove guild channels
+          const channelIDs = _this.channels
+            .filter(channel => channel.guild.id === d.id)
+            .map(channel => channel.id);
+          _this._deleteChannels(channelIDs);
+
+          // Remove guild roles
+          const roleIDs = _this.roles
+            .filter(role => role.guild_id === d.id)
+            .map(role => role.id);
+          _this._deleteRoles(roleIDs);
+
+          // Remove and emit guild
+          const oldGuild = guild._clone();
+          _this.guilds.delete(d.id);
+          _this.emit("guildDelete", oldGuild);
+          break;
+        }
+
+        // Member Events
+        case "GUILD_MEMBER_ADD": {
+          const guild = _this.guilds.get(d.guild_id);
+          if (guild) {
+            guild.members.cache(new Member(d, _this));
+          }
+          _this.users.cache(new User(d.user as APIUser, _this));
+          break;
+        }
+
+        case "GUILD_MEMBER_REMOVE": {
+          const data = d as { guild_id: string; user: APIUser };
+          const guild = _this.guilds.get(data.guild_id);
+          if (guild) {
+            guild.members.delete(data.user.id);
           }
           break;
+        }
 
-        case "GUILD_CREATE":
-          {
-            // Cache all guild roles
-            for (let i = 0; i < d.roles.length; i++) {
-              let role = d.roles[i];
-              role.guild_id = d.id;
-              _this.roles.cache(new Role(role, _this));
-            }
-
-            // Cache all users
-            if (_this.#cacheAllUsers) {
-              const allUsers: User[] = [];
-              for (let i = 0; i < d.members.length; i++) {
-                const user = d.members[i].user;
-                allUsers.push(new User(user, _this));
-              }
-
-              _this.users.cache(allUsers);
-            }
-
-            // Cache all channels
-            for (let i = 0; i < d.channels.length; i++) {
-              const channel = d.channels[i];
-              d.channels[i].guild_id = d.id;
-              _this.channels.cache(new Channel(channel, _this));
-            }
-
-            // Cache guild
-            _this.guilds.cache(new Guild(d, _this));
-            // Emit a guildCreate event
-            _this.emit("guildCreate", _this.guilds.get(d.id) as Guild);
+        case "GUILD_MEMBER_UPDATE": {
+          const data = d as APIGuildMemberEvent;
+          const guild = _this.guilds.get(data.guild_id);
+          const member = guild?.members.get(data.user.id);
+          
+          if (member) {
+            const oldMember = member._clone();
+            guild.members.update(data.user.id, data);
+            _this.emit(
+              "memberUpdate",
+              oldMember,
+              guild.members.get(data.user.id)
+            );
           }
           break;
+        }
 
-        case "GUILD_MEMBER_ADD":
-          {
-            const guild = _this.guilds.get(d.guild_id);
-            if (guild)
-              _this.guilds.get(d.guild_id).members.cache(new Member(d, _this));
-            _this.users.cache(new User(d.user as APIUser, _this));
-          }
-          break;
-        case "GUILD_MEMBER_REMOVE":
-          {
-            const data = d as {
-              guild_id: string;
-              user: APIUser;
-            };
-            const guild = _this.guilds.get(data.guild_id);
-            if (guild)
-              _this.guilds.get(data.guild_id).members.delete(data.user.id);
-          }
-          break;
-
-        case "GUILD_MEMBER_UPDATE":
-          {
-            // Update cached member
-            const data = d as APIGuildMemberEvent;
-            let oldMember = _this.guilds
-              .get(data.guild_id)
-              .members.get(data.user.id);
-            if (oldMember) {
-              oldMember = oldMember._clone();
-              _this.guilds
-                .get(data.guild_id)
-                .members.update(data.user.id, data);
-              _this.emit(
-                "memberUpdate",
-                oldMember,
-                _this.guilds.get(data.guild_id).members.get(data.user.id),
-              );
-            }
-          }
-          break;
-
-        case "INTERACTION_CREATE":
+        // Interaction Events
+        case "INTERACTION_CREATE": {
           if (d.type === InteractionTypes.APPLICATION_COMMAND) {
-            // Emit interactionCreate event with the argument according to the interaction type
             if (d.channel.type === ChannelTypes.DM) {
               const user = _this.users.get(d.user.id);
               await user.getDmChannel();
             }
+
             switch (d.data.type) {
               case ApplicationCommandTypes.CHAT_INPUT:
-                _this.emit(
-                  "interactionCreate",
-                  new SlashCommandInteraction(d, _this),
-                );
+                _this.emit("interactionCreate", new SlashCommandInteraction(d, _this));
                 break;
-
               case ApplicationCommandTypes.USER:
-                _this.emit(
-                  "interactionCreate",
-                  new UserContextInteraction(d, _this),
-                );
+                _this.emit("interactionCreate", new UserContextInteraction(d, _this));
                 break;
-
               case ApplicationCommandTypes.MESSAGE:
-                _this.emit(
-                  "interactionCreate",
-                  new MessageContextInteraction(d, _this),
-                );
+                _this.emit("interactionCreate", new MessageContextInteraction(d, _this));
                 break;
             }
-          } else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
+          } 
+          else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
+            const collector = _this.collectors.find(a => a.messageId === d.message.id);
+            
             if (d.data.component_type === ComponentTypes.BUTTON) {
-              const collector = _this.collectors.find(
-                (a) => a.messageId === d.message.id,
-              );
+              const interaction = new ButtonInteraction(d, _this);
               if (collector) {
-                collector.emit(
-                  "collect",
-                  d.data.component_type,
-                  new ButtonInteraction(d, _this),
-                );
+                if (!collector.filter || collector.filter(interaction)) {
+                  collector.emit("collect", d.data.component_type, interaction);
+                }
               }
-              _this.emit("interactionCreate", new ButtonInteraction(d, _this));
-            } else if (d.data.component_type === ComponentTypes.STRING_SELECT) {
-              const collector = _this.collectors.find(
-                (a) => a.messageId === d.message.id,
-              );
+              _this.emit("interactionCreate", interaction);
+            } 
+            else if (d.data.component_type === ComponentTypes.STRING_SELECT) {
+              const interaction = new StringSelectMenuInteraction(d, _this);
               if (collector) {
-                collector.emit(
-                  "collect",
-                  d.data.component_type,
-                  new StringSelectMenuInteraction(d, _this),
-                );
+                collector.emit("collect", d.data.component_type, interaction);
               }
-              _this.emit(
-                "interactionCreate",
-                new StringSelectMenuInteraction(d, _this),
-              );
+              _this.emit("interactionCreate", interaction);
             }
           }
-          break;
-
-        case "GUILD_ROLE_UPDATE":
-          {
-            // Update the cached role
-            const oldRole = _this.roles.get(d.role.id)._clone();
-            _this.roles.update(d.role.id, d.role);
-            _this.emit(
-              "roleUpdate",
-              oldRole,
-              _this.roles.get(d.role.id) as Role,
-              _this.guilds.get(d.guild_id) as Guild,
+          else if (d.type === InteractionTypes.MODAL_SUBMIT) {
+            const interaction = new ModalInteraction(d, _this);
+            const collector = _this.modalCollectors.find(
+              a => a.customId === interaction.data.custom_id
             );
-          }
-          break;
 
-        case "CHANNEL_CREATE":
-          {
-            // Cache the channel
-            const channel = _this.channels.cache(new Channel(d, _this));
-            _this.emit("channelCreate", channel);
-          }
-          break;
-
-        case "CHANNEL_DELETE":
-          {
-            // Remove channel from cache
-            const oldChannel = _this.channels.get(d.id);
-            if (oldChannel) {
-              _this.channels.delete(d.id);
-              _this.emit("channelDelete", oldChannel);
+            if (collector && (!collector.filter || collector.filter(interaction))) {
+              collector.emit("collect", interaction);
             }
+            _this.emit("interactionCreate", interaction);
           }
           break;
+        }
 
-        case "CHANNEL_UPDATE":
+        // Role Events
+        case "GUILD_ROLE_CREATE": {
+          const data = d as { guild_id: string; role: APIRole };
+          data.role.guild_id = data.guild_id;
+          _this.roles.cache(new Role(data.role, _this));
+          _this.emit("roleCreate", _this.roles.get(data.role.id));
+          break;
+        }
+
+        case "GUILD_ROLE_UPDATE": {
+          const oldRole = _this.roles.get(d.role.id)._clone();
+          _this.roles.update(d.role.id, d.role);
+          _this.emit(
+            "roleUpdate",
+            oldRole,
+            _this.roles.get(d.role.id) as Role,
+            _this.guilds.get(d.guild_id) as Guild
+          );
+          break;
+        }
+
+        case "GUILD_ROLE_DELETE": {
+          const data = d as { guild_id: string; role_id: string };
+          const oldRole = _this.roles.get(data.role_id)._clone();
+          _this.roles.delete(data.role_id);
+          _this.emit("roleDelete", oldRole);
+          break;
+        }
+
+        // Channel Events
+        case "CHANNEL_CREATE": {
+          const channel = _this.channels.cache(new Channel(d, _this));
+          _this.emit("channelCreate", channel);
+          break;
+        }
+
+        case "CHANNEL_UPDATE": {
           const oldChannel = _this.channels.get(d.id)._clone();
           _this.channels.update(d.id, d);
           _this.emit("channelUpdate", oldChannel, _this.channels.get(d.id));
           break;
+        }
 
-        case "GUILD_DELETE":
-          {
-            // Remove all cached channels that are related to the guild
-            const channelIDs: string[] = [];
-            const guildChannels = _this.channels.filter(
-              (channel) => channel.guild.id == d.id,
-            );
-            for (let i = 0; i < guildChannels.length; i++) {
-              channelIDs.push(guildChannels[i].id);
-            }
-            _this._deleteChannels(channelIDs);
-
-            // Remove all cached roles that are related to the guild
-            const roleIDs: string[] = [];
-            const guildRoles = _this.roles.filter(
-              (role) => role.guild_id == d.id,
-            );
-            for (let i = 0; i < guildRoles.length; i++) {
-              roleIDs.push(guildRoles[i].id);
-            }
-            _this._deleteRoles(roleIDs);
-
-            // Delete the cached guild
-            const oldGuild = _this.guilds.get(d.id)._clone();
-            _this.guilds.delete(d.id);
-
-            _this.emit("guildDelete", oldGuild);
+        case "CHANNEL_DELETE": {
+          const oldChannel = _this.channels.get(d.id);
+          if (oldChannel) {
+            _this.channels.delete(d.id);
+            _this.emit("channelDelete", oldChannel);
           }
           break;
+        }
 
-        case "GUILD_ROLE_CREATE":
-          {
-            // Update cached role
-            const data = d as {
-              guild_id: string;
-              role: APIRole | any;
-            };
-            data.role.guild_id = data.guild_id;
-            _this.roles.cache(new Role(data.role, _this));
-            _this.emit("roleCreate", _this.roles.get(data.role.id));
-          }
+        // User Events
+        case "USER_UPDATE": {
+          const data = d as APIUser;
+          const oldUser = _this.users.get(data.id)._clone();
+          _this.users.update(data.id, data);
+          _this.emit("userUpdate", oldUser, _this.users.get(data.id));
           break;
-
-        case "GUILD_ROLE_DELETE":
-          {
-            // Remove role from cache
-            const data = d as {
-              guild_id: string;
-              role_id: string;
-            };
-            const oldRole = _this.roles.get(data.role_id)._clone();
-            _this.roles.delete(data.role_id);
-            _this.emit("roleDelete", oldRole);
-          }
-          break;
-
-        case "USER_UPDATE":
-          {
-            // Update cached user
-            const data = d as APIUser;
-            const oldUser = _this.users.get(data.id)._clone();
-            _this.users.update(data.id, data);
-            _this.emit("userUpdate", oldUser, _this.users.get(data.id));
-          }
-          break;
+        }
       }
     });
+  }
+
+  /**
+   * Creates a collector for modal submissions
+   * @param customId The custom ID of the modal to collect
+   * @param options Collector options
+   * @returns A modal collector object
+   */
+  createModalCollector(
+    customId: string,
+    options?: {
+      timeout?: number;
+      filter?: (i: ModalInteraction) => boolean;
+    }
+  ): ModalCollector {
+    const collector = new ModalCollector(customId, this, options);
+    this.modalCollectors.push(collector);
+    return collector;
   }
 }

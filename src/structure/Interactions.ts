@@ -1,3 +1,4 @@
+import { assert } from "console";
 import {
   Guild,
   Channel,
@@ -10,6 +11,7 @@ import {
   ContentOptions,
   ApplicationCommandOptionTypes,
   APIApplicationCommandOptionsData,
+  ModalBuilder,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -97,12 +99,25 @@ export class Interaction extends Base {
    * @throws {Error} If the request fails with a 400 status code.
    */
   async reply(content: string | ContentOptions): Promise<Message> {
+    assert(!this.acknowledged, "Interaction has already been acknowledged");
     this.acknowledged = true;
     return await this.client.rest.respondToInteraction(
       4,
       content,
       this.token,
       this.interaction_id,
+    );
+  }
+
+  async sendModal(content: ModalBuilder): Promise<void> {
+    assert(!this.acknowledged, "Interaction has already been acknowledged");
+    this.acknowledged = true;
+    await this.client.rest.post(
+      Routes.InteractionCallback(this.interaction_id, this.token),
+      {
+        type: 9,
+        data: content.toJson(),
+      },
     );
   }
 
@@ -173,9 +188,9 @@ export class SlashCommandInteraction extends Interaction {
       return (
         this.options.length &&
         this.options[0].type ==
-          ApplicationCommandOptionTypes.SUB_COMMAND_GROUP &&
+        ApplicationCommandOptionTypes.SUB_COMMAND_GROUP &&
         this.options[0].options[0].type ==
-          ApplicationCommandOptionTypes.SUB_COMMAND
+        ApplicationCommandOptionTypes.SUB_COMMAND
       );
     } else return false;
   }
@@ -343,6 +358,48 @@ export class ButtonInteraction extends Interaction {
   }
 }
 
+export class ModalInteraction extends Interaction {
+  readonly data: {
+    custom_id: string,
+    components: {
+      type: number,
+      data: {
+        type: number,
+        custom_id: string,
+        value: string
+      }
+    }[]
+  }
+
+  constructor(data: BaseData, client: Client) {
+    super(data, client)
+    this.data = {
+      custom_id: data.data.custom_id,
+      components: []
+    }
+    for (let i = 0; i < data.data.components.length; i++) {
+      const component = data.data.components[i];
+      
+      this.data.components.push({
+        type: component.type,
+        data: {
+          type: component.components[0].type,
+          custom_id: component.components[0].custom_id,
+          value: component.components[0].value
+        }
+      })
+    }
+  }
+
+  /**
+   * Gets the custom ID of the modal component
+   * @returns The custom ID string that was set when creating the modal
+   */
+  get customID(): string {
+    return this.data.custom_id
+  }
+}
+
 /** String select menu interaction */
 export class StringSelectMenuInteraction extends Interaction {
   readonly data: {
@@ -354,6 +411,22 @@ export class StringSelectMenuInteraction extends Interaction {
   constructor(data: BaseData, client: Client) {
     super(data, client);
     this.data = data.data;
+  }
+
+  /**
+   * Gets the custom ID of the string select menu component
+   * @returns The custom ID string that was set when creating the menu
+   */
+  get customID(): string {
+    return this.data.custom_id
+  }
+
+  /**
+   * Gets the selected values from the string select menu
+   * @returns An array of strings containing the values of the selected options
+   */
+  get values(): string[] {
+    return this.data.values
   }
 
   /**
@@ -410,9 +483,9 @@ export class UserContextInteraction extends Interaction {
     user?: User;
     member?: Member;
   } = {
-    user: undefined,
-    member: undefined,
-  };
+      user: undefined,
+      member: undefined,
+    };
 
   constructor(data: BaseData, client: Client) {
     super(data, client);

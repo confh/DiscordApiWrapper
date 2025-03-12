@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiscordApiWrapper Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>DiscordApiWrapper</h1>
+            <p class="version">v2.1.3</p>
+        </div>
+        <div class="sidebar-content">
+            <div class="search-box">
+                <input type="text" placeholder="Search documentation..." aria-label="Search documentation">
+            </div>
+            <ul class="nav-items">
+                <li><a href="#getting-started" class="active"><i class="fas fa-rocket"></i> Getting Started</a></li>
+                <li><a href="#installation"><i class="fas fa-download"></i> Installation</a></li>
+                <li class="nav-group">
+                    <span class="nav-group-title">Core Concepts</span>
+                    <ul>
+                        <li><a href="#client"><i class="fas fa-server"></i> Client</a></li>
+                        <li><a href="#events"><i class="fas fa-bolt"></i> Events</a></li>
+                        <li><a href="#commands"><i class="fas fa-terminal"></i> Commands</a></li>
+                    </ul>
+                </li>
+                <li class="nav-group">
+                    <span class="nav-group-title">Features</span>
+                    <ul>
+                        <li><a href="#message-components"><i class="fas fa-puzzle-piece"></i> Message Components</a></li>
+                        <li><a href="#modals"><i class="fas fa-puzzle-piece"></i> Modals</a></li>
+                        <li><a href="#embeds"><i class="fas fa-image"></i> Embeds</a></li>
+                        <li><a href="#interactions"><i class="fas fa-exchange-alt"></i> Interactions</a></li>
+                        <li><a href="#collectors"><i class="fas fa-exchange-alt"></i> Collectors</a></li>
+                    </ul>
+                </li>
+                <li><a href="#api-reference"><i class="fas fa-book"></i> API Reference</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="content">
+        <div class="content-header">
+            <div class="header-links">
+                <a href="https://www.npmjs.com/package/@confis/discordapiwrapper" target="_blank">
+                    <i class="fab fa-npm"></i> NPM
+                </a>
+                <a href="https://github.com/confh/DiscordApiWrapper" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="https://jsr.io/@confis/discordapiwrapper/doc" target="_blank">
+                    <i class="fas fa-book"></i> JSR
+                </a>
+            </div>
+        </div>
+
+        <section id="getting-started">
+            <h2>Getting Started</h2>
+            <p>DiscordApiWrapper is a high-performance Discord bot library designed for maximum speed and minimal overhead. It provides essential features for interacting with the Discord API.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3><i class="fas fa-rocket"></i> Blazing Fast</h3>
+                    <p>Optimized for low-latency communication with Discord's API</p>
+                </div>
+                <div class="feature-card">
+                    <h3><i class="fas fa-shield-alt"></i> Type Safe</h3>
+                    <p>Written in TypeScript with complete type definitions</p>
+                </div>
+                <div class="feature-card">
+                    <h3><i class="fas fa-code"></i> Modern</h3>
+                    <p>Built with modern JavaScript practices and patterns</p>
+                </div>
+                <div class="feature-card">
+                    <h3><i class="fas fa-feather"></i> Lightweight</h3>
+                    <p>Keeps your bot's memory usage minimal</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="installation">
+            <h2>Installation</h2>
+                <div class="tab-content active" data-tab="npm">
+                    <pre><code class="language-bash">npm install @confis/discordapiwrapper</code></pre>
+                </div>
+                <div class="tab-content active" data-tab="yarn">
+                    <pre><code class="language-bash">yarn add @confis/discordapiwrapper</code></pre>
+                </div>
+                <div class="tab-content active" data-tab="jsr">
+                    <pre><code class="language-bash">npx jsr add @confis/discordapiwrapper</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="client">
+            <h2>Client</h2>
+            <p>The Client class is the main entry point for interacting with the Discord API. It handles the WebSocket connection, authentication, and event dispatching.</p>
+            
+            <pre><code class="language-typescript">import { Client, Intents } from "@confis/discordapiwrapper";
+
+const client = new Client("YOUR_BOT_TOKEN", {
+    intents: [
+        Intents.GUILDS,
+        Intents.GUILD_MESSAGES,
+        Intents.GUILD_MEMBERS
+    ]
+});
+
+client.connect();</code></pre>
+        </section>
+
+        <section id="events">
+            <h2>Events</h2>
+            <p>The library provides a comprehensive event system that allows you to respond to various Discord events.</p>
+            
+            <pre><code class="language-typescript">// Basic event handling
+client.on("ready", () => {
+    console.log(`Logged in as ${client.user.displayName}`);
+});
+
+// Message events
+client.on("messageCreate", (message) => {
+    if (message.content === "!ping") {
+        message.reply("Pong!");
+    }
+});
+
+// Member events
+client.on("memberJoin", (member) => {
+    console.log(`${member.user.username} joined the server!`);
+});</code></pre>
+        </section>
+
+        <section id="commands">
+            <h2>Commands</h2>
+            <p>Create and manage Slash Commands, Context Menus, and Message Components with ease.</p>
+            
+            <pre><code class="language-typescript">// Create a slash command
+const command = new SlashCommandBuilder()
+    .setName("greet")
+    .setDescription("Sends a greeting")
+    .addUserOption(option =>
+        option
+            .setName("user")
+            .setDescription("User to greet")
+            .setRequired(true)
+    );
+
+// Register the command
+client.setGlobalCommands([command]);
+
+// Handle the command
+client.on("interactionCreate", async (interaction) => {
+    if (interaction instanceof SlashCommandInteraction) {
+        if (interaction.name === "greet") {
+            const user = interaction.options.getUser("user");
+            await interaction.reply(`Hello, ${user.username}!`);
+        }
+    }
+});</code></pre>
+        </section>
+
+        <section id="message-components">
+            <h2>Message Components</h2>
+            <p>Add interactive elements to your messages using buttons, select menus, and more.</p>
+            
+            <pre><code class="language-typescript">// Create a button
+const button = new ButtonBuilder()
+    .setLabel("Click me!")
+    .setStyle(ButtonStyles.PRIMARY)
+    .setCustomId("my-button");
+
+// Create an action row
+const row = new ActionRowBuilder()
+    .addComponents(button);
+
+// Send message with components
+channel.send({
+    content: "Here's an interactive message!",
+    components: [row]
+});
+
+// Handle button interactions
+client.on("interactionCreate", (interaction) => {
+    if (interaction instanceof ButtonInteraction) {
+        if (interaction.customId === "my-button") {
+            interaction.reply("Button clicked!");
+        }
+    }
+});</code></pre>
+        </section>
+
+        <section id="modals">
+            <h2>Modals</h2>
+            <p>Create interactive modal forms with text inputs for user interaction.</p>
+            
+            <pre><code class="language-typescript">// Create a modal with text input
+const modal = new ModalBuilder()
+    .setTitle("User Information")
+    .setCustomId("user-info-modal")
+    .addComponents(
+        new TextInputBuilder()
+            .setCustomId("name")
+            .setLabel("Name")
+            .setStyle(TextInputStyles.SHORT)
+            .setMinLength(1)
+            .setMaxLength(4000)
+            .setPlaceholder("John")
+            .setRequired(true),
+        new TextInputBuilder()
+            .setCustomId("bio")
+            .setLabel("Biography")
+            .setStyle(TextInputStyles.PARAGRAPH)
+            .setPlaceholder("Tell us about yourself...")
+            .setRequired(false)
+    );
+
+// Show the modal in response to an interaction
+interaction.showModal(modal);
+
+// Handle modal submissions
+client.on("interactionCreate", async (interaction) => {
+    if (interaction instanceof ModalInteraction) {
+        if (interaction.data.custom_id === "user-info-modal") {
+            const name = interaction.data.components[0].data.value;
+            const bio = interaction.data.components[1].data.value;
+            
+            await interaction.reply(`Name: ${name}\nBio: ${bio}`);
+        }
+    }
+});</code></pre>
+        </section>
+
+        <section id="embeds">
+            <h2>Embeds</h2>
+            <p>Create rich embed messages with customizable fields, images, and formatting.</p>
+            
+            <pre><code class="language-typescript">const embed = new EmbedBuilder()
+    .setTitle("Welcome!")
+    .setDescription("This is a rich embed message")
+    .setColor(0x5865F2)
+    .addField("Field 1", "Value 1", true)
+    .addField("Field 2", "Value 2", true)
+    .setFooter({ text: "Powered by DiscordApiWrapper" })
+    .setTimestamp();
+
+channel.send({ embeds: [embed] });</code></pre>
+        </section>
+
+        <section id="interactions">
+            <h2>Interactions</h2>
+            <p>Handle various types of interactions including commands, buttons, and select menus.</p>
+            
+            <pre><code class="language-typescript">client.on("interactionCreate", async (interaction) => {
+    // Handle Slash Commands
+    if (interaction instanceof SlashCommandInteraction) {
+        // Command handling logic
+    }
+    
+    // Handle Buttons
+    if (interaction instanceof ButtonInteraction) {
+        // Button handling logic
+    }
+    
+    // Handle Select Menus
+    if (interaction instanceof StringSelectMenuInteraction) {
+        // Select menu handling logic
+    }
+});</code></pre>
+        </section>
+
+        <section id="collectors">
+            <h2>Collectors</h2>
+            <p>Collectors allow you to gather interactions or responses over a period of time. They're particularly useful for creating interactive menus, polls, or multi-step processes.</p>
+            
+            <pre><code class="language-typescript">// Create a button
+const button = new ButtonBuilder()
+    .setLabel("Click me!")
+    .setStyle(ButtonStyles.PRIMARY)
+    .setCustomId("collect-button");
+
+// Send message with button
+const message = await channel.send({
+    content: "This message will collect button clicks for 30 seconds!",
+    components: [new ActionRowBuilder().addComponents(button)]
+});
+
+// Create a collector
+const collector = message.createComponentCollector({
+    timeout: 30000, // 30 seconds
+    component_type: [ComponentTypes.BUTTON],
+    filter: (i) => i.user.id === message.author.id // Only collect interactions from message author
+});
+
+// Listen for collected interactions
+collector.on("collect", (type, interaction) => {
+    console.log(`Collected a ${type} interaction!`);
+    interaction.reply("Button click collected!");
+});
+
+// Listen for when the collector ends
+collector.on("end", () => {
+    console.log("Collector ended!");
+    message.edit({
+        content: "This collector has ended.",
+        components: [] // Remove components
+    });
+});
+
+// You can also reset the collector's timer
+collector.resetTimer();
+
+// Or end the collector early
+collector.end();</code></pre>
+
+            <h3>Collector Options</h3>
+            <ul>
+                <li><code>timeout</code>: Duration in milliseconds before the collector automatically ends</li>
+                <li><code>component_type</code>: Type of component to collect (BUTTON, STRING_SELECT, etc.)</li>
+                <li><code>filter</code>: Function to filter which interactions should be collected</li>
+            </ul>
+
+            <h3>Collector Events</h3>
+            <ul>
+                <li><code>collect</code>: Emitted when an interaction is collected</li>
+                <li><code>end</code>: Emitted when the collector ends (timeout or manual)</li>
+            </ul>
+        </section>
+
+        <section id="api-reference">
+            <h2>API Reference</h2>
+            <p>For detailed documentation of all classes, methods, and types, visit our <a href="https://jsr.io/@confis/discordapiwrapper/doc" target="_blank">JSR Documentation</a>.</p>
+            
+            <div class="reference-links">
+                <a href="https://github.com/confh/DiscordApiWrapper" class="btn btn-primary" target="_blank">
+                    <i class="fab fa-github"></i> View on GitHub
+                </a>
+                <a href="https://www.npmjs.com/package/@confis/discordapiwrapper" class="btn btn-secondary" target="_blank">
+                    <i class="fab fa-npm"></i> View on NPM
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>hljs.highlightAll();</script>
+    <script src="js/main.js"></script>
+</body>
+</html>

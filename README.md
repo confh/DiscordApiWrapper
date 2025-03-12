@@ -7,7 +7,7 @@
 </p>
 </div>
 
-**[Documentation](https://jsr.io/@confis/discordapiwrapper/doc)** | **[NPM Package](https://www.npmjs.com/package/@confis/discordapiwrapper)** | **[GitHub Repository](https://github.com/confh/DiscordApiWrapper)**
+**[Documentation](https://confh.github.io/)** | **[NPM Package](https://www.npmjs.com/package/@confis/discordapiwrapper)** | **[GitHub Repository](https://github.com/confh/DiscordApiWrapper)**
 
 ## Introduction
 
@@ -189,9 +189,4 @@ interface ClientOptions {
      client.disconnect();
      process.exit();
    });
-   ```
-
-## License
-
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
-```
+   ``````

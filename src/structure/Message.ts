@@ -13,6 +13,7 @@ import {
   JSONCache,
   APIMessageSnapshot,
   APIUser,
+  Interaction,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -171,9 +172,13 @@ export class Message extends Base {
   createComponentCollector(options?: {
     timeout?: number;
     component_type?: ComponentTypes;
+    filter?: (i: Interaction) => boolean;
   }): Collector {
     const index =
-      this.client.collectors.push(new Collector(this, this.client, options)) -
+      this.client.collectors.push(new Collector(this, this.client, {
+        ...options,
+        component_type: options?.component_type ? [options.component_type] : undefined
+      })) -
       1;
     return this.client.collectors[index];
   }

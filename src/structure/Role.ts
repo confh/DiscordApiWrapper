@@ -1,4 +1,4 @@
-import { Client } from "../client";
+import { APIRole, Client } from "../client";
 import { Base } from "../internal/Base";
 import PermissionCalculator, {
   PermissionsBitField,
@@ -24,7 +24,7 @@ export class Role extends Base {
   flags: number;
   readonly guild_id: string;
 
-  constructor(options: Role, client: Client) {
+  constructor(options: APIRole, client: Client) {
     super(client);
     Object.assign(this, options);
   }
