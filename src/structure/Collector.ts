@@ -1,11 +1,15 @@
 import { Client, ComponentTypes } from "../client";
-import { Interaction, ModalInteraction } from "./Interactions";
+import { ButtonInteraction, Interaction, ModalInteraction, StringSelectMenuInteraction } from "./Interactions";
 import { Message } from "./Message";
 
 type COLLECTOR_EVENTS = "collect" | "end";
+export type InteractionType<T extends ComponentTypes[]> = T[number] extends ComponentTypes.BUTTON ? ButtonInteraction :
+  T[number] extends ComponentTypes.STRING_SELECT ? StringSelectMenuInteraction :
+  T[number] extends ComponentTypes.TEXT_INPUT ? never :
+  Interaction
 
 /** Collector object */
-export class Collector {
+export class Collector<T extends ComponentTypes[]> {
   private timer: Timer;
   private client: Client;
   private listeners: {
@@ -15,15 +19,15 @@ export class Collector {
   public type: ComponentTypes[];
   public messageId: string;
   public timeout?: number;
-  public filter?: (i: Interaction) => boolean;
+  public filter?: (i: InteractionType<T>) => boolean;
 
   constructor(
     message: Message,
     client: Client,
     options?: {
       timeout?: number;
-      component_type?: ComponentTypes[];
-      filter?: (i: Interaction) => boolean;
+      component_type?: T;
+      filter?: (i: InteractionType<T>) => boolean;
     },
   ) {
     this.messageId = message.id;
@@ -43,7 +47,9 @@ export class Collector {
    * @param event Event name
    * @param callback The event callback
    */
-  on(event: COLLECTOR_EVENTS, callback: (...args: any[]) => any) {
+  on(event: COLLECTOR_EVENTS, callback: (
+    interaction: InteractionType<T>
+  ) => any) {
     this.listeners.push({
       event,
       callback,
@@ -179,6 +185,10 @@ export class ModalCollector {
     }
   }
 
+  /**
+   * Remove a listener
+   * @param event Event name
+   */
   off(event: COLLECTOR_EVENTS): void {
     for (let i = 0; i < this.listeners.length; i++) {
       const listener = this.listeners[i];

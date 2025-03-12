@@ -14,6 +14,7 @@ import {
   APIMessageSnapshot,
   APIUser,
   Interaction,
+  InteractionType,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -169,11 +170,11 @@ export class Message extends Base {
    * @param options Collector options
    * @returns A collector object
    */
-  createComponentCollector(options?: {
+  createComponentCollector<T extends ComponentTypes[]>(options?: {
     timeout?: number;
-    component_type?: ComponentTypes[];
-    filter?: (i: Interaction) => boolean;
-  }): Collector {
+    component_type?: T;
+    filter?: (i: InteractionType<T>) => boolean;
+  }): Collector<T> {
     const index =
       this.client.collectors.push(new Collector(this, this.client, {
         ...options,
@@ -188,7 +189,7 @@ export class Message extends Base {
    *
    * @returns An array of collectors
    */
-  get componentCollectors(): Collector[] {
+  get componentCollectors(): Collector<any>[] {
     return this.client.collectors.filter(
       (collector) => collector.messageId == this.id,
     );
