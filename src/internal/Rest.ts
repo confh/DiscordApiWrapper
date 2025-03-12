@@ -474,22 +474,6 @@ export class Rest {
     const [embeds, components, files] =
       this.contentToFilesEmbedsComponents(content);
 
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
-
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
     };
@@ -518,21 +502,6 @@ export class Rest {
     const [embeds, components, files] =
       this.contentToFilesEmbedsComponents(content);
 
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       embeds,
@@ -566,21 +535,6 @@ export class Rest {
     const [embeds, components, files] =
       this.contentToFilesEmbedsComponents(content);
 
-    if (typeof content !== "string") {
-      if (content.embeds && content.embeds?.length) {
-        for (let i = 0; i < content.embeds.length; i++) {
-          const embed = content.embeds[i];
-          embeds.push(embed.toJson());
-        }
-      }
-
-      if (content.components && content.components?.length) {
-        for (let i = 0; i < content.components.length; i++) {
-          const component = content.components[i];
-          components.push(component.toJson());
-        }
-      }
-    }
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       allowed_mentions: {
