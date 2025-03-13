@@ -352,9 +352,9 @@ export class ButtonInteraction extends Interaction {
    * @param {string | ContentOptions} content - The new content of the message or options for the message.
    * @return {Promise<Message>} A promise that resolves to the updated message.
    */
-  async update(content: string | ContentOptions): Promise<Message> {
+  async update(content: string | ContentOptions): Promise<void> {
     this.acknowledged = true;
-    return this.client.rest.updateInteraction(this.token, content);
+    await this.client.rest.updateInteraction(this.token, this.interaction_id, content);
   }
 }
 

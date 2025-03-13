@@ -270,6 +270,7 @@ export class Rest {
     const data = await this.post<APIMessage>(
       Routes.SendChannelMessage(channelID),
       payload,
+      Boolean(files)
     );
 
     return new Message(data, this.#client);
@@ -306,6 +307,7 @@ export class Rest {
     const data = await this.post<APIMessage>(
       Routes.SendChannelMessage(channelID),
       payload,
+      Boolean(files)
     );
 
     return new Message(data, this.#client);
@@ -430,8 +432,9 @@ export class Rest {
 
   async updateInteraction(
     token: string,
+    id: string,
     content: string | ContentOptions,
-  ): Promise<Message> {
+  ): Promise<void> {
     const [embeds, components, files] =
       this.contentToFilesEmbedsComponents(content);
 
@@ -453,17 +456,11 @@ export class Rest {
       payload = JSONToFormDataWithFile(payload, ...files);
     }
 
-    await this.patch(
-      Routes.OriginalMessage(this.#client.user.id, token),
+    await this.post(
+      Routes.InteractionCallback(id, token),
       payload,
       Boolean(files),
     );
-
-    const data = await this.get<APIMessage>(
-      Routes.OriginalMessage(this.#client.user.id, token),
-    );
-
-    return new Message(data, this.#client);
   }
 
   async editMessage(
@@ -489,6 +486,7 @@ export class Rest {
     const data = await this.patch<APIMessage>(
       Routes.EditChannelMessage(channelID, messageID),
       payload,
+      Boolean(files)
     );
 
     return new Message(data, this.#client);
