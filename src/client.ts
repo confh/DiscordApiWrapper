@@ -444,10 +444,10 @@ export class Client {
   readonly #cacheAllUsers: boolean;
   readonly #token: string;
   public shards: number;
-  public readonly users = new Manager<User>();
-  public readonly guilds = new Manager<Guild>();
-  public readonly channels = new Manager<Channel>();
-  public readonly roles = new Manager<Role>();
+  public readonly users: Manager<User> = new Manager();
+  public readonly guilds: Manager<Guild> = new Manager();
+  public readonly channels: Manager<Channel> = new Manager();
+  public readonly roles: Manager<Role> = new Manager();
   public readonly rest: Rest;
   public collectors: Collector[] = [];
   public modalCollectors: ModalCollector[] = [];
