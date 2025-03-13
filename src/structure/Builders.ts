@@ -215,7 +215,7 @@ export class ButtonBuilder {
    * @param id The custom ID
    * @returns ButtonBuilder Object
    */
-  setCustomid(id: string): this {
+  setCustomID(id: string): this {
     this.#custom_id = id;
     return this;
   }
@@ -295,7 +295,7 @@ export class StringSelectMenuBuilder {
    * @param id The custom ID
    * @returns StringSelectMenuBuilder Object
    */
-  setCustomid(id: string): this {
+  setCustomID(id: string): this {
     this.#custom_id = id;
     return this;
   }
