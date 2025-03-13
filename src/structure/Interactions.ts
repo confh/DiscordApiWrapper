@@ -164,7 +164,7 @@ export class Interaction extends Base {
    */
   async delete(): Promise<void> {
     await this.client.rest.delete(
-      Routes.OriginalMessage(this.#userID, this.token),
+      Routes.OriginalMessage(this.client.user.id, this.token),
     );
   }
 }
@@ -387,7 +387,7 @@ export class ModalInteraction extends Interaction {
     }
     for (let i = 0; i < data.data.components.length; i++) {
       const component = data.data.components[i];
-      
+
       this.data.components.push({
         type: component.type,
         data: {
@@ -459,12 +459,9 @@ export class StringSelectMenuInteraction extends Interaction {
    * @param {string | ContentOptions} content - The new content of the message or options for the message.
    * @return {Promise<Message>} A promise that resolves to the updated message.
    */
-  async update(content: string | ContentOptions): Promise<Message> {
+  async update(content: string | ContentOptions): Promise<void> {
     this.acknowledged = true;
-    return await this.client.rest.updateStringSelectMenuEmbed(
-      content,
-      this.token,
-    );
+    await this.client.rest.updateInteraction(this.token, this.interaction_id, content);
   }
 }
 
