@@ -71,6 +71,12 @@ export interface AvatarDecoration {
   sku_id: Snowflake;
 }
 
+interface CommandData extends BaseData {
+  name: string;
+  description: string;
+  guild_id?: string
+}
+
 /** User Object */
 export interface APIUser extends BaseData {
   username: string;
@@ -135,7 +141,7 @@ export interface APIMessageSnapshotPartial
     | "edited_timestamp"
     | "mentions"
     | "mention_roles"
-  > {}
+  > { }
 
 export interface APIMessageSnapshot {
   message: APIMessageSnapshotPartial;
@@ -431,16 +437,17 @@ export class Client {
   #cachedSocketMessages: string[] = [];
   #session_id: string;
   #seq: number | null = null;
+  #intents = 0;
+  #commands: CommandData[] = [];
   readonly #initialUrl = "wss://gateway.discord.gg";
   #url = this.#initialUrl;
   readonly #cacheAllUsers: boolean;
-  #intents = 0;
   readonly #token: string;
   public shards: number;
-  public readonly users: Manager<User> = new Manager();
-  public readonly guilds: Manager<Guild> = new Manager();
-  public readonly channels: Manager<Channel> = new Manager();
-  public readonly roles: Manager<Role> = new Manager();
+  public readonly users = new Manager<User>();
+  public readonly guilds = new Manager<Guild>();
+  public readonly channels = new Manager<Channel>();
+  public readonly roles = new Manager<Role>();
   public readonly rest: Rest;
   public collectors: Collector[] = [];
   public modalCollectors: ModalCollector[] = [];
@@ -449,6 +456,10 @@ export class Client {
     error: (...args: any[]) => any;
   } = console;
   public readonly baseURL = "https://discord.com/api/v10/";
+
+  get commands(): CommandData[] {
+    return this.#commands
+  }
 
   /**
    * The user object for the bot.
@@ -747,6 +758,8 @@ export class Client {
       },
     );
 
+    this.#commands = data.data
+
     if (data.status === 400) throw new Error(data.data.message);
 
     return data.data;
@@ -780,6 +793,8 @@ export class Client {
       },
     );
 
+    this.#commands = data.data
+
     if (data.status === 400) throw new Error(data.data.message);
   }
 
@@ -791,12 +806,12 @@ export class Client {
     data:
       | PRESENCES
       | {
-          activity?: {
-            name: string;
-            type: ActivityTypes;
-          };
-          status: PRESENCES;
-        },
+        activity?: {
+          name: string;
+          type: ActivityTypes;
+        };
+        status: PRESENCES;
+      },
   ) {
     const presencePayload = {
       op: 3,
@@ -981,7 +996,7 @@ export class Client {
         // Message Events
         case "MESSAGE_CREATE": {
           if (![MessageTypes.DEFAULT, MessageTypes.REPLY].includes(d.type)) return;
-          
+
           if (!_this.channels.get(d.channel_id)) {
             await _this.registerChannelFromAPI(d.channel_id);
           }
@@ -1021,7 +1036,7 @@ export class Client {
 
           // Cache users if enabled
           if (_this.#cacheAllUsers) {
-            const allUsers = d.members.map(member => 
+            const allUsers = d.members.map(member =>
               new User(member.user, _this)
             );
             _this.users.cache(allUsers);
@@ -1085,7 +1100,7 @@ export class Client {
           const data = d as APIGuildMemberEvent;
           const guild = _this.guilds.get(data.guild_id);
           const member = guild?.members.get(data.user.id);
-          
+
           if (member) {
             const oldMember = member._clone();
             guild.members.update(data.user.id, data);
@@ -1117,10 +1132,10 @@ export class Client {
                 _this.emit("interactionCreate", new MessageContextInteraction(d, _this));
                 break;
             }
-          } 
+          }
           else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
             const collector = _this.collectors.find(a => a.messageId === d.message.id);
-            
+
             if (d.data.component_type === ComponentTypes.BUTTON) {
               const interaction = new ButtonInteraction(d, _this);
               if (collector) {
@@ -1129,7 +1144,7 @@ export class Client {
                 }
               }
               _this.emit("interactionCreate", interaction);
-            } 
+            }
             else if (d.data.component_type === ComponentTypes.STRING_SELECT) {
               const interaction = new StringSelectMenuInteraction(d, _this);
               if (collector) {
