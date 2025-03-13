@@ -321,13 +321,21 @@ export class SlashCommandInteraction extends Interaction {
 
 /** Button interaction object */
 export class ButtonInteraction extends Interaction {
+  readonly #custom_id: string;
   readonly message: Message;
-  readonly custom_id: string;
 
   constructor(data: BaseData, client: Client) {
     super(data, client);
     this.message = new Message(data.message, client);
-    this.custom_id = data.data.custom_id;
+    this.#custom_id = data.data.custom_id;
+  }
+
+  /**
+   * Gets the custom ID of the button component
+   * @returns The custom ID string that was set when creating the button
+   */
+  get customID(): string {
+    return this.#custom_id
   }
 
   /**
