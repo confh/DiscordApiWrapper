@@ -293,7 +293,6 @@ export class SlashCommandBuilder {
 export class SubCommandBuilder {
   private name: string;
   private description: string;
-  private type = 1;
   private options: {
     type: number;
     name: string;

@@ -22,7 +22,7 @@ export class Interaction extends Base {
   #userID: string;
   readonly token: string;
   readonly callbackURL: string;
-  readonly interaction_id: string;
+  readonly interactionID: string;
   readonly name: string;
   readonly id: string;
   readonly guildId: string;
@@ -32,7 +32,7 @@ export class Interaction extends Base {
 
   constructor(data: BaseData, client: Client) {
     super(client);
-    this.interaction_id = data.id;
+    this.interactionID = data.id;
     this.token = data.token;
     this.name = data.data.name;
     this.id = data.data.id;
@@ -45,7 +45,7 @@ export class Interaction extends Base {
     if (!this.client.channels.get(this.#channelId)) {
       this.client.channels.cache(new Channel(data.channel, client));
     }
-    this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`;
+    this.callbackURL = `${client.baseURL}interactions/${this.interactionID}/${this.token}/callback`;
   }
 
   /**
@@ -108,7 +108,7 @@ export class Interaction extends Base {
       4,
       content,
       this.token,
-      this.interaction_id,
+      this.interactionID,
     );
   }
 
@@ -116,7 +116,7 @@ export class Interaction extends Base {
     assert(!this.acknowledged, "Interaction has already been acknowledged");
     this.acknowledged = true;
     await this.client.rest.post(
-      Routes.InteractionCallback(this.interaction_id, this.token),
+      Routes.InteractionCallback(this.interactionID, this.token),
       {
         type: 9,
         data: content.toJson(),
@@ -134,7 +134,7 @@ export class Interaction extends Base {
   async defer(options?: { ephemeral?: boolean }): Promise<void> {
     this.acknowledged = true;
     await this.client.rest.deferInteraction(
-      this.interaction_id,
+      this.interactionID,
       this.token,
       options,
     );
@@ -350,7 +350,7 @@ export class ButtonInteraction extends Interaction {
   override async defer(): Promise<void> {
     this.acknowledged = true;
     await this.client.rest.post(
-      Routes.InteractionCallback(this.interaction_id, this.token),
+      Routes.InteractionCallback(this.interactionID, this.token),
       {
         type: 6,
       },
@@ -365,7 +365,7 @@ export class ButtonInteraction extends Interaction {
    */
   async update(content: string | ContentOptions): Promise<void> {
     this.acknowledged = true;
-    await this.client.rest.updateInteraction(this.token, this.interaction_id, content);
+    await this.client.rest.updateInteraction(this.token, this.interactionID, content);
   }
 }
 
@@ -449,7 +449,7 @@ export class StringSelectMenuInteraction extends Interaction {
   override async defer(): Promise<void> {
     this.acknowledged = true;
     await this.client.rest.post(
-      Routes.InteractionCallback(this.interaction_id, this.token),
+      Routes.InteractionCallback(this.interactionID, this.token),
       {
         type: 6,
       },
@@ -464,7 +464,7 @@ export class StringSelectMenuInteraction extends Interaction {
    */
   async update(content: string | ContentOptions): Promise<void> {
     this.acknowledged = true;
-    await this.client.rest.updateInteraction(this.token, this.interaction_id, content);
+    await this.client.rest.updateInteraction(this.token, this.interactionID, content);
   }
 }
 

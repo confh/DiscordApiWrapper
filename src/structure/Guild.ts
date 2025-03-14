@@ -5,12 +5,13 @@ import { Routes } from "../internal/Route";
 
 /** Guild object */
 export class Guild extends Base {
+  #icon?: string
   readonly #channelIDs: string[] = [];
   readonly id: string;
   readonly name: string;
   readonly ownerId: string;
   readonly memberCount: number;
-  readonly joined_at: number;
+  readonly joinedAt: Date;
   readonly members: Manager<Member> = new Manager<Member>();
 
   constructor(data: BaseData, client: Client) {
@@ -19,7 +20,8 @@ export class Guild extends Base {
     this.name = data.name;
     this.ownerId = data.owner_id;
     this.memberCount = data.member_count;
-    this.joined_at = new Date(data.joined_at).getTime();
+    this.joinedAt = new Date(data.joined_at);
+    this.#icon = data.icon;
     for (let i = 0; i < data.members.length; i++) {
       let member = data.members[i];
       member.guild_id = this.id;
@@ -29,6 +31,10 @@ export class Guild extends Base {
       const channel = data.channels[i];
       this.#channelIDs.push(channel.id);
     }
+  }
+
+  get iconURL(): string {
+    return `https://cdn.discordapp.com/icons/${this.id}/${this.#icon}.png`;
   }
 
   /**

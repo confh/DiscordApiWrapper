@@ -12,10 +12,11 @@ import { Routes } from "../internal/Route";
 
 /** User object */
 export class User extends Base {
-  public username: string;
   public readonly id: string;
-  public discriminator: string | null;
   public readonly bot: boolean;
+  public readonly system: boolean;
+  public username: string;
+  public discriminator: string | null;
   public avatar: string;
   public avatarDecoration: AvatarDecoration | null;
   #dmChannelId?: string;
@@ -28,12 +29,25 @@ export class User extends Base {
     this.#globalName = data.global_name;
     this.discriminator = data.discriminator;
     this.bot = data.bot;
+    this.system = data.system;
     this.avatar = data.avatar;
     this.avatarDecoration = data.avatar_decoration_data;
   }
 
   toString(): string {
     return `<@${this.id}>`
+  }
+
+  /**
+   * Get the creation date of the user
+   * 
+   * @returns The date when the user account was created
+   */
+  get createdAt(): Date {
+    const discordEpoch = 1420070400000;
+    const timestamp = ((BigInt(this.id) >> 22n) + BigInt(discordEpoch)); 
+
+    return new Date(Number(timestamp));
   }
 
   /**

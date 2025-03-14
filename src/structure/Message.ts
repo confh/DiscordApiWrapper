@@ -26,14 +26,14 @@ export class MessageSnapshot {
   readonly content: string;
   readonly attachments: APIMessageAttachment[];
   readonly timestamp: number;
-  readonly edited_timestamp: number | null;
+  readonly editedTimestamp: Date | null;
 
   constructor(data: APIMessageSnapshot) {
     (this.type = data.message.type),
       (this.content = data.message.content),
       (this.attachments = data.message.attachments);
     this.timestamp = new Date(data.message.timestamp).getTime();
-    this.edited_timestamp = new Date(data.message.edited_timestamp).getTime();
+    this.editedTimestamp = new Date(data.message.edited_timestamp);
   }
 }
 
@@ -43,44 +43,44 @@ export class Message extends Base {
   readonly #mentionsIDs: string[] = [];
   readonly #messageSnapshots?: APIMessageSnapshot[];
   readonly id: string;
-  readonly channelId: string;
+  readonly channelID: string;
   readonly content: string;
-  readonly timestamp: number;
-  readonly edited_timestamp: number | null;
-  readonly mention_everyone: boolean;
-  readonly guildId: string;
+  readonly timestamp: Date;
+  readonly editedTimestamp: Date | null;
+  readonly mentionEveryone: boolean;
+  readonly guildID: string;
   readonly pinned: boolean;
   readonly type: APIMessageTypes;
-  readonly referenced_message?: Message;
+  readonly referencedMessage?: Message;
   readonly attachments: APIMessageAttachment[];
   readonly embeds: APIEmbed[];
 
   constructor(data: APIMessage, client: Client) {
     super(client);
     this.id = data.id;
-    this.channelId = data.channel_id;
-    if (!this.client.channels.get(this.channelId)) {
+    this.channelID = data.channel_id;
+    if (!this.client.channels.get(this.channelID)) {
       this.client.channels.cache(new Channel(data.channel, client));
     }
-    this.guildId = data.guild_id;
+    this.guildID = data.guild_id;
     this.#authorID = data.author ? data.author.id : null;
-    this.referenced_message = data.referenced_message
+    this.referencedMessage = data.referenced_message
       ? new Message(data.referenced_message, client)
       : null;
     this.#messageSnapshots = data.message_snapshots
       ? data.message_snapshots
       : [];
     this.content = data.content;
-    this.timestamp = new Date(data.timestamp).getTime();
-    this.edited_timestamp = data.edited_timestamp
-      ? new Date(data.edited_timestamp).getTime()
+    this.timestamp = new Date(data.timestamp);
+    this.editedTimestamp = data.edited_timestamp
+      ? new Date(data.edited_timestamp)
       : null;
     if (data.mentions) {
       for (let i = 0; i < data.mentions.length; i++) {
         this.#mentionsIDs.push(data.mentions[i].id);
       }
     }
-    this.mention_everyone = data.mention_everyone;
+    this.mentionEveryone = data.mention_everyone;
     this.pinned = data.pinned;
     this.type = data.type;
     this.attachments = data.attachments;
@@ -91,7 +91,7 @@ export class Message extends Base {
    * Get the link of the message
    */
   get jumpLink(): string {
-    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`;
+    return `https://discord.com/channels/${this.guildID}/${this.channelID}/${this.id}`;
   }
 
   /**
@@ -131,7 +131,7 @@ export class Message extends Base {
    * @returns A channel object
    */
   get channel(): Channel | null {
-    return this.client.channels.get(this.channelId) ?? null;
+    return this.client.channels.get(this.channelID) ?? null;
   }
 
   /**
@@ -150,7 +150,7 @@ export class Message extends Base {
    */
   get member(): Member | null {
     return (
-      this.client.guilds.get(this.guildId).members.get(this.#authorID) ?? null
+      this.client.guilds.get(this.guildID).members.get(this.#authorID) ?? null
     );
   }
 
@@ -160,7 +160,7 @@ export class Message extends Base {
    * @returns A guild object
    */
   get guild(): Guild {
-    return this.client.guilds.get(this.guildId) as Guild;
+    return this.client.guilds.get(this.guildID) as Guild;
   }
 
   /**
@@ -210,9 +210,9 @@ export class Message extends Base {
   async reply(content: string | ContentOptions): Promise<Message> {
     return await this.client.rest.sendReplyChannelMessage(
       content,
-      this.channelId,
+      this.channelID,
       this.id,
-      this.guildId,
+      this.guildID,
     );
   }
 
@@ -233,7 +233,7 @@ export class Message extends Base {
       throw new Error(
         "This message cannot be editted as it's not owned by the bot.",
       );
-    return await this.client.rest.editMessage(this.id, this.channelId, content);
+    return await this.client.rest.editMessage(this.id, this.channelID, content);
   }
 
   /**
@@ -246,10 +246,10 @@ export class Message extends Base {
    */
   async delete(options: { throwError?: boolean } = { throwError: true }): Promise<void> {
     if (options.throwError) {
-      await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+      await this.client.rest.delete(Routes.Message(this.channelID, this.id));
     } else {
       try {
-        await this.client.rest.delete(Routes.Message(this.channelId, this.id));
+        await this.client.rest.delete(Routes.Message(this.channelID, this.id));
       } catch { }
     }
   }
@@ -268,7 +268,7 @@ export class Message extends Base {
     }
 
     await this.client.rest.put<any>(
-      Routes.Reaction(this.channelId, this.id, emoji),
+      Routes.Reaction(this.channelID, this.id, emoji),
       {},
     );
   }
@@ -287,7 +287,7 @@ export class Message extends Base {
     }
 
     await this.client.rest.delete<any>(
-      Routes.Reaction(this.channelId, this.id, emoji),
+      Routes.Reaction(this.channelID, this.id, emoji),
     );
   }
 
@@ -306,7 +306,7 @@ export class Message extends Base {
     }
 
     await this.client.rest.delete<any>(
-      Routes.UserReaction(this.channelId, this.id, emoji, userID),
+      Routes.UserReaction(this.channelID, this.id, emoji, userID),
     );
   }
 
@@ -323,7 +323,7 @@ export class Message extends Base {
     }
 
     const data = await this.client.rest.get<APIUser[]>(
-      Routes.GetReaction(this.channelId, this.id, emoji),
+      Routes.GetReaction(this.channelID, this.id, emoji),
     );
 
     const users: User[] = [];
@@ -339,12 +339,12 @@ export class Message extends Base {
 
 /** Webhook message object */
 export class WebhookMessage extends Message {
-  readonly webhook_id: string;
+  readonly webhookID: string;
   readonly authorData: JSONCache;
 
   constructor(data: APIWebhookMessage, client: Client) {
     super(data as unknown as APIMessage, client);
-    this.webhook_id = data.webhook_id;
+    this.webhookID = data.webhook_id;
     this.authorData = data.author as JSONCache;
   }
 }

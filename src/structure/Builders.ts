@@ -501,7 +501,7 @@ export class TextInputBuilder {
    * @param id The custom ID
    * @returns TextInputBuilder Object
    */
-  setCustomId(id: string): this {
+  setCustomID(id: string): this {
     this.#custom_id = id;
     return this;
   }
@@ -622,7 +622,7 @@ export class ModalBuilder {
    * @param id The custom ID
    * @returns ModalBuilder Object
    */
-  setCustomId(id: string): this {
+  setCustomID(id: string): this {
     this.#custom_id = id;
     return this;
   }

@@ -6,10 +6,10 @@ import { Routes } from "../internal/Route";
 /** Member object */
 export class Member extends Base {
   readonly #guildId: string;
-  #rolesIDs: string[] = [];
   readonly id: string;
-  nick: string | null;
   readonly joined_at: number;
+  nick: string | null;
+  #rolesIDs: string[] = [];
 
   constructor(data: BaseData, client: Client) {
     super(client);
