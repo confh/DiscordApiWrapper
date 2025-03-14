@@ -42,6 +42,9 @@ export class Interaction extends Base {
     this.description = data.description;
     this.type = data.type;
     this.#channelId = data.channel_id;
+    if (!this.client.channels.get(this.#channelId)) {
+      this.client.channels.cache(new Channel(data.channel, client));
+    }
     this.callbackURL = `${client.baseURL}interactions/${this.interaction_id}/${this.token}/callback`;
   }
 

@@ -15,6 +15,7 @@ import {
   APIUser,
   Interaction,
   APIEmbed,
+  APIMessageTypes,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -49,7 +50,7 @@ export class Message extends Base {
   readonly mention_everyone: boolean;
   readonly guildId: string;
   readonly pinned: boolean;
-  readonly type: number;
+  readonly type: APIMessageTypes;
   readonly referenced_message?: Message;
   readonly attachments: APIMessageAttachment[];
   readonly embeds: APIEmbed[];
@@ -58,6 +59,9 @@ export class Message extends Base {
     super(client);
     this.id = data.id;
     this.channelId = data.channel_id;
+    if (!this.client.channels.get(this.channelId)) {
+      this.client.channels.cache(new Channel(data.channel, client));
+    }
     this.guildId = data.guild_id;
     this.#authorID = data.author ? data.author.id : null;
     this.referenced_message = data.referenced_message
