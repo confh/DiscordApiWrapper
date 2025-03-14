@@ -258,7 +258,7 @@ export class Rest {
       embeds,
       components,
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
     };
@@ -295,7 +295,7 @@ export class Rest {
         guild_Id: referenced_message_guildID,
       },
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
     };
@@ -376,7 +376,7 @@ export class Rest {
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
@@ -411,7 +411,7 @@ export class Rest {
       embeds,
       components,
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
@@ -505,7 +505,7 @@ export class Rest {
       embeds,
       components,
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
     };
@@ -536,7 +536,7 @@ export class Rest {
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
       allowed_mentions: {
-        parse: [],
+        parse: ["users"],
         replied_user: true,
       },
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,

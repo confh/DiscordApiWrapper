@@ -18,14 +18,14 @@ import { Routes } from "../internal/Route";
 
 /** Interaction object */
 export class Interaction extends Base {
-  #channelId: string;
+  #channelID: string;
   #userID: string;
   readonly token: string;
   readonly callbackURL: string;
   readonly interactionID: string;
   readonly name: string;
   readonly id: string;
-  readonly guildId: string;
+  readonly guildID: string;
   readonly description?: string;
   readonly type: ApplicationCommandTypes;
   acknowledged: boolean = false;
@@ -36,13 +36,13 @@ export class Interaction extends Base {
     this.token = data.token;
     this.name = data.data.name;
     this.id = data.data.id;
-    this.guildId = data.guild_id;
+    this.guildID = data.guild_id;
     if (data.member) this.#userID = data.member.user.id;
     else this.#userID = data.user.id;
     this.description = data.description;
     this.type = data.type;
-    this.#channelId = data.channel_id;
-    if (!this.client.channels.get(this.#channelId)) {
+    this.#channelID = data.channel_id;
+    if (!this.client.channels.get(this.#channelID)) {
       this.client.channels.cache(new Channel(data.channel, client));
     }
     this.callbackURL = `${client.baseURL}interactions/${this.interactionID}/${this.token}/callback`;
@@ -53,7 +53,7 @@ export class Interaction extends Base {
    * @returns A guild object
    */
   get guild(): Guild {
-    return this.client.guilds.get(this.guildId);
+    return this.client.guilds.get(this.guildID);
   }
 
   /**
@@ -61,7 +61,7 @@ export class Interaction extends Base {
    * @returns A channel object
    */
   get channel(): Channel {
-    return this.client.channels.get(this.#channelId);
+    return this.client.channels.get(this.#channelID);
   }
 
   /**
@@ -78,7 +78,7 @@ export class Interaction extends Base {
    */
   get member(): Member | null {
     return (
-      this.client.guilds.get(this.guildId).members.get(this.#userID) ?? null
+      this.client.guilds.get(this.guildID).members.get(this.#userID) ?? null
     );
   }
 
@@ -476,7 +476,7 @@ export class MessageContextInteraction extends Interaction {
   constructor(data: BaseData, client: Client) {
     super(data, client);
     this.target_id = data.data.target_id;
-    data.data.resolved.messages[this.target_id].guild_id = this.guildId;
+    data.data.resolved.messages[this.target_id].guild_id = this.guildID;
     this.message = new Message(
       data.data.resolved.messages[this.target_id],
       client,

@@ -13,7 +13,7 @@ export class Collector {
     callback: (...args: any[]) => any;
   }[] = [];
   public type: ComponentTypes[];
-  public messageId: string;
+  public messageID: string;
   public timeout?: number;
   public filter?: (i: Interaction) => boolean;
 
@@ -26,7 +26,7 @@ export class Collector {
       filter?: (i: Interaction) => boolean;
     },
   ) {
-    this.messageId = message.id;
+    this.messageID = message.id;
     this.client = client;
     this.type = options?.component_type || [ComponentTypes.BUTTON];
     this.filter = options?.filter;
@@ -58,7 +58,7 @@ export class Collector {
     if (endListener) endListener.callback();
     for (let i = 0; i < this.client.collectors.length; i++) {
       const collector = this.client.collectors[i];
-      if (collector.messageId === this.messageId) {
+      if (collector.messageID === this.messageID) {
         this.client.collectors.splice(i, 1);
         break;
       }
@@ -115,19 +115,19 @@ export class ModalCollector {
     event: COLLECTOR_EVENTS;
     callback: (i: ModalInteraction) => any;
   }[] = [];
-  public customId: string;
+  public customID: string;
   public timeout?: number;
   public filter?: (i: ModalInteraction) => boolean;
 
   constructor(
-    customId: string,
+    customID: string,
     client: Client,
     options?: {
       timeout?: number;
       filter?: (i: ModalInteraction) => boolean;
     },
   ) {
-    this.customId = customId;
+    this.customID = customID;
     this.client = client;
     this.filter = options?.filter;
     if (options?.timeout) {
@@ -158,7 +158,7 @@ export class ModalCollector {
     if (endListener) endListener.callback(null);
     for (let i = 0; i < this.client.modalCollectors.length; i++) {
       const collector = this.client.modalCollectors[i];
-      if (collector.customId === this.customId) {
+      if (collector.customID === this.customID) {
         this.client.modalCollectors.splice(i, 1);
         break;
       }

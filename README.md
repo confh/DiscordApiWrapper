@@ -11,22 +11,32 @@
 
 ## Introduction
 
-DiscordApiWrapper is a streamlined Discord bot library designed for maximum speed and minimal overhead. It provides essential features for interacting with the Discord API, making it ideal for building efficient and responsive Discord bots.
+DiscordApiWrapper is a streamlined Discord bot library designed for maximum speed and minimal overhead. Built with TypeScript, it provides a robust set of features for creating powerful Discord bots while maintaining excellent performance and type safety.
 
 ## Features
 
-- **Blazing-Fast Performance:** Optimized for low-latency communication with the Discord API
-- **Lightweight Footprint:** Keeps your bot's memory usage minimal
-- **Type Safety:** Written in TypeScript with full type definitions
-- **Modern Architecture:** Built with modern JavaScript practices and patterns
-- **Comprehensive Event System:** Full support for all Discord gateway events
-- **Flexible Command Handling:** Support for Slash Commands, Context Menus, and Message Components
-- **Rate Limit Handling:** Automatic handling of Discord API rate limits
-- **Caching System:** Efficient caching of guilds, channels, and users
+- **High-Performance Architecture**
+  - Optimized WebSocket connection handling
+  - Efficient caching system for guilds, channels, and users
+  - Automatic rate limit handling
+  
+- **Rich Interactive Features**
+  - Full Slash Commands support with builder patterns
+  - Message Components (Buttons, Select Menus)
+  - Modal Forms with text inputs
+  - Rich Embeds with full customization
+  - Context Menus (User and Message)
+  
+- **Event System**
+  - Comprehensive gateway event coverage
+  - Custom collectors for interactions and messages
+  - Detailed event typing for TypeScript support
+  
+- **Developer Experience**
+  - Full TypeScript support with detailed type definitions
+  - Intuitive builder patterns for components
 
 ## Installation
-
-Choose your preferred package manager:
 
 ```bash
 # Using npm
@@ -46,147 +56,95 @@ import {
   Client,
   Intents,
   SlashCommandBuilder,
-  SlashCommandInteraction
+  EmbedBuilder
 } from "@confis/discordapiwrapper";
 
-// Initialize the client
 const client = new Client("YOUR_BOT_TOKEN", {
   intents: [
     Intents.GUILDS,
     Intents.GUILD_MESSAGES,
     Intents.GUILD_MEMBERS
-  ],
-  cacheAllUsers: true
+  ]
 });
 
-// Register commands when ready
+// Register commands
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.displayName}`);
   
-  // Register a global slash command
   client.setGlobalCommands([
     new SlashCommandBuilder()
-      .setName("ping")
-      .setDescription("Check bot latency")
+      .setName("info")
+      .setDescription("Get server info")
   ]);
 });
 
-// Handle interactions
+// Handle interactions with rich embed response
 client.on("interactionCreate", async (interaction) => {
   if (interaction instanceof SlashCommandInteraction) {
-    if (interaction.name === "ping") {
-      await interaction.reply(`Pong! Latency: ${client.ping}ms`);
+    if (interaction.name === "info") {
+      const embed = new EmbedBuilder()
+        .setTitle("Server Information")
+        .setColor(0x5865F2)
+        .addField("Members", interaction.guild.memberCount.toString(), true)
+        .setTimestamp();
+      
+      await interaction.reply({ embeds: [embed] });
     }
   }
 });
 
-// Connect to Discord
 client.connect();
 ```
 
-## Advanced Usage
+## Advanced Features
 
-### Message Components
+### Interactive Components
 
 ```typescript
 import { ButtonBuilder, ButtonStyles, ActionRowBuilder } from "@confis/discordapiwrapper";
 
-// Create a button
+// Create interactive message
 const button = new ButtonBuilder()
   .setLabel("Click me!")
   .setStyle(ButtonStyles.PRIMARY)
-  .setCustomId("my-button");
+  .setCustomID("interaction-demo");
 
-// Create an action row
 const row = new ActionRowBuilder().addComponents(button);
 
-// Send a message with the button
-channel.send({
-  content: "Here's a button!",
-  components: [row]
-});
-```
-
-### Embeds
-
-```typescript
-import { EmbedBuilder } from "@confis/discordapiwrapper";
-
-const embed = new EmbedBuilder()
-  .setTitle("Hello World")
-  .setDescription("This is an embed!")
-  .setColor(0x00ff00)
-  .addField("Field 1", "Value 1")
-  .setFooter({ text: "Footer text" });
-
-channel.send({ embeds: [embed] });
-```
-
-### Event Handling
-
-```typescript
-// Message creation
-client.on("messageCreate", (message) => {
-  if (message.content === "!hello") {
-    message.reply("Hello there!");
+// Handle button clicks
+client.on("interactionCreate", async (interaction) => {
+  if (interaction instanceof ButtonInteraction) {
+    if (interaction.customID === "interaction-demo") {
+      await interaction.reply("Button clicked!");
+    }
   }
 });
-
-// Guild member updates
-client.on("memberUpdate", (oldMember, newMember) => {
-  if (oldMember.nickname !== newMember.nickname) {
-    console.log(`${newMember.user.username} changed their nickname`);
-  }
-});
-
-// Error handling
-client.on("error", (error) => {
-  console.error("An error occurred:", error);
-});
 ```
 
-## Configuration Options
+### Modal Forms
 
 ```typescript
-interface ClientOptions {
-  // Whether to cache all users in memory
-  cacheAllUsers?: boolean;
-  
-  // Array of gateway intents to enable
-  intents?: Intents[];
-  
-  // Number of shards to use (or "auto")
-  shards?: "auto" | number;
-}
+const modal = new ModalBuilder()
+  .setTitle("User Feedback")
+  .setCustomID("feedback-form")
+  .addComponents(
+    new TextInputBuilder()
+      .setLabel("Your Feedback")
+      .setStyle(TextInputStyles.PARAGRAPH)
+      .setCustomID("feedback-input")
+      .setRequired(true)
+  );
+
+// Show modal and handle submission
+client.on("interactionCreate", async (interaction) => {
+  if (interaction instanceof ModalInteraction) {
+    const feedback = interaction.data.components[0].data.value;
+    await interaction.reply(`Received: ${feedback}`);
+  }
+});
 ```
 
-## Best Practices
+## Documentation
 
-1. **Token Security:**
-   - Never commit your bot token to version control
-   - Use environment variables for sensitive data
-   ```typescript
-   import dotenv from "dotenv";
-   dotenv.config();
-   
-   const client = new Client(process.env.BOT_TOKEN);
-   ```
-
-2. **Error Handling:**
-   ```typescript
-   client.on("error", (error) => {
-     console.error("Client error:", error);
-   });
-
-   process.on("unhandledRejection", (error) => {
-     console.error("Unhandled promise rejection:", error);
-   });
-   ```
-
-3. **Resource Cleanup:**
-   ```typescript
-   process.on("SIGINT", () => {
-     client.disconnect();
-     process.exit();
-   });
-   ``````
+For complete API documentation and examples, visit our [Documentation Site](https://confh.github.io/).
+```

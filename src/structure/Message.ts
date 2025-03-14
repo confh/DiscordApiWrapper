@@ -197,7 +197,7 @@ export class Message extends Base {
    */
   get componentCollectors(): Collector[] {
     return this.client.collectors.filter(
-      (collector) => collector.messageId == this.id,
+      (collector) => collector.messageID == this.id,
     );
   }
 

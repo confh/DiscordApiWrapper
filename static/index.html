@@ -15,7 +15,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h1>DiscordApiWrapper</h1>
-            <p class="version">v2.2.2</p>
+            <p class="version">v2.2.7</p>
         </div>
         <div class="sidebar-content">
             <div class="search-box">
@@ -64,24 +64,24 @@
 
         <section id="getting-started">
             <h2>Getting Started</h2>
-            <p>DiscordApiWrapper is a high-performance Discord bot library designed for maximum speed and minimal overhead. It provides essential features for interacting with the Discord API.</p>
+            <p>DiscordApiWrapper is a high-performance Discord bot library designed for maximum speed and minimal overhead. Built with TypeScript, it provides a comprehensive set of features while maintaining excellent performance and type safety.</p>
             
             <div class="feature-grid">
                 <div class="feature-card">
-                    <h3><i class="fas fa-rocket"></i> Blazing Fast</h3>
-                    <p>Optimized for low-latency communication with Discord's API</p>
+                    <h3><i class="fas fa-rocket"></i> High Performance</h3>
+                    <p>Optimized WebSocket handling and efficient caching system</p>
                 </div>
                 <div class="feature-card">
                     <h3><i class="fas fa-shield-alt"></i> Type Safe</h3>
-                    <p>Written in TypeScript with complete type definitions</p>
+                    <p>Complete TypeScript definitions with detailed type support</p>
                 </div>
                 <div class="feature-card">
-                    <h3><i class="fas fa-code"></i> Modern</h3>
-                    <p>Built with modern JavaScript practices and patterns</p>
+                    <h3><i class="fas fa-puzzle-piece"></i> Interactive</h3>
+                    <p>Rich support for buttons, modals, and select menus</p>
                 </div>
                 <div class="feature-card">
-                    <h3><i class="fas fa-feather"></i> Lightweight</h3>
-                    <p>Keeps your bot's memory usage minimal</p>
+                    <h3><i class="fas fa-bolt"></i> Event Driven</h3>
+                    <p>Comprehensive event system with collectors</p>
                 </div>
             </div>
         </section>
@@ -102,7 +102,7 @@
 
         <section id="client">
             <h2>Client</h2>
-            <p>The Client class is the main entry point for interacting with the Discord API. It handles the WebSocket connection, authentication, and event dispatching.</p>
+            <p>The Client class is the core of DiscordApiWrapper, providing robust WebSocket connection handling, efficient caching, and comprehensive event management.</p>
             
             <pre><code class="language-typescript">import { Client, Intents } from "@confis/discordapiwrapper";
 
@@ -111,9 +111,21 @@ const client = new Client("YOUR_BOT_TOKEN", {
         Intents.GUILDS,
         Intents.GUILD_MESSAGES,
         Intents.GUILD_MEMBERS
-    ]
+    ],
+    cacheAllUsers: true // Enable full user caching
 });
 
+// Handle connection events
+client.on("ready", () => {
+    console.log(`Connected as ${client.user.displayName}`);
+});
+
+// Error handling
+client.on("error", (error) => {
+    console.error("Client error:", error);
+});
+
+// Connect to Discord
 client.connect();</code></pre>
         </section>
 
@@ -176,7 +188,7 @@ client.on("interactionCreate", async (interaction) => {
 const button = new ButtonBuilder()
     .setLabel("Click me!")
     .setStyle(ButtonStyles.PRIMARY)
-    .setCustomId("my-button");
+    .setCustomID("my-button");
 
 // Create an action row
 const row = new ActionRowBuilder()
@@ -191,7 +203,7 @@ channel.send({
 // Handle button interactions
 client.on("interactionCreate", (interaction) => {
     if (interaction instanceof ButtonInteraction) {
-        if (interaction.customId === "my-button") {
+        if (interaction.customID === "my-button") {
             interaction.reply("Button clicked!");
         }
     }
@@ -205,10 +217,10 @@ client.on("interactionCreate", (interaction) => {
             <pre><code class="language-typescript">// Create a modal with text input
 const modal = new ModalBuilder()
     .setTitle("User Information")
-    .setCustomId("user-info-modal")
+    .setCustomID("user-info-modal")
     .addComponents(
         new TextInputBuilder()
-            .setCustomId("name")
+            .setCustomID("name")
             .setLabel("Name")
             .setStyle(TextInputStyles.SHORT)
             .setMinLength(1)
@@ -216,7 +228,7 @@ const modal = new ModalBuilder()
             .setPlaceholder("John")
             .setRequired(true),
         new TextInputBuilder()
-            .setCustomId("bio")
+            .setCustomID("bio")
             .setLabel("Biography")
             .setStyle(TextInputStyles.PARAGRAPH)
             .setPlaceholder("Tell us about yourself...")
@@ -279,60 +291,19 @@ channel.send({ embeds: [embed] });</code></pre>
 
         <section id="collectors">
             <h2>Collectors</h2>
-            <p>Collectors allow you to gather interactions or responses over a period of time. They're particularly useful for creating interactive menus, polls, or multi-step processes.</p>
+            <p>Collectors provide a powerful way to gather interactions or responses over time, perfect for creating interactive menus, polls, or multi-step processes.</p>
             
-            <pre><code class="language-typescript">// Create a button
-const button = new ButtonBuilder()
-    .setLabel("Click me!")
-    .setStyle(ButtonStyles.PRIMARY)
-    .setCustomId("collect-button");
+            <pre><code class="language-typescript">// Create a button collector
+const filter = (i) => i.user.id === userID;
+const collector = message.createButtonCollector({ filter, time: 30000 });
 
-// Send message with button
-const message = await channel.send({
-    content: "This message will collect button clicks for 30 seconds!",
-    components: [new ActionRowBuilder().addComponents(button)]
+collector.on("collect", async (interaction) => {
+    await interaction.reply(`Button ${interaction.customID} clicked!`);
 });
 
-// Create a collector
-const collector = message.createComponentCollector({
-    timeout: 30000, // 30 seconds
-    component_type: [ComponentTypes.BUTTON],
-    filter: (i) => i.user.id === message.author.id // Only collect interactions from message author
-});
-
-// Listen for collected interactions
-collector.on("collect", (type, interaction) => {
-    console.log(`Collected a ${type} interaction!`);
-    interaction.reply("Button click collected!");
-});
-
-// Listen for when the collector ends
-collector.on("end", () => {
-    console.log("Collector ended!");
-    message.edit({
-        content: "This collector has ended.",
-        components: [] // Remove components
-    });
-});
-
-// You can also reset the collector's timer
-collector.resetTimer();
-
-// Or end the collector early
-collector.end();</code></pre>
-
-            <h3>Collector Options</h3>
-            <ul>
-                <li><code>timeout</code>: Duration in milliseconds before the collector automatically ends</li>
-                <li><code>component_type</code>: Type of component to collect (BUTTON, STRING_SELECT, etc.)</li>
-                <li><code>filter</code>: Function to filter which interactions should be collected</li>
-            </ul>
-
-            <h3>Collector Events</h3>
-            <ul>
-                <li><code>collect</code>: Emitted when an interaction is collected</li>
-                <li><code>end</code>: Emitted when the collector ends (timeout or manual)</li>
-            </ul>
+collector.on("end", collected => {
+    console.log(`Collected ${collected.size} interactions`);
+});</code></pre>
         </section>
 
         <section id="api-reference">

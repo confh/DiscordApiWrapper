@@ -5,7 +5,7 @@ import { Routes } from "../internal/Route";
 
 /** Member object */
 export class Member extends Base {
-  readonly #guildId: string;
+  readonly #guildID: string;
   readonly id: string;
   readonly joined_at: number;
   nick: string | null;
@@ -16,7 +16,7 @@ export class Member extends Base {
     this.joined_at = new Date(data.joined_at).getTime();
     this.id = data.user.id;
     this.nick = data.nick;
-    this.#guildId = data.guild_id;
+    this.#guildID = data.guild_id;
     this.#rolesIDs = data.roles;
   }
 
@@ -30,7 +30,7 @@ export class Member extends Base {
    * @returns A guild object
    */
   get guild(): Guild {
-    return this.client.guilds.get(this.#guildId);
+    return this.client.guilds.get(this.#guildID);
   }
 
   /**
@@ -117,7 +117,7 @@ export class Member extends Base {
    * @param [delete_message_seconds=0] Number of seconds to delete messages for.
    */
   async ban(delete_message_seconds = 0): Promise<void> {
-    await this.client.rest.put(Routes.GuildBan(this.#guildId, this.id), {
+    await this.client.rest.put(Routes.GuildBan(this.#guildID, this.id), {
       delete_message_seconds,
     });
   }
@@ -128,7 +128,7 @@ export class Member extends Base {
    * @param [delete_message_seconds=0] Number of seconds to delete messages for.
    */
   async kick(): Promise<void> {
-    await this.client.rest.delete(Routes.GuildBan(this.#guildId, this.id));
+    await this.client.rest.delete(Routes.GuildBan(this.#guildID, this.id));
   }
 
   /**
@@ -139,7 +139,7 @@ export class Member extends Base {
   async setNick(nickname: string) {
     await this.client.rest.patch(
       Routes.GuildMember(
-        this.#guildId,
+        this.#guildID,
         this.id === this.client.user.id ? "@me" : this.id,
       ),
       {
@@ -156,7 +156,7 @@ export class Member extends Base {
   async setCommunicationDisabled(communicationDisabledUntil: Date) {
     await this.client.rest.patch(
       Routes.GuildMember(
-        this.#guildId,
+        this.#guildID,
         this.id === this.client.user.id ? "@me" : this.id,
       ),
       {

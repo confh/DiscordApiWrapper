@@ -679,10 +679,10 @@ export class Client {
 
   /**
    * Register a channel from the Discord API.
-   * @param channelId The ID of the channel to register.
+   * @param channelID The ID of the channel to register.
    */
-  async registerChannelFromAPI(channelId: string) {
-    const data = await axios.get(`${this.baseURL}channels/${channelId}`, {
+  async registerChannelFromAPI(channelID: string) {
+    const data = await axios.get(`${this.baseURL}channels/${channelID}`, {
       headers: this.getHeaders(),
       validateStatus: () => true,
     });
@@ -906,13 +906,13 @@ export class Client {
 
   /**
    * Fetch a message from the discord API
-   * @param channelId The id of the channel the message is in
-   * @param messageId The id of the message
+   * @param channelID The id of the channel the message is in
+   * @param messageID The id of the message
    * @returns A {@link Message} object
    */
-  async getMessage(channelId: string, messageId: string): Promise<Message> {
+  async getMessage(channelID: string, messageID: string): Promise<Message> {
     const data = await axios.get(
-      `${this.baseURL}/channels/${channelId}/messages/${messageId}`,
+      `${this.baseURL}/channels/${channelID}/messages/${messageID}`,
       {
         headers: this.getHeaders(),
         validateStatus: () => true,
@@ -926,11 +926,11 @@ export class Client {
 
   /**
    * Get cached channel
-   * @param channelId The id of the channel
+   * @param channelID The id of the channel
    * @returns A {@link Channel} object
    */
-  getChannel(channelId: string): Channel {
-    return this.channels.get(channelId);
+  getChannel(channelID: string): Channel {
+    return this.channels.get(channelID);
   }
 
   /**
@@ -1212,7 +1212,7 @@ export class Client {
             }
           }
           else if (d.type === InteractionTypes.MESSAGE_COMPONENT) {
-            const collector = _this.collectors.find(a => a.messageId === d.message.id);
+            const collector = _this.collectors.find(a => a.messageID === d.message.id);
 
             if (d.data.component_type === ComponentTypes.BUTTON) {
               const interaction = new ButtonInteraction(d, _this);
@@ -1234,7 +1234,7 @@ export class Client {
           else if (d.type === InteractionTypes.MODAL_SUBMIT) {
             const interaction = new ModalInteraction(d, _this);
             const collector = _this.modalCollectors.find(
-              a => a.customId === interaction.data.custom_id
+              a => a.customID === interaction.data.custom_id
             );
 
             if (collector && (!collector.filter || collector.filter(interaction))) {
@@ -1311,18 +1311,18 @@ export class Client {
 
   /**
    * Creates a collector for modal submissions
-   * @param customId The custom ID of the modal to collect
+   * @param customID The custom ID of the modal to collect
    * @param options Collector options
    * @returns A modal collector object
    */
   createModalCollector(
-    customId: string,
+    customID: string,
     options?: {
       timeout?: number;
       filter?: (i: ModalInteraction) => boolean;
     }
   ): ModalCollector {
-    const collector = new ModalCollector(customId, this, options);
+    const collector = new ModalCollector(customID, this, options);
     this.modalCollectors.push(collector);
     return collector;
   }
