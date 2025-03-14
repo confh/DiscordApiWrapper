@@ -14,6 +14,7 @@ import {
   APIMessageSnapshot,
   APIUser,
   Interaction,
+  APIEmbed,
 } from "../index";
 import { Base } from "../internal/Base";
 import { Routes } from "../internal/Route";
@@ -51,6 +52,7 @@ export class Message extends Base {
   readonly type: number;
   readonly referenced_message?: Message;
   readonly attachments: APIMessageAttachment[];
+  readonly embeds: APIEmbed[];
 
   constructor(data: APIMessage, client: Client) {
     super(client);
@@ -78,6 +80,7 @@ export class Message extends Base {
     this.pinned = data.pinned;
     this.type = data.type;
     this.attachments = data.attachments;
+    this.embeds = data.embeds;
   }
 
   /**
