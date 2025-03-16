@@ -1,6 +1,6 @@
 import { ButtonStyles, APIEmoji, JSONCache, PartialEmoji } from "../client";
 
-type SUPPORTED_ELEMENTS = ButtonBuilder | StringSelectMenuBuilder;
+type SUPPORTED_ELEMENTS = ButtonBuilder | StringSelectMenuBuilder | TextInputBuilder;
 
 export interface FieldOptions {
   name: string;
@@ -132,6 +132,19 @@ export class EmbedBuilder {
   setFields(fields: FieldOptions[]): this {
     this.fields = fields;
     return this;
+  }
+
+  /**
+   * Add one or more fields to the embed
+   * @param fields The fields to add
+   * @returns EmbedBuilder Object
+   */
+  addFields(...fields: FieldOptions[]): this {
+    if (!this.fields) {
+      this.fields = []
+    }
+    this.fields.push(...fields)
+    return this
   }
 
   /**
@@ -430,17 +443,27 @@ export class StringSelect {
 }
 
 /** Action Row builder */
-export class ActionRowBuilder {
-  public components!: Array<SUPPORTED_ELEMENTS>;
+export class ActionRowBuilder<T extends SUPPORTED_ELEMENTS> {
+  public components!: Array<T>;
 
   /**
    * Set the Components of the ActionRow
    * @param ...args An array of {@link SUPPORTED_ELEMENTS}
    * @returns ActionRowBuilder Object
    */
-  setComponents(...args: SUPPORTED_ELEMENTS[]): this {
+  setComponents(...args: T[]): this {
     this.components = args;
     return this;
+  }
+
+  /**
+   * Add components to the ActionRow
+   * @param args An array of components to add
+   * @returns ActionRowBuilder Object for method chaining
+   */
+  addComponents(...args: T[]): this {
+    this.components.push(...args)
+    return this
   }
 
   /**
@@ -448,7 +471,11 @@ export class ActionRowBuilder {
    * @returns The ActionRowBuilder instance for method chaining
    */
   disableAllComponents(): this {
-    this.components.forEach(e => e.setDisabled(true))
+    for (const component of this.components) {
+      if (!(component instanceof TextInputBuilder)) {
+        component.setDisabled(true)
+      }
+    }
     return this
   }
 
@@ -457,7 +484,7 @@ export class ActionRowBuilder {
    * @param components An array of {@link SUPPORTED_ELEMENTS}
    * @returns ActionRowBuilder Object
    */
-  setComponentsArray(components: SUPPORTED_ELEMENTS[]): this {
+  setComponentsArray(components: T[]): this {
     this.components = components;
     return this;
   }
@@ -632,8 +659,8 @@ export class ModalBuilder {
    * @param components The components to add
    * @returns ModalBuilder Object
    */
-  addComponents(...components: TextInputBuilder[]): this {
-    this.#components.push(...components);
+  addComponents(components: ActionRowBuilder<TextInputBuilder>): this {
+    this.#components.push(...components.components);
     return this;
   }
 
@@ -642,8 +669,8 @@ export class ModalBuilder {
    * @param components The components to set
    * @returns ModalBuilder Object
    */
-  setComponents(...components: TextInputBuilder[]): this {
-    this.#components = components;
+  setComponents(components: ActionRowBuilder<TextInputBuilder>): this {
+    this.#components = components.components;
     return this;
   }
 

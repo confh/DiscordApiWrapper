@@ -101,23 +101,36 @@ client.connect();
 ### Interactive Components
 
 ```typescript
-import { ButtonBuilder, ButtonStyles, ActionRowBuilder } from "@confis/discordapiwrapper";
+import { 
+  ButtonBuilder, 
+  ButtonStyles, 
+  ActionRowBuilder,
+  StringSelectMenuBuilder
+} from "@confis/discordapiwrapper";
 
-// Create interactive message
+// Create button row
 const button = new ButtonBuilder()
   .setLabel("Click me!")
   .setStyle(ButtonStyles.PRIMARY)
   .setCustomID("interaction-demo");
 
-const row = new ActionRowBuilder().addComponents(button);
+// Type-safe action row with buttons
+const buttonRow = new ActionRowBuilder<ButtonBuilder>()
+  .addComponents(button);
 
-// Handle button clicks
-client.on("interactionCreate", async (interaction) => {
-  if (interaction instanceof ButtonInteraction) {
-    if (interaction.customID === "interaction-demo") {
-      await interaction.reply("Button clicked!");
-    }
-  }
+// Create select menu row
+const select = new StringSelectMenuBuilder()
+  .setCustomID("select-demo")
+  .setPlaceholder("Choose an option");
+
+// Type-safe action row with select menu
+const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>()
+  .addComponents(select);
+
+// Send message with multiple component types
+channel.send({
+  content: "Interactive message with typed components!",
+  components: [buttonRow, selectRow]
 });
 ```
 

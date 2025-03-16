@@ -15,7 +15,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h1>DiscordApiWrapper</h1>
-            <p class="version">v2.2.7</p>
+            <p class="version">v2.2.8</p>
         </div>
         <div class="sidebar-content">
             <div class="search-box">
@@ -182,30 +182,50 @@ client.on("interactionCreate", async (interaction) => {
 
         <section id="message-components">
             <h2>Message Components</h2>
-            <p>Add interactive elements to your messages using buttons, select menus, and more.</p>
+            <p>Add interactive elements to your messages using buttons, select menus, and more. The library provides type-safe component builders using generics.</p>
             
-            <pre><code class="language-typescript">// Create a button
-const button = new ButtonBuilder()
-    .setLabel("Click me!")
+            <pre><code class="language-typescript">// Create buttons
+const button1 = new ButtonBuilder()
+    .setLabel("Primary Button")
     .setStyle(ButtonStyles.PRIMARY)
-    .setCustomID("my-button");
+    .setCustomID("button-1");
 
-// Create an action row
-const row = new ActionRowBuilder()
-    .addComponents(button);
+const button2 = new ButtonBuilder()
+    .setLabel("Link Button")
+    .setStyle(ButtonStyles.LINK)
+    .setUrl("https://example.com");
 
-// Send message with components
+// Type-safe action row with buttons
+const buttonRow = new ActionRowBuilder&lt;ButtonBuilder&gt;()
+    .addComponents(button1, button2);
+
+// Create select menu
+const select = new StringSelectMenuBuilder()
+    .setCustomID("select-demo")
+    .setPlaceholder("Choose an option")
+    .addOptions([
+        { label: "Option 1", value: "1" },
+        { label: "Option 2", value: "2" }
+    ]);
+
+// Type-safe action row with select menu
+const selectRow = new ActionRowBuilder&lt;StringSelectMenuBuilder&gt;()
+    .addComponents(select);
+
+// Send message with multiple typed components
 channel.send({
-    content: "Here's an interactive message!",
-    components: [row]
+    content: "Interactive message example",
+    components: [buttonRow, selectRow]
 });
 
-// Handle button interactions
+// Handle interactions with type safety
 client.on("interactionCreate", (interaction) => {
     if (interaction instanceof ButtonInteraction) {
-        if (interaction.customID === "my-button") {
-            interaction.reply("Button clicked!");
-        }
+        // TypeScript knows this is a button interaction
+        console.log(`Button ${interaction.customID} clicked`);
+    } else if (interaction instanceof StringSelectMenuInteraction) {
+        // TypeScript knows this is a select menu interaction
+        console.log(`Selected value: ${interaction.values[0]}`);
     }
 });</code></pre>
         </section>

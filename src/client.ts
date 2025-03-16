@@ -406,7 +406,7 @@ export interface FileContent {
 export interface ContentOptions {
   content?: string;
   embeds?: EmbedBuilder[];
-  components?: ActionRowBuilder[];
+  components?: ActionRowBuilder<any>[];
   ephemeral?: boolean;
   file?: FileContent | FileContent[];
   poll?: PollRequestObject;
