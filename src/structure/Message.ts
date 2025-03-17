@@ -205,15 +205,22 @@ export class Message extends Base {
    * Sends a reply message.
    *
    * @param {string | ContentOptions} content - The content of the message or options for the message.
+   * @param {number} [deleteAfter] - The number of milliseconds to wait before deleting the message.
    * @return {Promise<Message>} A promise that resolves to the sent message.
    */
-  async reply(content: string | ContentOptions): Promise<Message> {
-    return await this.client.rest.sendReplyChannelMessage(
+  async reply(content: string | ContentOptions, deleteAfter?: number): Promise<Message> {
+    const msg = await this.client.rest.sendReplyChannelMessage(
       content,
       this.channelID,
       this.id,
       this.guildID,
     );
+    if (deleteAfter) {
+      setTimeout(() => {
+        msg.delete({ throwError: false });
+      }, deleteAfter);
+    }
+    return msg;
   }
 
   /**

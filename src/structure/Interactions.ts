@@ -98,18 +98,25 @@ export class Interaction extends Base {
    * Sends a reply message to the interaction.
    *
    * @param {string | ContentOptions} content - The content of the message. It can be a string or an object with optional properties like embeds, components, and file.
+   * @param {number | undefined} deleteAfter - The number of milliseconds to wait before deleting the message.
    * @return {Promise<Message>} A promise that resolves to the sent message as a `Message` object.
    * @throws {Error} If the request fails with a 400 status code.
    */
-  async reply(content: string | ContentOptions): Promise<Message> {
+  async reply(content: string | ContentOptions, deleteAfter?: number): Promise<Message> {
     assert(!this.acknowledged, "Interaction has already been acknowledged");
     this.acknowledged = true;
-    return await this.client.rest.respondToInteraction(
+    const msg = await this.client.rest.respondToInteraction(
       4,
       content,
       this.token,
       this.interactionID,
     );
+    if (deleteAfter) {
+      setTimeout(() => {
+        msg.delete({ throwError: false });
+      }, deleteAfter);
+    }
+    return msg;
   }
 
   async sendModal(content: ModalBuilder): Promise<void> {
