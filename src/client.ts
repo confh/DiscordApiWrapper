@@ -737,7 +737,7 @@ export class Client {
   public on<K extends keyof ClientEvents>(
     event: K,
     callback: (...args: ClientEvents[K]) => any,
-  ) {
+  ): this {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
@@ -753,7 +753,7 @@ export class Client {
   public once<K extends keyof ClientEvents>(
     event: K,
     callback: (...args: ClientEvents[K]) => any,
-  ) {
+  ): this {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
