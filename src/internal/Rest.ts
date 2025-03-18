@@ -66,10 +66,64 @@ async function wait(ms: number): Promise<unknown> {
  */
 export class Rest {
   readonly #client: Client;
+  readonly #pendingRequests = new Map();
+  readonly #requestQueue: Array<() => Promise<any>> = [];
+  readonly #maxConcurrentRequests = 5;
+  #activeRequests = 0;
 
   constructor(client: Client) {
     this.#client = client;
   }
+
+  private async processQueue() {
+    if (this.#activeRequests >= this.#maxConcurrentRequests || this.#requestQueue.length === 0) {
+      return;
+    }
+
+    this.#activeRequests++;
+    const request = this.#requestQueue.shift();
+
+    try {
+      await request();
+    } finally {
+      this.#activeRequests--;
+      this.processQueue();
+    }
+  }
+
+  private async executeRequest(key: string, requestFn: () => Promise<any>) {
+    if (this.#pendingRequests.has(key)) {
+      return this.#pendingRequests.get(key);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+      this.#requestQueue.push(async () => {
+        try {
+          const result = await requestFn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    this.#pendingRequests.set(key, promise);
+    this.processQueue();
+
+    return promise.finally(() => {
+      this.#pendingRequests.delete(key);
+    });
+  }
+
+  // Optimize axios instance
+  private readonly axiosInstance = axios.create({
+    timeout: 15000,
+    maxRedirects: 5,
+    headers: {
+      'Connection': 'keep-alive',
+      'Keep-Alive': 'timeout=5, max=1000'
+    }
+  });
 
   /**
    * Deletes a resource from the Discord API.
@@ -78,21 +132,23 @@ export class Rest {
    * @returns The deleted resource.
    */
   async delete<T>(route: string): Promise<T> {
-    const request = await axios.delete(route, {
-      headers: this.#client.getHeaders(),
-      validateStatus: () => true,
-    });
+    const requestKey = `DELETE:${route}`;
+    return this.executeRequest(requestKey, async () => {
+      const response = await this.axiosInstance.delete(route, {
+        headers: this.#client.getHeaders(),
+        validateStatus: () => true,
+      });
 
-    if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== undefined) {
-        await wait(request.data.retry_after * 1000);
-        return await this.delete(route);
-      } else {
-        throw new Error(request.data.message);
+      if (![200, 204].includes(response.status)) {
+        if (response.data.retry_after !== undefined) {
+          await wait(response.data.retry_after * 1000);
+          return this.delete(route);
+        }
+        throw new Error(response.data.message);
       }
-    }
 
-    return request.data;
+      return response.data;
+    });
   }
 
   /**
@@ -108,23 +164,36 @@ export class Rest {
     data: JSONCache | FormData,
     formData?: boolean,
   ): Promise<T> {
-    const request = await axios.post(route, data, {
-      headers: this.#client.getHeaders(
-        formData ? "multipart/form-data" : "application/json",
-      ),
-      validateStatus: () => true,
-    });
+    const requestKey = `POST:${route}`;
+    return this.executeRequest(requestKey, async () => {
+      const headers = this.#client.getHeaders(
+        formData ? "multipart/form-data" : "application/json"
+      );
 
-    if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== undefined) {
-        await wait(request.data.retry_after * 1000);
-        return await this.post(route, data, formData);
-      } else {
-        throw new Error(request.data.message);
+      try {
+        const response = await axios.post(route, data, {
+          headers,
+          validateStatus: null
+        });
+
+        if (response.status === 429) {
+          await wait(response.data.retry_after * 1000);
+          return this.post(route, data, formData);
+        }
+
+        if (response.status >= 400) {
+          throw new Error(response.data.message || 'Request failed');
+        }
+
+        return response.data;
+      } catch (error) {
+        if (error.response?.status === 429) {
+          await wait(error.response.data.retry_after * 1000);
+          return this.post(route, data, formData);
+        }
+        throw error;
       }
-    }
-
-    return request.data;
+    });
   }
 
   /**
@@ -134,21 +203,23 @@ export class Rest {
    * @returns The response data.
    */
   async get<T>(route: string): Promise<T> {
-    const request = await axios.get(route, {
-      headers: this.#client.getHeaders(),
-      validateStatus: () => true,
-    });
+    const requestKey = `GET:${route}`;
+    return this.executeRequest(requestKey, async () => {
+      const response = await this.axiosInstance.get(route, {
+        headers: this.#client.getHeaders(),
+        validateStatus: () => true,
+      });
 
-    if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== undefined) {
-        await wait(request.data.retry_after * 1000);
-        return await this.get(route);
-      } else {
-        throw new Error(request.data.message);
+      if (![200, 204].includes(response.status)) {
+        if (response.data.retry_after !== undefined) {
+          await wait(response.data.retry_after * 1000);
+          return this.get(route);
+        }
+        throw new Error(response.data.message);
       }
-    }
 
-    return request.data;
+      return response.data;
+    });
   }
 
   /**
@@ -164,23 +235,25 @@ export class Rest {
     payload: JSONCache | FormData,
     formData?: boolean,
   ): Promise<T> {
-    const request = await axios.patch(route, payload, {
-      headers: this.#client.getHeaders(
-        formData ? "multipart/form-data" : "application/json",
-      ),
-      validateStatus: () => true,
-    });
+    const requestKey = `PATCH:${route}`;
+    return this.executeRequest(requestKey, async () => {
+      const response = await this.axiosInstance.patch(route, payload, {
+        headers: this.#client.getHeaders(
+          formData ? "multipart/form-data" : "application/json",
+        ),
+        validateStatus: () => true,
+      });
 
-    if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== undefined) {
-        await wait(request.data.retry_after * 1000);
-        return await this.patch(route, payload, formData);
-      } else {
-        throw new Error(request.data.message);
+      if (![200, 204].includes(response.status)) {
+        if (response.data.retry_after !== undefined) {
+          await wait(response.data.retry_after * 1000);
+          return this.patch(route, payload, formData);
+        }
+        throw new Error(response.data.message);
       }
-    }
 
-    return request.data;
+      return response.data;
+    });
   }
 
   /**
@@ -196,23 +269,25 @@ export class Rest {
     payload: JSONCache | FormData,
     formData?: boolean,
   ): Promise<T> {
-    const request = await axios.put(route, payload, {
-      headers: this.#client.getHeaders(
-        formData ? "multipart/form-data" : "application/json",
-      ),
-      validateStatus: () => true,
-    });
+    const requestKey = `PUT:${route}`;
+    return this.executeRequest(requestKey, async () => {
+      const response = await this.axiosInstance.put(route, payload, {
+        headers: this.#client.getHeaders(
+          formData ? "multipart/form-data" : "application/json",
+        ),
+        validateStatus: () => true,
+      });
 
-    if (![200, 204].includes(request.status)) {
-      if (request.data.retry_after !== undefined) {
-        await wait(request.data.retry_after * 1000);
-        return await this.put(route, payload, formData);
-      } else {
-        throw new Error(request.data.message);
+      if (![200, 204].includes(response.status)) {
+        if (response.data.retry_after !== undefined) {
+          await wait(response.data.retry_after * 1000);
+          return this.put(route, payload, formData);
+        }
+        throw new Error(response.data.message);
       }
-    }
 
-    return request.data;
+      return response.data;
+    });
   }
 
   private contentToFilesEmbedsComponents(
@@ -319,8 +394,7 @@ export class Rest {
     token: string,
     id: string,
   ): Promise<Message> {
-    const [embeds, components, files] =
-      this.contentToFilesEmbedsComponents(content);
+    const [embeds, components, files] = this.contentToFilesEmbedsComponents(content);
 
     let payload: JSONCache | FormData = {
       type,
@@ -340,17 +414,21 @@ export class Rest {
       payload = JSONToFormDataWithFile(payload, ...files);
     }
 
-    await this.post(
-      Routes.InteractionCallback(id, token),
-      payload,
-      Boolean(files),
+    // Send the response and get message data in one request
+    const data = await this.post<{
+      resource: {
+        message: APIMessage
+      }
+    }>(
+      Routes.InteractionCallback(id, token) + "?with_response=true",
+      {
+        ...payload,
+        // Add a flag to return message object
+      },
+      Boolean(files)
     );
 
-    const data = await this.get<APIMessage>(
-      Routes.OriginalMessage(this.#client.user.id, token),
-    );
-
-    return new Message(data, this.#client);
+    return new Message(data.resource.message, this.#client);
   }
 
   async deferInteraction(
@@ -358,7 +436,7 @@ export class Rest {
     token: string,
     options?: { ephemeral?: boolean },
   ): Promise<void> {
-    const request = await this.post(Routes.InteractionCallback(id, token), {
+    await this.post(Routes.InteractionCallback(id, token), {
       type: 5,
       data: {
         flags: options?.ephemeral ? 64 : 0,

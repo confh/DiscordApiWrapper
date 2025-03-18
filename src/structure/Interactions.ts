@@ -103,7 +103,9 @@ export class Interaction extends Base {
    * @throws {Error} If the request fails with a 400 status code.
    */
   async reply(content: string | ContentOptions, deleteAfter?: number): Promise<Message> {
-    assert(!this.acknowledged, "Interaction has already been acknowledged");
+    if (this.acknowledged) {
+      return this.followUp(content);
+    }
     this.acknowledged = true;
     const msg = await this.client.rest.respondToInteraction(
       4,

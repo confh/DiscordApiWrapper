@@ -534,6 +534,14 @@ export class Client {
     error: (...args: any[]) => any;
   } = console;
   public readonly baseURL = "https://discord.com/api/v10/";
+  private readonly eventHandlers: Map<string, Array<{
+    once: boolean;
+    callback: (...args: any[]) => any;
+  }>> = new Map();
+  readonly #cache = {
+    headers: null as null | { Authorization: string; "Content-Type": string },
+    heartbeatPayload: null as null | string,
+  };
 
   get commands(): CommandData[] {
     return this.#commands
@@ -585,9 +593,15 @@ export class Client {
    * @returns Interval
    */
   private _heartbeat(ms: number) {
+    if (!this.#cache.heartbeatPayload) {
+      this.#cache.heartbeatPayload = JSON.stringify({ op: 1, d: null });
+    }
+
     return setInterval(() => {
       this.#lastHeartbeat = Date.now();
-      this.sendToSocket({ op: 1, d: this.#seq });
+      if (this.#ws.readyState === 1) {
+        this.#ws.send(this.#cache.heartbeatPayload);
+      }
     }, ms);
   }
 
@@ -702,12 +716,16 @@ export class Client {
     ...args: ClientEvents[K]
   ) {
     if (!this.#isReady) return;
-    for (let i = 0; i < this.#listeners.length; i++) {
-      const listener = this.#listeners[i];
-      if (listener.event === event) {
-        listener.callback(...args);
-        if (listener.once) this.#listeners.splice(i, 1);
-      }
+
+    const handlers = this.eventHandlers.get(event);
+    if (!handlers?.length) return;
+
+    // Remove once listeners while iterating
+    let i = handlers.length;
+    while (i--) {
+      const handler = handlers[i];
+      handler.callback(...args);
+      if (handler.once) handlers.splice(i, 1);
     }
   }
 
@@ -716,15 +734,15 @@ export class Client {
    * @param event Event to listen for
    * @param callback Event callback
    */
-  on<K extends keyof ClientEvents>(
+  public on<K extends keyof ClientEvents>(
     event: K,
     callback: (...args: ClientEvents[K]) => any,
   ) {
-    this.#listeners.push({
-      event,
-      once: false,
-      callback,
-    });
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, []);
+    }
+    this.eventHandlers.get(event)!.push({ once: false, callback });
+    return this;
   }
 
   /**
@@ -732,15 +750,15 @@ export class Client {
    * @param event Event to listen for
    * @param callback Event callback
    */
-  once<K extends keyof ClientEvents>(
+  public once<K extends keyof ClientEvents>(
     event: K,
     callback: (...args: ClientEvents[K]) => any,
   ) {
-    this.#listeners.push({
-      event,
-      once: true,
-      callback,
-    });
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, []);
+    }
+    this.eventHandlers.get(event)!.push({ once: true, callback });
+    return this;
   }
 
   /**
@@ -748,14 +766,21 @@ export class Client {
    * @param contentType The content type of the request. Defaults to `application/json`
    * @returns The headers for the request
    */
-  getHeaders(contentType?: string): {
-    Authorization: string;
-    "Content-Type": string;
-  } {
-    return {
+  getHeaders(contentType?: string): { Authorization: string; "Content-Type": string } {
+    if (!contentType && this.#cache.headers) {
+      return this.#cache.headers;
+    }
+
+    const headers = {
       Authorization: `Bot ${this.#token}`,
       "Content-Type": contentType || "application/json",
     };
+
+    if (!contentType) {
+      this.#cache.headers = headers;
+    }
+
+    return headers;
   }
 
   /**
@@ -963,7 +988,16 @@ export class Client {
     const _this = this;
 
     // Open the websocket
-    this.#ws = new WebSocket(this.#url + "/?v=10&encoding=json");
+    this.#ws = new WebSocket(this.#url + "/?v=10&encoding=json", {
+      perMessageDeflate: {
+        zlibDeflateOptions: {
+          level: 1
+        },
+        zlibInflateOptions: {
+          chunkSize: 32 * 1024
+        }
+      }
+    });
 
     this.#ws.on("open", function open(data: any) {
       // If this isn't the first time the client connects send resumePayload
