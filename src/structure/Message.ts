@@ -39,6 +39,7 @@ export class MessageSnapshot {
 
 /** Message object */
 export class Message extends Base {
+  readonly #cachedAuthor?: APIUser
   readonly #authorID?: string;
   readonly #mentionsIDs: string[] = [];
   readonly #messageSnapshots?: APIMessageSnapshot[];
@@ -64,6 +65,7 @@ export class Message extends Base {
     }
     this.guildID = data.guild_id;
     this.#authorID = data.author ? data.author.id : null;
+    this.#cachedAuthor = data.author
     this.referencedMessage = data.referenced_message
       ? new Message(data.referenced_message, client)
       : null;
@@ -140,6 +142,9 @@ export class Message extends Base {
    * @returns A user object
    */
   get author(): User | null {
+    if (this.#cachedAuthor) {
+      return new User(this.#cachedAuthor, this.client)
+    }
     return this.client.users.get(this.#authorID) ?? null;
   }
 
