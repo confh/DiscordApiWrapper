@@ -588,8 +588,10 @@ export class Rest {
       },
     };
 
-    if (typeof content !== "string" && content.username)
-      payload.username = content.username;
+    if (typeof content !== "string") {
+      if (content.username) payload.username = content.username;
+      if (content.avatarURL) payload.avatar_url = content.avatarURL;
+    }
 
     if (files) {
       payload = JSONToFormDataWithFile(payload, ...files);

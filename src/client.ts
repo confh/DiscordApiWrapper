@@ -417,7 +417,7 @@ export interface ContentOptions {
  */
 export interface WebhookContentOptions extends ContentOptions {
   username?: string;
-  avatar_url?: string;
+  avatarURL?: string;
 }
 
 /**
