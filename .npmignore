@@ -10,3 +10,5 @@ README.md
 *.env
 commit
 static/
+jsr.json
+rollupconfig.ts
