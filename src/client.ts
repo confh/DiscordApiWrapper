@@ -1172,7 +1172,7 @@ export class Client {
 
           // Remove guild channels
           const channelIDs = _this.channels
-            .filter(channel => channel.guild.id === d.id)
+            .filter(channel => channel.guild && channel.guild.id === d.id)
             .map(channel => channel.id);
           _this._deleteChannels(channelIDs);
 

@@ -45,7 +45,7 @@ export class Channel extends Base {
    * Get the guild of this channel
    * @returns A guild object
    */
-  get guild(): Guild {
+  get guild(): Guild | undefined {
     return this.client.guilds.get(this.#guild_id);
   }
 
