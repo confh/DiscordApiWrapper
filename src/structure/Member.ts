@@ -6,14 +6,14 @@ import { Routes } from "../internal/Route";
 /** Member object */
 export class Member extends Base {
   readonly #guildID: string;
+  readonly #joined_at: number;
   readonly id: string;
-  readonly joined_at: number;
   nick: string | null;
   #rolesIDs: string[] = [];
 
   constructor(data: BaseData, client: Client) {
     super(client);
-    this.joined_at = new Date(data.joined_at).getTime();
+    this.#joined_at = new Date(data.joined_at).getTime();
     this.id = data.user.id;
     this.nick = data.nick;
     this.#guildID = data.guild_id;
@@ -22,6 +22,15 @@ export class Member extends Base {
 
   toString(): string {
     return this.user.toString()
+  }
+
+  /**
+   * Get the join date of the member
+   *
+   * @returns The date when the member joined the guild
+   */
+  get joinedAt(): Date {
+    return new Date(this.#joined_at);
   }
 
   /**

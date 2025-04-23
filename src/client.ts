@@ -143,6 +143,17 @@ export interface APIMember {
   permissions: string;
 }
 
+export interface APIGuild extends BaseData {
+  name: string;
+  icon?: string;
+  splash?: string;
+  owner_id: string;
+  roles: APIRole[];
+  emojis: APIEmoji[],
+  mfa_level: number;
+  nsfw_level: number;
+}
+
 /** Message Attachment Object */
 export interface APIMessageAttachment extends BaseData {
   filename: string;

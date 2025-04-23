@@ -1,4 +1,4 @@
-import { Member, Channel, Role, Client, BaseData } from "../index";
+import { Member, Channel, Role, Client, BaseData, APIGuild } from "../index";
 import { Base } from "../internal/Base";
 import { Manager } from "../internal/Manager";
 import { Routes } from "../internal/Route";
@@ -14,7 +14,7 @@ export class Guild extends Base {
   readonly joinedAt: Date;
   readonly members: Manager<Member> = new Manager<Member>();
 
-  constructor(data: BaseData, client: Client) {
+  constructor(data: APIGuild, client: Client) {
     super(client);
     this.id = data.id;
     this.name = data.name;
@@ -35,6 +35,18 @@ export class Guild extends Base {
 
   get iconURL(): string {
     return `https://cdn.discordapp.com/icons/${this.id}/${this.#icon}.png`;
+  }
+
+  /**
+   * Get the creation date of the guild
+   * 
+   * @returns The date when the guild was created
+   */
+  get createdAt(): Date {
+    const discordEpoch = 1420070400000;
+    const timestamp = ((BigInt(this.id) >> 22n) + BigInt(discordEpoch)); 
+
+    return new Date(Number(timestamp));
   }
 
   /**
