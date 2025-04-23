@@ -9,7 +9,7 @@ export class Guild extends Base {
   readonly #channelIDs: string[] = [];
   readonly id: string;
   readonly name: string;
-  readonly ownerId: string;
+  readonly ownerID: string;
   readonly memberCount: number;
   readonly joinedAt: Date;
   readonly members: Manager<Member> = new Manager<Member>();
@@ -18,7 +18,7 @@ export class Guild extends Base {
     super(client);
     this.id = data.id;
     this.name = data.name;
-    this.ownerId = data.owner_id;
+    this.ownerID = data.owner_id;
     this.memberCount = data.member_count;
     this.joinedAt = new Date(data.joined_at);
     this.#icon = data.icon;

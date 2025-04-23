@@ -6,14 +6,14 @@ import { Routes } from "../internal/Route";
 /** Member object */
 export class Member extends Base {
   readonly #guildID: string;
-  readonly #joined_at: number;
+  readonly joinedAt: Date;
   readonly id: string;
   nick: string | null;
   #rolesIDs: string[] = [];
 
   constructor(data: BaseData, client: Client) {
     super(client);
-    this.#joined_at = new Date(data.joined_at).getTime();
+    this.joinedAt = new Date(data.joined_at);
     this.id = data.user.id;
     this.nick = data.nick;
     this.#guildID = data.guild_id;
@@ -23,16 +23,6 @@ export class Member extends Base {
   toString(): string {
     return this.user.toString()
   }
-
-  /**
-   * Get the join date of the member
-   *
-   * @returns The date when the member joined the guild
-   */
-  get joinedAt(): Date {
-    return new Date(this.#joined_at);
-  }
-
   /**
    * Get the guild of the member
    *
@@ -84,7 +74,7 @@ export class Member extends Base {
    */
   get permissions(): (keyof typeof PermissionsBitField)[] {
     let perms: (keyof typeof PermissionsBitField)[] = [];
-    if (this.id === this.guild.ownerId) {
+    if (this.id === this.guild.ownerID) {
       for (const key in PermissionsBitField) {
         perms.push(key as keyof typeof PermissionsBitField);
       }

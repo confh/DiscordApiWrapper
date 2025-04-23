@@ -7,6 +7,7 @@ import {
   Message,
   APIMessage,
   WebhookContentOptions,
+  AllowedMentions,
 } from "../index";
 import { Routes } from "./Route";
 
@@ -321,6 +322,12 @@ export class Rest {
     return [embeds, components, files];
   }
 
+  private getAllowedMentions(content: string | ContentOptions): AllowedMentions {
+    if (typeof content !== "string" && content.allowedMentions) return content.allowedMentions
+
+    return this.#client.defaultAllowedMentions
+  }
+
   async sendChannelMessage(
     content: string | ContentOptions,
     channelID: string,
@@ -332,10 +339,7 @@ export class Rest {
       content: typeof content === "string" ? content : content.content,
       embeds,
       components,
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
     };
 
     if (files) {
@@ -369,10 +373,7 @@ export class Rest {
         channel_id: channelID,
         guild_Id: referenced_message_guildID,
       },
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
     };
 
     if (files) {
@@ -453,10 +454,7 @@ export class Rest {
 
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
     };
 
@@ -488,10 +486,7 @@ export class Rest {
       content: typeof content === "string" ? content : content.content,
       embeds,
       components,
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
     };
 
@@ -582,10 +577,7 @@ export class Rest {
       content: typeof content === "string" ? content : content.content,
       embeds,
       components,
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
     };
 
     if (typeof content !== "string") {
@@ -615,10 +607,7 @@ export class Rest {
 
     let payload: JSONCache | FormData = {
       content: typeof content === "string" ? content : content.content,
-      allowed_mentions: {
-        parse: ["users"],
-        replied_user: true,
-      },
+      allowed_mentions: this.getAllowedMentions(content),
       flags: typeof content !== "string" && content.ephemeral ? 64 : 0,
     };
 

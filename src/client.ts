@@ -411,6 +411,15 @@ export interface FileContent {
   buffer: Buffer;
 }
 
+type AllowedMentionTypes = "users" | "roles" | "everyone"
+
+export interface AllowedMentions {
+  parse?: AllowedMentionTypes[];
+  roles?: string[];
+  users?: string[];
+  replied_user?: boolean;
+}
+
 /**
  * Options for sending a message
  */
@@ -421,6 +430,7 @@ export interface ContentOptions {
   ephemeral?: boolean;
   file?: FileContent | FileContent[];
   poll?: PollRequestObject;
+  allowedMentions?: AllowedMentions;
 }
 
 /**
@@ -538,6 +548,7 @@ export class Client {
   public readonly channels: Manager<Channel> = new Manager();
   public readonly roles: Manager<Role> = new Manager();
   public readonly rest: Rest;
+  public readonly defaultAllowedMentions: AllowedMentions;
   public collectors: Collector[] = [];
   public modalCollectors: ModalCollector[] = [];
   public logger: {
@@ -638,6 +649,7 @@ export class Client {
       cacheAllUsers?: boolean;
       intents?: Intents[];
       shards?: "auto" | number;
+      defaultAllowedMentions?: AllowedMentions;
     },
   ) {
     process.on("SIGINT", () => {
@@ -647,6 +659,10 @@ export class Client {
     const shards = options.shards || "auto";
     this.#token = token;
     this.#cacheAllUsers = options?.cacheAllUsers || false;
+    this.defaultAllowedMentions = options?.defaultAllowedMentions || {
+      parse: ["users"],
+      replied_user: true
+    };
     if (options?.intents && options.intents.length) {
       this.#intents = calculateIntents(options.intents);
     }
