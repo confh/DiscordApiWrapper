@@ -172,7 +172,7 @@ export class Message extends Base {
    */
   get member(): Member | null {
     return (
-      this.client.guilds.get(this.guildID).members.get(this.#authorID) ?? null
+      this.client.guilds.get(this.guildID)?.members.get(this.#authorID) ?? null
     );
   }
 
