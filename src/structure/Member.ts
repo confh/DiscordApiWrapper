@@ -13,7 +13,6 @@ export class Member extends Base {
 
   constructor(data: any, client: Client) {
     super(client);
-    console.log(data)
     this.joinedAt = new Date(data.joined_at);
     this.id = data.user.id;
     this.nick = data.nick;
