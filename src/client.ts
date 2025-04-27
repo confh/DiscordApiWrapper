@@ -203,6 +203,7 @@ export interface APIEmbed {
 export interface APIMessage extends BaseData {
   channel_id: string;
   author: APIUser;
+  member?: APIMember;
   content: string;
   timestamp: string;
   edited_timestamp: string;
@@ -213,9 +214,9 @@ export interface APIMessage extends BaseData {
   pinned: boolean;
   type: number;
   referenced_message?: APIMessage;
-  guild_id: string;
   attachments: APIMessageAttachment[];
   embeds: APIEmbed[];
+  guild_id?: string;
   message_snapshots?: APIMessageSnapshot[];
 }
 

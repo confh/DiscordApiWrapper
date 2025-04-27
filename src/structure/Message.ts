@@ -39,7 +39,6 @@ export class MessageSnapshot {
 
 /** Message object */
 export class Message extends Base {
-  readonly #cachedAuthor?: APIUser
   readonly #authorID?: string;
   readonly #mentionsIDs: string[] = [];
   readonly #messageSnapshots?: APIMessageSnapshot[];
@@ -49,7 +48,7 @@ export class Message extends Base {
   readonly timestamp: Date;
   readonly editedTimestamp: Date | null;
   readonly mentionEveryone: boolean;
-  readonly guildID: string;
+  readonly guildID: string | null;
   readonly pinned: boolean;
   readonly type: APIMessageTypes;
   readonly referencedMessage?: Message;
@@ -63,9 +62,20 @@ export class Message extends Base {
     if (!this.client.channels.get(this.channelID)) {
       this.client.channels.cache(new Channel(data.channel, client));
     }
-    this.guildID = data.guild_id;
+    
+    if (data.author) {
+      this.client.users.cache(new User(data.author, client));
+    }
+
+    if (data.guild_id && data.member) {
+      data.member.user = data.author
+      this.client.guilds
+        .get(data.guild_id)
+        .members.cache(new Member(data.member, client));
+    }
+
+    this.guildID = data.guild_id ?? null;
     this.#authorID = data.author ? data.author.id : null;
-    this.#cachedAuthor = data.author
     this.referencedMessage = data.referenced_message
       ? new Message(data.referenced_message, client)
       : null;
@@ -79,7 +89,17 @@ export class Message extends Base {
       : null;
     if (data.mentions) {
       for (let i = 0; i < data.mentions.length; i++) {
-        this.#mentionsIDs.push(data.mentions[i].id);
+        const mention = data.mentions[i] as any
+        this.client.users.cache(new User(mention, client));
+        
+        if (data.guild_id) {
+          mention.member.user = mention
+          this.client.guilds
+            .get(data.guild_id)
+            .members.cache(new Member(mention.member, client));
+        }
+
+        this.#mentionsIDs.push(mention.id);
       }
     }
     this.mentionEveryone = data.mention_everyone;
@@ -93,7 +113,7 @@ export class Message extends Base {
    * Get the link of the message
    */
   get jumpLink(): string {
-    return `https://discord.com/channels/${this.guildID}/${this.channelID}/${this.id}`;
+    return `https://discord.com/channels/${this.guildID ?? "@me"}/${this.channelID}/${this.id}`;
   }
 
   /**
@@ -142,9 +162,6 @@ export class Message extends Base {
    * @returns A user object
    */
   get author(): User | null {
-    if (this.#cachedAuthor) {
-      return new User(this.#cachedAuthor, this.client)
-    }
     return this.client.users.get(this.#authorID) ?? null;
   }
 
@@ -164,8 +181,8 @@ export class Message extends Base {
    *
    * @returns A guild object
    */
-  get guild(): Guild {
-    return this.client.guilds.get(this.guildID) as Guild;
+  get guild(): Guild | null {
+    return this.client.guilds.get(this.guildID) ?? null;
   }
 
   /**

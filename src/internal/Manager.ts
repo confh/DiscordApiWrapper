@@ -37,12 +37,26 @@ export class Manager<K extends Base> {
    * @param data The element(s) to add to the cache.
    * @returns The added element.
    */
-  cache(data: K | K[]): K {
+  cache(data: K | K[]): K | null {
     if (!Array.isArray(data)) {
-      this.#cache.push(data);
+      if (this.#cache.some(a => a.id === data.id)) {
+        const index = this.#cache.findIndex((a) => a.id === data.id)
+        this.#cache.splice(index, 1);
+        this.#cache.splice(index, 0, data);
+      } else {
+        this.#cache.push(data);
+      }
       return this.#cache.find((a) => a.id === data.id);
     } else {
-      this.#cache.push(...data);
+      for (const part of data) {
+        if (this.#cache.some(a => a.id === part.id)) {
+          const index = this.#cache.findIndex((a) => a.id === part.id)
+          this.#cache.splice(index, 1);
+          this.#cache.splice(index, 0, part);
+        } else {
+          this.#cache.push(part);
+        }
+      }
     }
   }
 
@@ -60,7 +74,7 @@ export class Manager<K extends Base> {
    * @param id The ID of the element to get.
    * @returns The element with the specified ID, or undefined if the element is not found.
    */
-  get(id: string): K | undefined {
+  get(id: string): K | null {
     return this.#cache.find((a) => a.id === id);
   }
 

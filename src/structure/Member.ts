@@ -11,8 +11,9 @@ export class Member extends Base {
   nick: string | null;
   #rolesIDs: string[] = [];
 
-  constructor(data: BaseData, client: Client) {
+  constructor(data: any, client: Client) {
     super(client);
+    console.log(data)
     this.joinedAt = new Date(data.joined_at);
     this.id = data.user.id;
     this.nick = data.nick;

@@ -37,8 +37,16 @@ export class Interaction extends Base {
     this.name = data.data.name;
     this.id = data.data.id;
     this.guildID = data.guild_id;
-    if (data.member) this.#userID = data.member.user.id;
-    else this.#userID = data.user.id;
+    if (data.member) {
+      this.client.guilds.get(this.guildID).members.cache(new Member(data.member, client));
+      this.client.users.cache(new User(data.member.user, client));
+      this.#userID = data.member.user.id;
+    }
+    else {
+      this.client.users.cache(new User(data.user, client));
+      this.#userID = data.user.id;
+    }
+
     this.description = data.description;
     this.type = data.type;
     this.#channelID = data.channel_id;
@@ -509,10 +517,10 @@ export class UserContextInteraction extends Interaction {
     this.target_id = data.data.target_id;
     this.target.user =
       client.users.get(this.target_id) ||
-      new User(data.data.resolved.users[this.target_id], this.client);
+      client.users.cache(new User(data.data.resolved.users[this.target_id], this.client));
     this.target.member =
       this.guild.members.get(this.target_id) ||
-      new Member(data.data.resolved.members[this.target_id], client);
+      client.guilds.get(this.guildID).members.cache(new Member(data.data.resolved.members[this.target_id], client));
   }
 }
 
