@@ -38,8 +38,8 @@ export class Interaction extends Base {
     this.id = data.data.id;
     this.guildID = data.guild_id;
     if (data.member) {
+      data.member.user = data.user
       this.client.guilds.get(this.guildID).members.cache(new Member(data.member, client));
-      this.client.users.cache(new User(data.member.user, client));
       this.#userID = data.member.user.id;
     }
     else {

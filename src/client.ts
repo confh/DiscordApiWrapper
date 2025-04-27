@@ -1255,6 +1255,7 @@ export class Client {
 
         // Interaction Events
         case "INTERACTION_CREATE": {
+          _this.users.cache(new User(d.user, _this));
           if (d.type === InteractionTypes.APPLICATION_COMMAND) {
             if (d.channel.type === ChannelTypes.DM) {
               const user = _this.users.get(d.user.id);
