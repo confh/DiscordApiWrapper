@@ -87,12 +87,12 @@ export class Message extends Base {
     this.editedTimestamp = data.edited_timestamp
       ? new Date(data.edited_timestamp)
       : null;
-    if (data.mentions) {
+    if (data.mentions.length) {
       for (let i = 0; i < data.mentions.length; i++) {
         const mention = data.mentions[i] as any
         this.client.users.cache(new User(mention, client));
         
-        if (data.guild_id) {
+        if (data.guild_id && mention.member) {
           mention.member.user = mention
           this.client.guilds
             .get(data.guild_id)
