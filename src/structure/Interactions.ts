@@ -37,8 +37,14 @@ export class Interaction extends Base {
     this.name = data.data.name;
     this.id = data.data.id;
     this.guildID = data.guild_id;
+
     if (data.member) {
-      this.client.guilds.get(this.guildID).members.cache(new Member(data.member, client));
+      const guildExists = this.client.guilds.get(this.guildID);
+
+      if (guildExists) {
+        this.client.guilds.get(this.guildID).members.cache(new Member(data.member, client));
+      }
+      
       this.#userID = data.member.user.id;
     }
     else {
