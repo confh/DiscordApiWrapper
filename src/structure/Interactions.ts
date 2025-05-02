@@ -42,6 +42,7 @@ export class Interaction extends Base {
       const guildExists = this.client.guilds.get(this.guildID);
 
       if (guildExists) {
+        data.member.guild_id = this.guildID;
         this.client.guilds.get(this.guildID).members.cache(new Member(data.member, client));
       }
       

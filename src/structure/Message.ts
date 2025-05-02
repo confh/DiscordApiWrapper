@@ -69,6 +69,7 @@ export class Message extends Base {
 
     if (data.guild_id && data.member) {
       data.member.user = data.author
+      data.member.guild_id = data.guild_id
       this.client.guilds
         .get(data.guild_id)
         .members.cache(new Member(data.member, client));
@@ -94,6 +95,7 @@ export class Message extends Base {
         
         if (data.guild_id && mention.member) {
           mention.member.user = mention
+          mention.member.guild_id = data.guild_id
           this.client.guilds
             .get(data.guild_id)
             .members.cache(new Member(mention.member, client));

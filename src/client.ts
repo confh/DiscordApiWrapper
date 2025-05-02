@@ -29,7 +29,7 @@ export type Snowflake = string;
 /**
  * Guild Member Event Object
  */
-export interface APIGuildMemberEvent extends APIMember {
+export interface APIGuildMemberEvent extends Omit<APIMember, "guild_id"> {
   guild_id: string;
 }
 
@@ -141,6 +141,7 @@ export interface APIMember {
   mute: boolean;
   flags: number;
   permissions: string;
+  guild_id?: string;
 }
 
 export interface APIGuild extends BaseData {
